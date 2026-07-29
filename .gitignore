@@ -1,0 +1,11 @@
+# credenciais locais
+app/config.local.php
+
+# uploads dos cursos
+storage/cursos/*
+!storage/cursos/.gitkeep
+
+# logs
+logs/
+*.log
+error_log
