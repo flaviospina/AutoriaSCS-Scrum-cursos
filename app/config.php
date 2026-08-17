@@ -16,7 +16,7 @@ $config = [
     'charset' => 'utf8mb4',
   ],
   'app' => [
-    'base_url' => 'https://cecapescs.com.br/autoriascs/ciclo_acompa/public',
+    'base_url' => 'https://cecapescs.com.br/autoriascs/scrum/public',
     'nome'     => 'AutoriaSCS • Gestão de Cursos',
   ],
   'n8n' => [
