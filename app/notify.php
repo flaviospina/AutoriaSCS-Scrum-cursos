@@ -46,8 +46,45 @@ function notify_queue(string $email, string $nome, string $assunto, string $html
       INSERT INTO tb_notificacoes (destinatario_email, destinatario_nome, assunto, corpo_html, status, send_after)
       VALUES (?,?,?,?, 'PENDENTE', ?)
     ")->execute([$email, $nome, $assunto, $html, $sendAfter]);
+
+    // ENVIO IMEDIATO (em tempo de execução): a fila fica como retaguarda —
+    // se falhar aqui, o registro permanece PENDENTE/ERRO e o cron reprocessa.
+    if ($sendAfter === null) {
+      notify_send_one((int)db()->lastInsertId());
+    }
   } catch (Throwable $e) {
     error_log('Falha ao enfileirar notificação: ' . $e->getMessage());
+  }
+}
+
+/** Envia uma notificação específica da fila. Retorna true se enviou. */
+function notify_send_one(int $idNotificacao): bool {
+  try {
+    $cfg = notify_config()['mail'] ?? [];
+    if (($cfg['method'] ?? 'disabled') === 'disabled') return false;
+
+    $st = db()->prepare("
+      SELECT * FROM tb_notificacoes
+      WHERE id_notificacao=? AND status IN ('PENDENTE','ERRO') AND tentativas < 3
+        AND (send_after IS NULL OR send_after <= NOW())
+      LIMIT 1
+    ");
+    $st->execute([$idNotificacao]);
+    $n = $st->fetch();
+    if (!$n) return false;
+
+    $res = mailer_send($n['destinatario_email'], $n['destinatario_nome'], $n['assunto'], $n['corpo_html']);
+    if ($res === true) {
+      db()->prepare("UPDATE tb_notificacoes SET status='ENVIADO', sent_at=NOW(), erro_msg=NULL WHERE id_notificacao=?")
+        ->execute([$idNotificacao]);
+      return true;
+    }
+    db()->prepare("UPDATE tb_notificacoes SET status='ERRO', tentativas=tentativas+1, erro_msg=? WHERE id_notificacao=?")
+      ->execute([mb_substr((string)$res, 0, 500), $idNotificacao]);
+    return false;
+  } catch (Throwable $e) {
+    error_log('Falha no envio imediato da notificação #' . $idNotificacao . ': ' . $e->getMessage());
+    return false;
   }
 }
 
@@ -191,7 +228,7 @@ function notify_send_pending(int $limit = 25): array {
   if ($method === 'disabled') return [0, 0];
 
   $rows = db()->query("
-    SELECT * FROM tb_notificacoes
+    SELECT id_notificacao FROM tb_notificacoes
     WHERE status IN ('PENDENTE','ERRO') AND tentativas < 3
       AND (send_after IS NULL OR send_after <= NOW())
     ORDER BY id_notificacao
@@ -200,16 +237,7 @@ function notify_send_pending(int $limit = 25): array {
 
   $ok = 0; $err = 0;
   foreach ($rows as $n) {
-    $res = mailer_send($n['destinatario_email'], $n['destinatario_nome'], $n['assunto'], $n['corpo_html']);
-    if ($res === true) {
-      db()->prepare("UPDATE tb_notificacoes SET status='ENVIADO', sent_at=NOW(), erro_msg=NULL WHERE id_notificacao=?")
-        ->execute([$n['id_notificacao']]);
-      $ok++;
-    } else {
-      db()->prepare("UPDATE tb_notificacoes SET status='ERRO', tentativas=tentativas+1, erro_msg=? WHERE id_notificacao=?")
-        ->execute([mb_substr($res, 0, 500), $n['id_notificacao']]);
-      $err++;
-    }
+    notify_send_one((int)$n['id_notificacao']) ? $ok++ : $err++;
   }
   return [$ok, $err];
 }
