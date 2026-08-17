@@ -218,7 +218,7 @@ function notify_send_pending(int $limit = 25): array {
 function mailer_send(string $toEmail, string $toName, string $subject, string $html) {
   $cfg = notify_config()['mail'] ?? [];
   $method = $cfg['method'] ?? 'disabled';
-  $fromEmail = $cfg['from_email'] ?? 'ti.cecape@scseduca.com.br';
+  $fromEmail = $cfg['from_email'] ?? 'no-reply.cecape@scseduca.com.br';
   $fromName  = $cfg['from_name'] ?? 'AutoriaSCS - CECAPE';
 
   if ($method === 'disabled') return 'Envio de e-mail desativado na configuração.';

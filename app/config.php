@@ -26,7 +26,7 @@ $config = [
   'mail' => [
     // method: 'mail' (nativo do cPanel), 'smtp' (autenticado) ou 'disabled'
     'method'      => 'mail',
-    'from_email'  => 'ti.cecape@scseduca.com.br',
+    'from_email'  => 'no-reply.cecape@scseduca.com.br',
     'from_name'   => 'AutoriaSCS - CECAPE',
     // usados apenas quando method = 'smtp'
     'smtp_host'   => 'mail.scseduca.com.br',
