@@ -6,6 +6,12 @@ $nStatus = (int)db()->query("SELECT COUNT(*) n FROM tb_status WHERE ativo=1")->f
 $nTrans  = (int)db()->query("SELECT COUNT(*) n FROM tb_status_transicoes")->fetch()['n'];
 $nUsers  = (int)db()->query("SELECT COUNT(*) n FROM tb_users WHERE ativo=1")->fetch()['n'];
 $nCursos = (int)db()->query("SELECT COUNT(*) n FROM tb_cursos")->fetch()['n'];
+try {
+  $nAudit  = (int)db()->query("SELECT COUNT(*) n FROM tb_audit_log")->fetch()['n'];
+  $nNotifP = (int)db()->query("SELECT COUNT(*) n FROM tb_notificacoes WHERE status='PENDENTE'")->fetch()['n'];
+} catch (Throwable $e) {
+  $nAudit = 0; $nNotifP = 0; // tabelas da V3 ainda não migradas
+}
 
 include __DIR__ . '/../_layout_top.php';
 ?>
@@ -25,6 +31,8 @@ include __DIR__ . '/../_layout_top.php';
       ['Status', $nStatus, 'Criar, editar, mover entre colunas, definir cores, status inicial e finais.', 'status.php'],
       ['Transições por perfil', $nTrans, 'Definir quais movimentações cada perfil (PROFESSOR, TI, MB) pode realizar.', 'transicoes.php'],
       ['Usuários', $nUsers, 'Cadastrar formadores, equipe TI, MB Estúdios e administradores.', 'usuarios.php'],
+      ['Auditoria', $nAudit, 'Registro de todas as ações do sistema: quem fez, o quê, quando e de onde. Exportável em CSV.', 'auditoria.php'],
+      ['Notificações', $nNotifP, 'Fila de e-mails do sistema (pendentes, enviados, erros) e processamento manual.', 'notificacoes.php'],
     ];
   ?>
   <?php foreach ($cards as [$titulo, $n, $desc, $link]): ?>

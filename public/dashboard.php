@@ -176,6 +176,7 @@ include __DIR__ . '/_layout_top.php';
     <?php else: ?>
       <a class="btn btn-outline-primary <?= $view==='kanban'?'active':'' ?>" href="?<?= buildQuery(['view'=>'kanban','page'=>1]) ?>">Kanban</a>
       <a class="btn btn-outline-primary <?= $view==='table'?'active':'' ?>" href="?<?= buildQuery(['view'=>'table','page'=>1]) ?>">Tabela</a>
+      <a class="btn btn-outline-success" href="export_cursos.php" title="Exportar todos os cursos em CSV">CSV</a>
     <?php endif; ?>
   </div>
 </div>

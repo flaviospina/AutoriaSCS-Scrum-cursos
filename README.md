@@ -27,30 +27,52 @@ O fluxo do Kanban não é mais fixo no código — é configurável em `Admin`:
   TI e MB podem fazer (ADMIN pode todas).
 - **Usuários** (`admin/usuarios.php`): cadastro, perfil, ativação e redefinição de senha.
 
+## Auditoria, E-mails e Biblioteca de Modelos (V3)
+
+- **Auditoria** (`Admin → Auditoria`): toda ação fica registrada em `tb_audit_log`
+  (quem, o quê, quando, valores antes/depois, IP), incluindo logins, downloads e ações
+  administrativas. Exportável em CSV;
+- **Notificações por e-mail**: fila em `tb_notificacoes` processada por cron; eventos do fluxo
+  (curso proposto, aguardando revisão, recusado com apontamentos, aprovado, inserido, publicado,
+  novo apontamento), alertas diários de prazo e resumo semanal às segundas. Cada usuário escolhe
+  em **Meu Perfil**: imediato, resumo diário ou desativado;
+- **Biblioteca de Modelos** (`Modelos`): TI/ADMIN publica os templates oficiais com versão e
+  marcação "vigente"; todos os formadores baixam (máx. 50MB por arquivo);
+- **Arquivos por módulo** + **links externos** (Google Drive para mídia pesada) em cada curso.
+
 ## Instalação
 
-1. Crie o banco e execute `database/schema.sql` (instalação nova) **ou**
-   `database/upgrade_v2.sql` (banco da versão anterior — faça backup antes).
-2. Copie `app/config.php` para `app/config.local.php` e preencha as credenciais reais
+1. Crie o banco e execute `database/schema.sql` (instalação nova). Migrações a partir de banco
+   antigo: `upgrade_v2.sql` (fluxo dinâmico) e depois `upgrade_v3.sql` (auditoria/e-mails/modelos)
+   — faça backup antes.
+2. Copie `app/config.php` para `app/config.local.php` e preencha as credenciais reais do banco,
+   a seção `mail` (método `mail` do cPanel ou `smtp`) e a `cron.chave`
    (o arquivo local é ignorado pelo git).
 3. Publique o projeto no servidor (o *document root* deve apontar para `public/`).
-4. Garanta permissão de escrita em `storage/cursos/`.
-5. Acesse com o usuário inicial `admin@scseduca.com.br` / `admin123` e **troque a senha**.
+4. Garanta permissão de escrita em `storage/cursos/` e `storage/modelos/`.
+5. Agende os crons no cPanel:
+   - a cada 5 min: `php /home/USUARIO/caminho/cron/cron_notificacoes.php SUA_CHAVE`
+   - 1x ao dia (07h): `php /home/USUARIO/caminho/cron/cron_prazos.php SUA_CHAVE`
+   (também aceitam chamada via URL: `cron/cron_notificacoes.php?chave=SUA_CHAVE`).
+6. Acesse com o usuário inicial `admin@scseduca.com.br` / `admin123` e **troque a senha**.
 
 ## Estrutura
 
 ```
-app/        código de domínio (auth, cursos, kanban dinâmico, csrf, n8n)
-public/     páginas (dashboard kanban/tabela, curso, apontamentos, relatórios)
-public/admin/  área administrativa (ADMIN)
-database/   schema.sql (novo) e upgrade_v2.sql (migração)
-storage/    uploads dos cursos (fora do webroot lógico; download via download.php)
-docs/       análise completa do sistema e roadmap de funcionalidades
+app/        código de domínio (auth, cursos, kanban dinâmico, csrf, auditoria, notificações)
+public/     páginas (dashboard kanban/tabela, curso, apontamentos, relatórios, modelos, perfil)
+public/admin/  área administrativa (ADMIN): kanban, status, transições, usuários, auditoria, e-mails
+cron/       cron_notificacoes.php (fila de e-mails) e cron_prazos.php (prazos + resumo semanal)
+database/   schema.sql (novo), upgrade_v2.sql e upgrade_v3.sql (migrações)
+storage/    uploads dos cursos e biblioteca de modelos (download via páginas autenticadas)
+docs/       análise completa, proposta de auditoria/e-mails/repositório e roadmap
 ```
 
 ## Documentação
 
 - [`docs/ANALISE_E_PROPOSTAS.md`](docs/ANALISE_E_PROPOSTAS.md) — análise completa do sistema,
   pesquisa de boas práticas e roadmap de novas funcionalidades.
+- [`docs/PROPOSTA_LOGS_EMAILS_REPOSITORIO.md`](docs/PROPOSTA_LOGS_EMAILS_REPOSITORIO.md) —
+  proposta aprovada de auditoria, notificações e repositório de modelos (V3).
 
 Suporte: **ti.cecape@scseduca.com.br**

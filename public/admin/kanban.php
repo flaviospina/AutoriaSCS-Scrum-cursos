@@ -17,6 +17,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $max = (int)db()->query("SELECT COALESCE(MAX(ordem),0) m FROM tb_kanban_colunas")->fetch()['m'];
       db()->prepare("INSERT INTO tb_kanban_colunas (nome, cor, ordem, wip_limit, ativo) VALUES (?,?,?,?,1)")
         ->execute([$nome, $cor, $max + 1, $wip]);
+      audit_log('kanban_coluna_criada', 'kanban_coluna', (int)db()->lastInsertId(), null,
+        ['nome' => $nome, 'cor' => $cor, 'wip_limit' => $wip]);
       $ok = "Coluna \"{$nome}\" criada.";
     }
 
@@ -29,8 +31,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if ($nome === '') throw new Exception("Informe o nome da coluna.");
       if (!preg_match('/^#[0-9a-fA-F]{6}$/', $cor)) $cor = '#e9ecef';
 
+      $stA = db()->prepare("SELECT nome, cor, wip_limit, ativo FROM tb_kanban_colunas WHERE id_coluna=?");
+      $stA->execute([$idc]);
+      $antes = $stA->fetch() ?: null;
+
       db()->prepare("UPDATE tb_kanban_colunas SET nome=?, cor=?, wip_limit=?, ativo=? WHERE id_coluna=?")
         ->execute([$nome, $cor, $wip, $ativo, $idc]);
+      audit_log('kanban_coluna_editada', 'kanban_coluna', $idc, $antes,
+        ['nome' => $nome, 'cor' => $cor, 'wip_limit' => $wip, 'ativo' => $ativo]);
       $ok = "Coluna atualizada.";
     }
 
@@ -62,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         throw new Exception("Não é possível excluir: a coluna possui status vinculados. Mova ou exclua os status antes.");
       }
       db()->prepare("DELETE FROM tb_kanban_colunas WHERE id_coluna=?")->execute([$idc]);
+      audit_log('kanban_coluna_excluida', 'kanban_coluna', $idc);
       $ok = "Coluna excluída.";
     }
   } catch (Throwable $e) {

@@ -26,6 +26,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       db()->prepare("INSERT INTO tb_users (nome, email, senha_hash, role, ativo) VALUES (?,?,?,?,1)")
         ->execute([$nome, $email, password_hash($senha, PASSWORD_DEFAULT), $role]);
+      audit_log('usuario_criado', 'user', (int)db()->lastInsertId(), null,
+        ['nome' => $nome, 'email' => $email, 'role' => $role]);
       $ok = "Usuário \"{$nome}\" criado.";
     }
 
@@ -48,8 +50,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $dup->execute([$email, $idu]);
       if ((int)$dup->fetch()['n'] > 0) throw new Exception("Já existe outro usuário com este e-mail.");
 
+      $stA = db()->prepare("SELECT nome, email, role, ativo FROM tb_users WHERE id_user=?");
+      $stA->execute([$idu]);
+      $antes = $stA->fetch() ?: null;
+
       db()->prepare("UPDATE tb_users SET nome=?, email=?, role=?, ativo=? WHERE id_user=?")
         ->execute([$nome, $email, $role, $ativo, $idu]);
+      audit_log('usuario_editado', 'user', $idu, $antes,
+        ['nome' => $nome, 'email' => $email, 'role' => $role, 'ativo' => $ativo]);
       $ok = "Usuário atualizado.";
     }
 
@@ -59,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if (strlen($senha) < 6) throw new Exception("A nova senha deve ter pelo menos 6 caracteres.");
       db()->prepare("UPDATE tb_users SET senha_hash=? WHERE id_user=?")
         ->execute([password_hash($senha, PASSWORD_DEFAULT), $idu]);
+      audit_log('usuario_senha_redefinida', 'user', $idu);
       $ok = "Senha redefinida.";
     }
   } catch (Throwable $e) {

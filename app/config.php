@@ -23,6 +23,22 @@ $config = [
     'webhook_url' => '', // ex.: https://SEU_N8N/webhook/curso-event (vazio = desativado)
     'token'       => '',
   ],
+  'mail' => [
+    // method: 'mail' (nativo do cPanel), 'smtp' (autenticado) ou 'disabled'
+    'method'      => 'mail',
+    'from_email'  => 'ti.cecape@scseduca.com.br',
+    'from_name'   => 'AutoriaSCS - CECAPE',
+    // usados apenas quando method = 'smtp'
+    'smtp_host'   => 'mail.scseduca.com.br',
+    'smtp_port'   => 587,
+    'smtp_user'   => '',
+    'smtp_pass'   => '',
+    'smtp_secure' => 'tls', // 'ssl' (465) | 'tls' (587) | 'none'
+  ],
+  'cron' => [
+    // chave exigida pelos scripts de cron quando chamados via URL
+    'chave' => 'troque-esta-chave-cron',
+  ],
 ];
 
 $local = __DIR__ . '/config.local.php';

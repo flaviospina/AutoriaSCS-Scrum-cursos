@@ -31,6 +31,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $max = (int)db()->query("SELECT COALESCE(MAX(ordem),0) m FROM tb_status")->fetch()['m'];
       db()->prepare("INSERT INTO tb_status (nome, id_coluna, cor, ordem, is_inicial, is_final, ativo) VALUES (?,?,?,?,0,0,1)")
         ->execute([$nome, $idc, $cor, $max + 1]);
+      audit_log('status_criado', 'status', (int)db()->lastInsertId(), null,
+        ['nome' => $nome, 'id_coluna' => $idc, 'cor' => $cor]);
       $ok = "Status \"{$nome}\" criado. Configure as transições em Transições por perfil.";
     }
 
@@ -69,6 +71,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         db()->rollBack();
         throw $e;
       }
+      audit_log('status_editado', 'status', $ids,
+        ['nome' => $nomeAntigo],
+        ['nome' => $nome, 'id_coluna' => $idc, 'cor' => $cor, 'ativo' => $ativo, 'is_final' => $isFinal]);
       $ok = "Status atualizado." . ($nome !== $nomeAntigo ? " Cursos e histórico foram renomeados automaticamente." : "");
     }
 
@@ -83,6 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         db()->rollBack();
         throw $e;
       }
+      audit_log('status_inicial_definido', 'status', $ids);
       $ok = "Status inicial definido.";
     }
 
@@ -120,6 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         db()->rollBack();
         throw $e;
       }
+      audit_log('status_excluido', 'status', $ids);
       $ok = "Status excluído (transições associadas também foram removidas).";
     }
   } catch (Throwable $e) {

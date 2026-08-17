@@ -3,6 +3,7 @@ session_start();
 require_once __DIR__ . '/../app/auth.php';
 require_once __DIR__ . '/../app/db.php';
 require_once __DIR__ . '/../app/curso_repo.php';
+require_once __DIR__ . '/../app/audit.php';
 
 require_login();
 $u = auth_user();
@@ -25,6 +26,8 @@ $base = realpath(__DIR__ . '/../storage');
 $path = $base . "/cursos/{$f['id_curso']}/{$f['stored_name']}";
 
 if (!file_exists($path)) { http_response_code(404); exit("Arquivo ausente no storage."); }
+
+audit_log('arquivo_baixado', 'curso', (int)$f['id_curso'], null, ['arquivo' => $f['original_name']]);
 
 header("Content-Type: {$f['mime_type']}");
 header('Content-Length: ' . filesize($path));

@@ -4,6 +4,8 @@ require_once __DIR__ . '/../app/auth.php';
 require_once __DIR__ . '/../app/db.php';
 require_once __DIR__ . '/../app/curso_repo.php';
 require_once __DIR__ . '/../app/csrf.php';
+require_once __DIR__ . '/../app/audit.php';
+require_once __DIR__ . '/../app/notify.php';
 
 require_login();
 $u = auth_user();
@@ -33,6 +35,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
     db()->prepare("INSERT INTO tb_curso_apontamentos (id_curso, id_user, tipo, conteudo) VALUES (?,?,?,?)")
       ->execute([$id, $u['id_user'], $tipo, $conteudo]);
 
+    audit_log('apontamento_criado', 'curso', $id, null, ['tipo' => $tipo, 'conteudo' => $conteudo]);
+    notify_apontamento($curso, $tipo, $conteudo);
+
     header("Location: apontamentos.php?id={$id}");
     exit;
   } catch (Throwable $e) {
@@ -50,6 +55,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggl
 
     db()->prepare("UPDATE tb_curso_apontamentos SET resolvido=? WHERE id_apontamento=? AND id_curso=?")
       ->execute([$val, $id_ap, $id]);
+
+    audit_log($val ? 'apontamento_resolvido' : 'apontamento_reaberto', 'apontamento', $id_ap,
+      null, ['id_curso' => $id]);
 
     header("Location: apontamentos.php?id={$id}");
     exit;

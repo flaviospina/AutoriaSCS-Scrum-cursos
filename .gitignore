@@ -1,9 +1,11 @@
 # credenciais locais
 app/config.local.php
 
-# uploads dos cursos
+# uploads dos cursos e biblioteca de modelos
 storage/cursos/*
 !storage/cursos/.gitkeep
+storage/modelos/*
+!storage/modelos/.gitkeep
 
 # logs
 logs/

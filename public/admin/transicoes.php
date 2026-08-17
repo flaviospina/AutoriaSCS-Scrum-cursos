@@ -21,12 +21,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       db()->prepare("INSERT INTO tb_status_transicoes (role, id_status_de, id_status_para) VALUES (?,?,?)")
         ->execute([$role, $de, $para]);
+      audit_log('transicao_criada', 'transicao', (int)db()->lastInsertId(), null,
+        ['role' => $role, 'de' => $de, 'para' => $para]);
       $ok = "Transição criada.";
     }
 
     if ($action === 'delete') {
       $idt = (int)($_POST['id_transicao'] ?? 0);
       db()->prepare("DELETE FROM tb_status_transicoes WHERE id_transicao=?")->execute([$idt]);
+      audit_log('transicao_removida', 'transicao', $idt);
       $ok = "Transição removida.";
     }
   } catch (Throwable $e) {

@@ -4,6 +4,7 @@ require_once __DIR__ . '/../app/auth.php';
 require_once __DIR__ . '/../app/db.php';
 require_once __DIR__ . '/../app/curso_repo.php';
 require_once __DIR__ . '/../app/csrf.php';
+require_once __DIR__ . '/../app/audit.php';
 
 require_login();
 $u = auth_user();
@@ -21,6 +22,10 @@ if ($u['role'] === 'PROFESSOR' && (int)$curso['id_professor'] !== (int)$u['id_us
 $categoria = $_POST['categoria'] ?? 'OUTROS';
 $allowedCat = ['PLANEJAMENTO','PRODUCAO','ENTREGA','OUTROS'];
 if (!in_array($categoria, $allowedCat, true)) $categoria = 'OUTROS';
+
+// módulo do curso a que o arquivo pertence (0 = geral)
+$modulo = (int)($_POST['modulo'] ?? 0);
+if ($modulo < 0 || $modulo > 8) $modulo = 0;
 
 if (!isset($_FILES['arquivo']) || $_FILES['arquivo']['error'] !== UPLOAD_ERR_OK) {
   header("Location: curso_detalhe.php?id={$id_curso}&err=upload");
@@ -75,8 +80,8 @@ if (!move_uploaded_file($tmp, $dest)) {
 }
 
 db()->prepare("
-  INSERT INTO tb_curso_files (id_curso, id_user, original_name, stored_name, mime_type, file_size, categoria)
-  VALUES (?,?,?,?,?,?,?)
+  INSERT INTO tb_curso_files (id_curso, id_user, original_name, stored_name, mime_type, file_size, categoria, modulo)
+  VALUES (?,?,?,?,?,?,?,?)
 ")->execute([
   $id_curso,
   $u['id_user'],
@@ -84,7 +89,15 @@ db()->prepare("
   $stored,
   $mime,
   (int)$_FILES['arquivo']['size'],
-  $categoria
+  $categoria,
+  $modulo
+]);
+
+audit_log('arquivo_enviado', 'curso', $id_curso, null, [
+  'arquivo' => $original,
+  'categoria' => $categoria,
+  'modulo' => $modulo,
+  'tamanho' => (int)$_FILES['arquivo']['size'],
 ]);
 
 header("Location: curso_detalhe.php?id={$id_curso}&ok=upload");

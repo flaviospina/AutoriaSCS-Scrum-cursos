@@ -35,14 +35,20 @@ function is_staff(): bool {
 }
 
 function login_attempt(string $email, string $senha): bool {
+  require_once __DIR__ . '/audit.php';
+
   $st = db()->prepare("SELECT id_user, nome, email, senha_hash, role, ativo FROM tb_users WHERE email=? LIMIT 1");
   $st->execute([$email]);
   $u = $st->fetch();
-  if (!$u || !$u['ativo']) return false;
-  if (!password_verify($senha, $u['senha_hash'])) return false;
+  if (!$u || !$u['ativo'] || !password_verify($senha, $u['senha_hash'])) {
+    audit_log('login_falhou', 'user', $u ? (int)$u['id_user'] : null, null,
+      ['email_informado' => $email], $u ? (int)$u['id_user'] : null);
+    return false;
+  }
 
   unset($u['senha_hash']);
   session_regenerate_id(true);
   $_SESSION['user'] = $u;
+  audit_log('login_ok', 'user', (int)$u['id_user']);
   return true;
 }

@@ -72,6 +72,7 @@ $LP = $LP ?? '';
       <div class="collapse navbar-collapse" id="navMain">
         <ul class="navbar-nav me-auto">
           <li class="nav-item"><a class="nav-link" href="<?= $LP ?>dashboard.php">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="<?= $LP ?>modelos.php">Modelos</a></li>
           <?php if (is_staff()): ?>
             <li class="nav-item"><a class="nav-link" href="<?= $LP ?>relatorios.php">Relatórios</a></li>
           <?php endif; ?>
@@ -86,6 +87,8 @@ $LP = $LP ?? '';
                 <li><a class="dropdown-item" href="<?= $LP ?>admin/transicoes.php">Transições por perfil</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="<?= $LP ?>admin/usuarios.php">Usuários</a></li>
+                <li><a class="dropdown-item" href="<?= $LP ?>admin/auditoria.php">Auditoria</a></li>
+                <li><a class="dropdown-item" href="<?= $LP ?>admin/notificacoes.php">Notificações</a></li>
               </ul>
             </li>
           <?php endif; ?>
@@ -93,7 +96,8 @@ $LP = $LP ?? '';
 
         <div class="d-flex gap-2 align-items-center">
           <span class="badge bg-warning text-dark">Perfil: <?= htmlspecialchars($u['role']) ?></span>
-          <span class="text-white small d-none d-md-inline">Olá, <?= htmlspecialchars($u['nome']) ?></span>
+          <a class="nav-link text-white small d-none d-md-inline" href="<?= $LP ?>perfil.php"
+             title="Meu Perfil">Olá, <?= htmlspecialchars($u['nome']) ?></a>
           <a class="btn btn-outline-light btn-sm" href="<?= $LP ?>logout.php">Sair</a>
         </div>
       </div>

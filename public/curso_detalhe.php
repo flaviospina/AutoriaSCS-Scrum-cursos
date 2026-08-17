@@ -5,6 +5,7 @@ require_once __DIR__ . '/../app/db.php';
 require_once __DIR__ . '/../app/curso_repo.php';
 require_once __DIR__ . '/../app/status_repo.php';
 require_once __DIR__ . '/../app/csrf.php';
+require_once __DIR__ . '/../app/audit.php';
 
 require_login();
 $u = auth_user();
@@ -25,9 +26,17 @@ $hst = db()->prepare("SELECT h.*, u.nome AS user_nome FROM tb_curso_status_histo
 $hst->execute([$id]);
 $history = $hst->fetchAll();
 
-$fs = db()->prepare("SELECT * FROM tb_curso_files WHERE id_curso=? ORDER BY created_at DESC");
+$fs = db()->prepare("SELECT * FROM tb_curso_files WHERE id_curso=? ORDER BY modulo, created_at DESC");
 $fs->execute([$id]);
 $files = $fs->fetchAll();
+
+// links externos (Google Drive / vídeos MB)
+$lk = db()->prepare("SELECT l.*, u.nome AS user_nome FROM tb_curso_links l JOIN tb_users u ON u.id_user=l.id_user WHERE l.id_curso=? ORDER BY l.created_at DESC");
+$lk->execute([$id]);
+$links = $lk->fetchAll();
+
+$podeGerirLinks = in_array($u['role'], ['TI','ADMIN'], true) ||
+  ($u['role'] === 'PROFESSOR' && (int)$curso['id_professor'] === (int)$u['id_user']);
 
 // apontamentos
 $ap = db()->prepare("SELECT a.*, u.nome AS user_nome FROM tb_curso_apontamentos a JOIN tb_users u ON u.id_user=a.id_user WHERE a.id_curso=? ORDER BY a.created_at DESC");
@@ -60,9 +69,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
     }
     $vals[] = $id;
 
+    $antesCheck = $check;
     db()->prepare("UPDATE tb_curso_checklist SET ".implode(',', $sets)." WHERE id_curso=?")->execute($vals);
-    $ok = "Checklist atualizado com sucesso.";
     $check = checklist_get($id);
+    [$da, $dd] = audit_diff(
+      array_intersect_key($antesCheck, array_flip($fields)),
+      array_intersect_key($check, array_flip($fields))
+    );
+    if ($dd) audit_log('checklist_atualizado', 'curso', $id, $da, $dd);
+    $ok = "Checklist atualizado com sucesso.";
   } catch (Throwable $e) {
     $erro = $e->getMessage();
   }
@@ -90,6 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'recus
 
         db()->prepare("INSERT INTO tb_curso_apontamentos (id_curso, id_user, tipo, conteudo) VALUES (?,?,?,?)")
           ->execute([$id, $u['id_user'], $tipo, $conteudo]);
+        audit_log('apontamento_criado', 'curso', $id, null, ['tipo' => $tipo, 'conteudo' => $conteudo]);
       }
 
       db()->commit();
@@ -99,6 +115,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'recus
     }
 
     curso_transition($id, $u, 'Recusado - Ajustes Necessários', 'Recusa com relatório (TI)');
+
+    header("Location: curso_detalhe.php?id={$id}");
+    exit;
+  } catch (Throwable $e) {
+    $erro = $e->getMessage();
+  }
+}
+
+// Adicionar link externo (Drive / vídeo)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add_link') {
+  csrf_check();
+  try {
+    if (!$podeGerirLinks) throw new Exception("Sem permissão para adicionar links.");
+    $titulo = trim($_POST['link_titulo'] ?? '');
+    $url = trim($_POST['link_url'] ?? '');
+    $tipo = $_POST['link_tipo'] ?? 'DRIVE';
+    if (!in_array($tipo, ['DRIVE','VIDEO','OUTRO'], true)) $tipo = 'OUTRO';
+    if ($titulo === '') throw new Exception("Informe o título do link.");
+    if (!filter_var($url, FILTER_VALIDATE_URL) || !preg_match('#^https?://#i', $url)) {
+      throw new Exception("URL inválida (use http:// ou https://).");
+    }
+
+    db()->prepare("INSERT INTO tb_curso_links (id_curso, id_user, titulo, url, tipo) VALUES (?,?,?,?,?)")
+      ->execute([$id, $u['id_user'], $titulo, $url, $tipo]);
+    audit_log('link_adicionado', 'curso', $id, null, ['titulo' => $titulo, 'url' => $url, 'tipo' => $tipo]);
+
+    header("Location: curso_detalhe.php?id={$id}");
+    exit;
+  } catch (Throwable $e) {
+    $erro = $e->getMessage();
+  }
+}
+
+// Remover link externo
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'del_link') {
+  csrf_check();
+  try {
+    $idl = (int)($_POST['id_link'] ?? 0);
+    $stl = db()->prepare("SELECT * FROM tb_curso_links WHERE id_link=? AND id_curso=?");
+    $stl->execute([$idl, $id]);
+    $l = $stl->fetch();
+    if (!$l) throw new Exception("Link não encontrado.");
+
+    $podeRemover = in_array($u['role'], ['TI','ADMIN'], true) || (int)$l['id_user'] === (int)$u['id_user'];
+    if (!$podeRemover) throw new Exception("Sem permissão para remover este link.");
+
+    db()->prepare("DELETE FROM tb_curso_links WHERE id_link=?")->execute([$idl]);
+    audit_log('link_removido', 'curso', $id, ['titulo' => $l['titulo'], 'url' => $l['url']], null);
 
     header("Location: curso_detalhe.php?id={$id}");
     exit;
@@ -358,7 +422,7 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
         <form class="row g-2" method="post" action="upload.php" enctype="multipart/form-data">
           <?= csrf_field() ?>
           <input type="hidden" name="id_curso" value="<?= (int)$id ?>">
-          <div class="col-12 col-md-3">
+          <div class="col-6 col-md-3">
             <label class="form-label small">Categoria</label>
             <select class="form-select" name="categoria">
               <option value="PLANEJAMENTO">Planejamento</option>
@@ -367,7 +431,16 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
               <option value="OUTROS" selected>Outros</option>
             </select>
           </div>
-          <div class="col-12 col-md-7">
+          <div class="col-6 col-md-2">
+            <label class="form-label small">Módulo</label>
+            <select class="form-select" name="modulo">
+              <option value="0">Geral</option>
+              <?php for ($mo = 1; $mo <= 8; $mo++): ?>
+                <option value="<?= $mo ?>">Módulo <?= $mo ?></option>
+              <?php endfor; ?>
+            </select>
+          </div>
+          <div class="col-12 col-md-5">
             <label class="form-label small">Arquivo</label>
             <input class="form-control" type="file" name="arquivo" required>
             <div class="form-text">Limite 25MB. Tipos comuns: PDF, DOCX, PPTX, MP4, ZIP.</div>
@@ -387,6 +460,7 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
               <thead class="table-light">
                 <tr>
                   <th>Data</th>
+                  <th>Módulo</th>
                   <th>Categoria</th>
                   <th>Nome</th>
                   <th>Tamanho</th>
@@ -397,6 +471,11 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
                 <?php foreach ($files as $f): ?>
                   <tr>
                     <td class="text-nowrap"><?= htmlspecialchars($f['created_at']) ?></td>
+                    <td>
+                      <span class="badge <?= ((int)($f['modulo'] ?? 0)) ? 'bg-primary' : 'bg-secondary' ?>">
+                        <?= ((int)($f['modulo'] ?? 0)) ? 'Módulo ' . (int)$f['modulo'] : 'Geral' ?>
+                      </span>
+                    </td>
                     <td><span class="badge bg-info text-dark"><?= htmlspecialchars($f['categoria']) ?></span></td>
                     <td><?= htmlspecialchars($f['original_name']) ?></td>
                     <td class="text-nowrap"><?= number_format($f['file_size']/1024/1024, 2, ',', '.') ?> MB</td>
@@ -410,6 +489,82 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
           </div>
         <?php endif; ?>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- Links externos (Google Drive / vídeos) -->
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h2 class="h6 mb-0">Links Externos (Google Drive / Vídeos)</h2>
+        <div class="small text-muted mb-3">
+          Para mídia pesada (vídeos brutos, materiais acima de 25MB) use o Google Drive e registre o link aqui.
+        </div>
+
+        <?php if ($podeGerirLinks): ?>
+          <form method="post" class="row g-2 mb-3">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="add_link">
+            <div class="col-12 col-md-4">
+              <label class="form-label small">Título</label>
+              <input class="form-control form-control-sm" name="link_titulo" required maxlength="150"
+                     placeholder="Ex.: Vídeos brutos - Módulo 2">
+            </div>
+            <div class="col-12 col-md-5">
+              <label class="form-label small">URL</label>
+              <input class="form-control form-control-sm" type="url" name="link_url" required
+                     placeholder="https://drive.google.com/...">
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label small">Tipo</label>
+              <select class="form-select form-select-sm" name="link_tipo">
+                <option value="DRIVE">Google Drive</option>
+                <option value="VIDEO">Vídeo</option>
+                <option value="OUTRO">Outro</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-1 d-flex align-items-end">
+              <button class="btn btn-primary btn-sm w-100">Adicionar</button>
+            </div>
+          </form>
+        <?php endif; ?>
+
+        <?php if (!$links): ?>
+          <div class="text-muted small">Nenhum link cadastrado.</div>
+        <?php else: ?>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr><th>Data</th><th>Tipo</th><th>Título</th><th>Por</th><th class="text-end">Ações</th></tr>
+              </thead>
+              <tbody>
+                <?php foreach ($links as $l): ?>
+                  <tr>
+                    <td class="text-nowrap small"><?= htmlspecialchars($l['created_at']) ?></td>
+                    <td><span class="badge bg-info text-dark"><?= htmlspecialchars($l['tipo']) ?></span></td>
+                    <td>
+                      <a href="<?= htmlspecialchars($l['url']) ?>" target="_blank" rel="noopener noreferrer">
+                        <?= htmlspecialchars($l['titulo']) ?> ↗
+                      </a>
+                    </td>
+                    <td class="small"><?= htmlspecialchars($l['user_nome']) ?></td>
+                    <td class="text-end">
+                      <?php if (in_array($u['role'], ['TI','ADMIN'], true) || (int)$l['id_user'] === (int)$u['id_user']): ?>
+                        <form method="post" class="d-inline" onsubmit="return confirm('Remover este link?');">
+                          <?= csrf_field() ?>
+                          <input type="hidden" name="action" value="del_link">
+                          <input type="hidden" name="id_link" value="<?= (int)$l['id_link'] ?>">
+                          <button class="btn btn-sm btn-outline-danger py-0">Remover</button>
+                        </form>
+                      <?php endif; ?>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+        <?php endif; ?>
       </div>
     </div>
   </div>
