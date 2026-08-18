@@ -4,6 +4,7 @@ session_boot();
 require_once __DIR__ . '/../app/auth.php';
 require_once __DIR__ . '/../app/db.php';
 require_once __DIR__ . '/../app/status_repo.php';
+require_once __DIR__ . '/../app/escolas_repo.php';
 
 require_login();
 $u = auth_user();
@@ -199,7 +200,10 @@ include __DIR__ . '/_layout_top.php';
 
         <div class="col-12 col-md-3">
           <label class="form-label small">Formador(a)</label>
-          <input class="form-control form-control-sm" name="prof" value="<?= htmlspecialchars($prof) ?>" placeholder="Nome do professor">
+          <input class="form-control form-control-sm" name="prof" list="dlFormadores"
+                 value="<?= htmlspecialchars($prof) ?>"
+                 placeholder="Digite ou escolha na lista" autocomplete="off">
+          <?= datalist_html('dlFormadores', formadores_nomes()) ?>
         </div>
 
         <div class="col-6 col-md-2">
@@ -224,7 +228,10 @@ include __DIR__ . '/_layout_top.php';
 
         <div class="col-12 col-md-2">
           <label class="form-label small">Unidade escolar</label>
-          <input class="form-control form-control-sm" name="unidade" value="<?= htmlspecialchars($fUnid) ?>" placeholder="Unidade">
+          <input class="form-control form-control-sm" name="unidade" list="dlEscolas"
+                 value="<?= htmlspecialchars($fUnid) ?>"
+                 placeholder="Digite ou escolha" autocomplete="off">
+          <?= datalist_html('dlEscolas', escolas_ativas()) ?>
         </div>
 
         <div class="col-12 col-md-4">

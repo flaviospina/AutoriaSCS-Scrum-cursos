@@ -4,6 +4,7 @@ session_boot();
 require_once __DIR__ . '/../app/auth.php';
 require_once __DIR__ . '/../app/curso_repo.php';
 require_once __DIR__ . '/../app/csrf.php';
+require_once __DIR__ . '/../app/escolas_repo.php';
 
 require_login();
 $u = auth_user();
@@ -84,7 +85,9 @@ include __DIR__ . '/_layout_top.php';
 
       <div class="col-12 col-md-5">
         <label class="form-label">Unidade escolar</label>
-        <input class="form-control" name="unidade_escolar" maxlength="120" placeholder="Ex.: EMEF Prof. ...">
+        <input class="form-control" name="unidade_escolar" maxlength="120" list="dlEscolas"
+               placeholder="Digite ou escolha na lista" autocomplete="off">
+        <?= datalist_html('dlEscolas', escolas_ativas()) ?>
       </div>
 
       <div class="col-6 col-md-3">

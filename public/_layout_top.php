@@ -65,6 +65,7 @@ $PAGINA = basename($_SERVER['PHP_SELF'] ?? '');
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="<?= $LP ?>admin/usuarios.php">Usuários</a></li>
                 <li><a class="dropdown-item" href="<?= $LP ?>admin/perfis.php">Perfis de acesso</a></li>
+                <li><a class="dropdown-item" href="<?= $LP ?>admin/escolas.php">Escolas</a></li>
                 <li><a class="dropdown-item" href="<?= $LP ?>admin/auditoria.php">Auditoria</a></li>
                 <li><a class="dropdown-item" href="<?= $LP ?>admin/notificacoes.php">Notificações</a></li>
               </ul>
