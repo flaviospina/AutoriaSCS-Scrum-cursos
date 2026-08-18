@@ -223,15 +223,17 @@ h1, h2, h3, h4, h5, h6 { color: var(--text); font-weight: 700; }
   letter-spacing: .06em; text-transform: uppercase;
   color: var(--text-muted);
 }
+/* IMPORTANTE: usar background-color (nunca o atalho background:) para não
+   resetar o background-image/repeat/position da seta do select do Bootstrap */
 .form-control, .form-select {
-  background: var(--bg-input);
+  background-color: var(--bg-input);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text);
   font-family: var(--font);
 }
 .form-control:focus, .form-select:focus {
-  background: var(--bg-input);
+  background-color: var(--bg-input);
   border-color: var(--cyan);
   box-shadow: 0 0 0 3px rgba(34,211,238,.12);
   color: var(--text);
@@ -257,9 +259,12 @@ h1, h2, h3, h4, h5, h6 { color: var(--text); font-weight: 700; }
 .form-check-input:focus { box-shadow: 0 0 0 3px rgba(34,211,238,.12); border-color: var(--cyan); }
 .form-check-label { color: var(--text-muted); }
 .form-control-color { padding: 4px; min-height: 34px; }
-.form-control:disabled, .form-control[readonly] {
-  background: rgba(255,255,255,.02); color: var(--text-dim); opacity: .6;
+.form-control:disabled, .form-control[readonly],
+.form-select:disabled {
+  background-color: rgba(255,255,255,.02); color: var(--text-dim); opacity: .6;
 }
+/* ícone do seletor de data visível no tema escuro */
+input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.72); cursor: pointer; }
 
 /* ── TABELAS ───────────────────────────────────────────────── */
 .table {

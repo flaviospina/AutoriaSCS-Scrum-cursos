@@ -24,7 +24,8 @@ $PAGINA = basename($_SERVER['PHP_SELF'] ?? '');
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="<?= $LP ?>assets/autoria-dark.css" rel="stylesheet">
+  <?php $cssV = @filemtime(__DIR__ . '/assets/autoria-dark.css') ?: 1; ?>
+  <link href="<?= $LP ?>assets/autoria-dark.css?v=<?= $cssV ?>" rel="stylesheet">
 </head>
 <body class="bg-light">
 
