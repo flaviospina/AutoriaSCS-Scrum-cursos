@@ -202,7 +202,7 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
     <h1 class="h4 mb-0"><?= htmlspecialchars($curso['nome_curso']) ?></h1>
     <div class="text-muted small">
       Formador(a): <b><?= htmlspecialchars($curso['professor_nome']) ?></b> •
-      CH: <b><?= htmlspecialchars($curso['carga_horaria']) ?>h</b> •
+      Carga horária: <b><?= htmlspecialchars($curso['carga_horaria']) ?> horas</b> •
       Status: <span class="badge rounded-pill" style="<?= status_badge_style($curso['status_atual']) ?>">
                 <?= htmlspecialchars($curso['status_atual']) ?>
               </span>

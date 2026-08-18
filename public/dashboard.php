@@ -299,7 +299,7 @@ include __DIR__ . '/_layout_top.php';
                   <div class="fw-semibold" style="line-height:1.2;">
                     <?= htmlspecialchars($c['nome_curso']) ?>
                   </div>
-                  <span class="chip"><b><?= htmlspecialchars($c['carga_horaria']) ?>h</b></span>
+                  <span class="chip"><b><?= htmlspecialchars($c['carga_horaria']) ?> horas</b></span>
                 </div>
 
                 <div class="small text-muted mt-1"><?= htmlspecialchars($c['professor_nome']) ?></div>
@@ -465,7 +465,7 @@ include __DIR__ . '/_layout_top.php';
                 $headers = [
                   'id_curso'       => '#',
                   'nome_curso'     => 'Curso',
-                  'carga_horaria'  => 'CH',
+                  'carga_horaria'  => 'Carga Horária',
                   'prioridade'     => 'Prioridade',
                   'status_atual'   => 'Status',
                   'professor_nome' => 'Formador(a)',
@@ -514,7 +514,7 @@ include __DIR__ . '/_layout_top.php';
                     </small>
                   </td>
 
-                  <td class="text-nowrap"><?= htmlspecialchars($c['carga_horaria']) ?>h</td>
+                  <td class="text-nowrap"><?= htmlspecialchars($c['carga_horaria']) ?> horas</td>
 
                   <td class="text-nowrap">
                     <span class="badge rounded-pill" style="<?= $pb['style'] ?>"><?= $pb['label'] ?></span>

@@ -47,7 +47,7 @@ function curso_create(int $id_prof, array $d): int {
   if ($curso) {
     $link = app_base_url() . '/curso_detalhe.php?id=' . $id;
     $corpo = "<p>Curso: <b>" . htmlspecialchars($curso['nome_curso']) . "</b><br>"
-           . "Carga horária: " . htmlspecialchars($curso['carga_horaria']) . "h<br>"
+           . "Carga horária: " . htmlspecialchars($curso['carga_horaria']) . " horas<br>"
            . "Status: <b>" . htmlspecialchars($inicial) . "</b></p>";
     notify_queue($curso['professor_email'], $curso['professor_nome'],
       "[AutoriaSCS] Curso proposto: {$curso['nome_curso']}",
