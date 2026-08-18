@@ -20,6 +20,14 @@ $config = [
     'nome'     => 'AutoriaSCS • Gestão de Cursos',
     // duração da sessão de login (horas); cada clique renova o prazo
     'sessao_horas' => 8,
+    // logos exibidas no cabeçalho e no login, na ordem (esquerda -> direita).
+    // A do meio é a da Plataforma AutoriaSCS; ajuste as outras duas se o
+    // nome do arquivo for diferente (uma logo inexistente é ocultada sozinha).
+    'logos' => [
+      'https://cecapescs.com.br/logos/logo-cecape.png',
+      'https://cecapescs.com.br/logos/logo-autoriascs.png',
+      'https://cecapescs.com.br/logos/logo-mb.png',
+    ],
   ],
   'n8n' => [
     'webhook_url' => '', // ex.: https://SEU_N8N/webhook/curso-event (vazio = desativado)

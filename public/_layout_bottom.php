@@ -1,8 +1,9 @@
 </main>
 
-<footer class="border-top py-3 bg-white">
-  <div class="container small text-muted d-flex flex-wrap justify-content-between gap-2">
+<footer class="site-footer mt-auto">
+  <div class="container d-flex flex-wrap justify-content-center gap-2 text-center">
     <span>AutoriaSCS / CECAPE • Acompanhamento Scrum/Kanban da Produção de Cursos</span>
+    <span>•</span>
     <span>Suporte: ti.cecape@scseduca.com.br</span>
   </div>
 </footer>
@@ -12,6 +13,9 @@
 <script>
 (function () {
   if (typeof Swal === 'undefined') return; // CDN indisponível: formulários seguem funcionando sem confirmação
+
+  var SWAL_BG = '#0f2044';
+  var SWAL_FG = '#e8edf5';
 
   /**
    * 1) Confirmação SweetAlert em qualquer formulário com data-confirm.
@@ -35,8 +39,10 @@
         showCancelButton: true,
         confirmButtonText: form.dataset.confirmBtn || 'Sim, confirmar',
         cancelButtonText: 'Cancelar',
-        confirmButtonColor: perigo ? '#dc3545' : '#058285',
-        cancelButtonColor: '#6c757d',
+        confirmButtonColor: perigo ? '#ef4444' : '#06b6d4',
+        cancelButtonColor: '#374151',
+        background: SWAL_BG,
+        color: SWAL_FG,
         reverseButtons: true,
         focusCancel: perigo
       }).then(function (r) {
@@ -67,7 +73,9 @@
       title: text,
       timer: 4500,
       timerProgressBar: true,
-      showConfirmButton: false
+      showConfirmButton: false,
+      background: SWAL_BG,
+      color: SWAL_FG
     });
   }
   document.querySelectorAll('main > .alert-success, main > .row .alert-success').forEach(function (el) {
