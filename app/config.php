@@ -28,6 +28,9 @@ $config = [
     'method'      => 'mail',
     'from_email'  => 'no-reply.cecape@scseduca.com.br',
     'from_name'   => 'AutoriaSCS - CECAPE',
+    // caixa institucional da equipe TI & AutoriaSCS — recebe aviso de toda
+    // movimentação de status feita pelos perfis PROFESSOR e MB
+    'ti_email'    => 'ti.cecape@scseduca.com.br',
     // usados apenas quando method = 'smtp'
     'smtp_host'   => 'mail.scseduca.com.br',
     'smtp_port'   => 587,

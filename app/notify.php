@@ -20,6 +20,11 @@ function app_base_url(): string {
   return rtrim(notify_config()['app']['base_url'] ?? '', '/');
 }
 
+/** Caixa institucional da equipe TI & AutoriaSCS. */
+function ti_email(): string {
+  return notify_config()['mail']['ti_email'] ?? 'ti.cecape@scseduca.com.br';
+}
+
 /**
  * Enfileira um e-mail respeitando a preferência do destinatário
  * (IMEDIATO envia no próximo ciclo do cron; DIARIO agrupa para as 07h;
@@ -146,6 +151,15 @@ function notify_event_status(array $curso, string $from, string $to, array $byUs
         . "Formador(a): " . htmlspecialchars($profNome) . "<br>"
         . "Status: <b>" . htmlspecialchars($from) . "</b> → <b>" . htmlspecialchars($to) . "</b><br>"
         . "Por: " . htmlspecialchars($byUser['nome'] ?? $byUser['email'] ?? '-') . "</p>";
+
+  // Caixa institucional TI: TODA movimentação feita por PROFESSOR ou MB
+  $roleAtor = $byUser['role'] ?? '';
+  if (in_array($roleAtor, ['PROFESSOR', 'MB'], true)) {
+    $origem = $roleAtor === 'MB' ? 'MB Estúdios' : 'formador(a)';
+    notify_queue(ti_email(), 'Equipe TI & AutoriaSCS',
+      "[AutoriaSCS] {$nomeCurso}: {$from} → {$to}",
+      mail_template("Movimentação de status pelo(a) {$origem}", $base, $link, 'Ver curso'));
+  }
 
   // TI: cursos aguardando revisão
   if (in_array($to, ['Pronto para Análise', 'Pronto para Nova Análise'], true)) {
