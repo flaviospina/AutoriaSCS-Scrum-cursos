@@ -24,9 +24,9 @@ $config = [
     // A do meio é a da Plataforma AutoriaSCS; ajuste as outras duas se o
     // nome do arquivo for diferente (uma logo inexistente é ocultada sozinha).
     'logos' => [
-      'https://cecapescs.com.br/logos/logo-cecape.png',
+      'https://cecapescs.com.br/logos/logo-cecape-new.png',
       'https://cecapescs.com.br/logos/logo-autoriascs.png',
-      'https://cecapescs.com.br/logos/logo-mb.png',
+      'https://cecapescs.com.br/logos/logo-seeduc.png',
     ],
   ],
   'n8n' => [

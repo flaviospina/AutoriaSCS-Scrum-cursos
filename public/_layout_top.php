@@ -33,10 +33,11 @@ $PAGINA = basename($_SERVER['PHP_SELF'] ?? '');
   <div class="container">
     <a class="navbar-brand d-flex align-items-center gap-2 me-2" href="<?= $LP ?>dashboard.php">
       <span class="brand-logos">
-        <?php foreach ($LOGOS as $i => $logo): ?>
-          <?php if ($i > 0): ?><span class="brand-divider"></span><?php endif; ?>
-          <img class="brand-img" src="<?= htmlspecialchars($logo) ?>" alt="Logo"
-               onerror="this.previousElementSibling && (this.previousElementSibling.style.display='none'); this.style.display='none';">
+        <?php foreach ($LOGOS as $logo): ?>
+          <span class="logo-chip">
+            <img class="brand-img" src="<?= htmlspecialchars($logo) ?>" alt="Logo"
+                 onerror="this.closest('.logo-chip').style.display='none';">
+          </span>
         <?php endforeach; ?>
       </span>
       <span class="brand-title d-none d-xl-inline">Gestão de Cursos</span>

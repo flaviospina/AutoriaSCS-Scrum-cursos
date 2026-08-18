@@ -34,10 +34,11 @@ include __DIR__ . '/_layout_top.php';
     <div class="login-card p-4 p-md-5">
 
       <div class="login-logo-row">
-        <?php foreach ($LOGOS as $i => $logo): ?>
-          <?php if ($i > 0): ?><span class="login-logo-divider"></span><?php endif; ?>
-          <img class="login-logo" src="<?= htmlspecialchars($logo) ?>" alt="Logo"
-               onerror="this.previousElementSibling && (this.previousElementSibling.style.display='none'); this.style.display='none';">
+        <?php foreach ($LOGOS as $logo): ?>
+          <span class="logo-chip">
+            <img class="login-logo" src="<?= htmlspecialchars($logo) ?>" alt="Logo"
+                 onerror="this.closest('.logo-chip').style.display='none';">
+          </span>
         <?php endforeach; ?>
       </div>
 
