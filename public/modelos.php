@@ -8,7 +8,7 @@ require_once __DIR__ . '/../app/audit.php';
 
 require_login();
 $u = auth_user();
-$gerencia = in_array($u['role'], ['TI', 'ADMIN'], true);
+$gerencia = perm('gerencia_modelos');
 
 $CATS = [
   'TEMPLATE_SLIDES' => 'Template de Slides (Comfortaa)',

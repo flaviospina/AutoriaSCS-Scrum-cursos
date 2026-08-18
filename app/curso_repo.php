@@ -52,7 +52,7 @@ function curso_create(int $id_prof, array $d): int {
     notify_queue($curso['professor_email'], $curso['professor_nome'],
       "[AutoriaSCS] Curso proposto: {$curso['nome_curso']}",
       mail_template('Sua proposta de curso foi registrada', $corpo, $link, 'Acompanhar meu curso'));
-    notify_role('TI', "[AutoriaSCS] Novo curso no backlog: {$curso['nome_curso']}",
+    notify_flag('recebe_email_revisao', "[AutoriaSCS] Novo curso no backlog: {$curso['nome_curso']}",
       mail_template('Novo curso proposto por ' . $curso['professor_nome'], $corpo, $link, 'Ver curso'));
   }
 
@@ -118,8 +118,9 @@ function curso_transition(int $id_curso, array $user, string $to, ?string $obs =
     throw new Exception("Transição inválida: {$from} → {$to} para o perfil {$user['role']}.");
   }
 
-  // professor só mexe no próprio curso
-  if ($user['role'] === 'PROFESSOR' && (int)$c['id_professor'] !== (int)$user['id_user']) {
+  // quem não enxerga todos os cursos (formador) só mexe no próprio
+  if (!perfil_flag($user['role'], 've_todos_cursos') &&
+      (int)$c['id_professor'] !== (int)$user['id_user']) {
     throw new Exception("Sem permissão.");
   }
 

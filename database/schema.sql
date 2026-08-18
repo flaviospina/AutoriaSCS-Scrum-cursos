@@ -5,6 +5,28 @@
 SET NAMES utf8mb4;
 
 -- ------------------------------------------------------------
+-- Perfis de acesso (dinâmicos — CRUD na área Admin)
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tb_perfis (
+  id_perfil              INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  codigo                 VARCHAR(30) NOT NULL,
+  nome                   VARCHAR(60) NOT NULL,
+  descricao              VARCHAR(255) NULL,
+  admin_total            TINYINT(1) NOT NULL DEFAULT 0,
+  ve_todos_cursos        TINYINT(1) NOT NULL DEFAULT 0,
+  propoe_cursos          TINYINT(1) NOT NULL DEFAULT 0,
+  move_kanban            TINYINT(1) NOT NULL DEFAULT 0,
+  revisa_cursos          TINYINT(1) NOT NULL DEFAULT 0,
+  gerencia_modelos       TINYINT(1) NOT NULL DEFAULT 0,
+  recebe_email_revisao   TINYINT(1) NOT NULL DEFAULT 0,
+  recebe_email_insercao  TINYINT(1) NOT NULL DEFAULT 0,
+  is_sistema             TINYINT(1) NOT NULL DEFAULT 0,
+  ativo                  TINYINT(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (id_perfil),
+  UNIQUE KEY uq_perfis_codigo (codigo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
 -- Usuários
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS tb_users (
@@ -12,7 +34,7 @@ CREATE TABLE IF NOT EXISTS tb_users (
   nome        VARCHAR(120) NOT NULL,
   email       VARCHAR(160) NOT NULL,
   senha_hash  VARCHAR(255) NOT NULL,
-  role        ENUM('PROFESSOR','TI','MB','ADMIN') NOT NULL DEFAULT 'PROFESSOR',
+  role        VARCHAR(30) NOT NULL DEFAULT 'PROFESSOR',
   ativo       TINYINT(1) NOT NULL DEFAULT 1,
   notif_pref  ENUM('IMEDIATO','DIARIO','DESATIVADO') NOT NULL DEFAULT 'IMEDIATO',
   created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -51,7 +73,7 @@ CREATE TABLE IF NOT EXISTS tb_status (
 
 CREATE TABLE IF NOT EXISTS tb_status_transicoes (
   id_transicao   INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  role           ENUM('PROFESSOR','TI','MB') NOT NULL,  -- ADMIN pode tudo (regra na aplicação)
+  role           VARCHAR(30) NOT NULL,  -- código do perfil (admin_total pode tudo, regra na aplicação)
   id_status_de   INT UNSIGNED NOT NULL,
   id_status_para INT UNSIGNED NOT NULL,
   PRIMARY KEY (id_transicao),
@@ -243,6 +265,20 @@ CREATE TABLE IF NOT EXISTS tb_curso_links (
 -- ============================================================
 -- SEEDS — fluxo padrão AutoriaSCS (idêntico ao fluxo original)
 -- ============================================================
+
+-- Perfis do sistema
+INSERT INTO tb_perfis
+  (codigo, nome, descricao, admin_total, ve_todos_cursos, propoe_cursos, move_kanban,
+   revisa_cursos, gerencia_modelos, recebe_email_revisao, recebe_email_insercao, is_sistema, ativo)
+VALUES
+  ('PROFESSOR', 'Professor(a) Formador(a)', 'Propõe e produz os próprios cursos.',
+   0, 0, 1, 0, 0, 0, 0, 0, 1, 1),
+  ('TI', 'Equipe TI & AutoriaSCS', 'Revisão técnica/pedagógica, Kanban completo e Biblioteca de Modelos.',
+   0, 1, 0, 1, 1, 1, 1, 0, 1, 1),
+  ('MB', 'MB Estúdios', 'Acompanha e move os status de inserção na plataforma.',
+   0, 1, 0, 0, 0, 0, 0, 1, 1, 1),
+  ('ADMIN', 'Administrador', 'Acesso completo, incluindo a área Admin.',
+   1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
 
 INSERT INTO tb_kanban_colunas (nome, cor, ordem, wip_limit, ativo) VALUES
   ('Backlog',          '#f8f9fa', 1,  NULL, 1),

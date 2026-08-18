@@ -8,6 +8,7 @@
  * status_rules.php / status_helper.php.
  */
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/perfis_repo.php';
 
 /** Colunas ativas do Kanban, em ordem, cada uma com a lista de status ativos. */
 function kanban_columns(bool $onlyActive = true): array {
@@ -67,7 +68,7 @@ function status_inicial(): string {
 
 /**
  * Verifica se o perfil pode mover um curso de $from para $to.
- * ADMIN pode realizar qualquer transição entre status ativos.
+ * Perfis com admin_total podem realizar qualquer transição entre status ativos.
  */
 function can_transition(string $role, string $from, string $to): bool {
   if ($from === $to) return false;
@@ -76,7 +77,7 @@ function can_transition(string $role, string $from, string $to): bool {
   $sTo   = status_by_name($to);
   if (!$sFrom || !$sTo || empty($sTo['ativo'])) return false;
 
-  if ($role === 'ADMIN') return true;
+  if (perfil_flag($role, 'admin_total')) return true;
 
   $st = db()->prepare("
     SELECT COUNT(*) AS n FROM tb_status_transicoes
@@ -88,7 +89,7 @@ function can_transition(string $role, string $from, string $to): bool {
 
 /** Transições possíveis a partir de um status, para um perfil. */
 function possible_transitions(string $role, string $from): array {
-  if ($role === 'ADMIN') {
+  if (perfil_flag($role, 'admin_total')) {
     return array_values(array_filter(status_names(), fn($n) => $n !== $from));
   }
   $sFrom = status_by_name($from);

@@ -9,6 +9,7 @@
  *   method: 'mail' (nativo do cPanel), 'smtp' ou 'disabled'
  */
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/perfis_repo.php';
 
 function notify_config(): array {
   static $cfg = null;
@@ -93,7 +94,7 @@ function notify_send_one(int $idNotificacao): bool {
   }
 }
 
-/** Enfileira para todos os usuários ativos de um perfil. */
+/** Enfileira para todos os usuários ativos de um perfil (código exato). */
 function notify_role(string $role, string $assunto, string $html): void {
   try {
     $st = db()->prepare("SELECT nome, email FROM tb_users WHERE role=? AND ativo=1");
@@ -103,6 +104,31 @@ function notify_role(string $role, string $assunto, string $html): void {
     }
   } catch (Throwable $e) {
     error_log('Falha ao enfileirar por perfil: ' . $e->getMessage());
+  }
+}
+
+/**
+ * Enfileira para os usuários ativos cujo PERFIL possui a permissão indicada
+ * (ex.: recebe_email_revisao, recebe_email_insercao) — cobre perfis
+ * personalizados criados na área Admin.
+ */
+function notify_flag(string $flag, string $assunto, string $html): void {
+  $codigos = [];
+  foreach (perfis_all() as $cod => $p) {
+    if (!empty($p['admin_total'])) continue; // admins não recebem e-mail operacional em massa
+    if (!empty($p[$flag])) $codigos[] = $cod;
+  }
+  if (!$codigos) return;
+
+  try {
+    $in = implode(',', array_fill(0, count($codigos), '?'));
+    $st = db()->prepare("SELECT nome, email FROM tb_users WHERE ativo=1 AND role IN ($in)");
+    $st->execute($codigos);
+    foreach ($st->fetchAll() as $u) {
+      notify_queue($u['email'], $u['nome'], $assunto, $html);
+    }
+  } catch (Throwable $e) {
+    error_log('Falha ao enfileirar por permissão: ' . $e->getMessage());
   }
 }
 
@@ -152,30 +178,33 @@ function notify_event_status(array $curso, string $from, string $to, array $byUs
         . "Status: <b>" . htmlspecialchars($from) . "</b> → <b>" . htmlspecialchars($to) . "</b><br>"
         . "Por: " . htmlspecialchars($byUser['nome'] ?? $byUser['email'] ?? '-') . "</p>";
 
-  // Caixa institucional TI: TODA movimentação feita por PROFESSOR ou MB
+  // Caixa institucional TI: TODA movimentação feita por quem não é da equipe
+  // de revisão/administração (formadores, MB e perfis personalizados equivalentes)
   $roleAtor = $byUser['role'] ?? '';
-  if (in_array($roleAtor, ['PROFESSOR', 'MB'], true)) {
-    $origem = $roleAtor === 'MB' ? 'MB Estúdios' : 'formador(a)';
+  $atorEhEquipe = perfil_flag($roleAtor, 'revisa_cursos') || perfil_flag($roleAtor, 'admin_total');
+  if ($roleAtor !== '' && !$atorEhEquipe) {
+    $perfilAtor = perfil_get($roleAtor);
+    $origem = $perfilAtor['nome'] ?? $roleAtor;
     notify_queue(ti_email(), 'Equipe TI & AutoriaSCS',
       "[AutoriaSCS] {$nomeCurso}: {$from} → {$to}",
-      mail_template("Movimentação de status pelo(a) {$origem}", $base, $link, 'Ver curso'));
+      mail_template("Movimentação de status por {$origem}", $base, $link, 'Ver curso'));
   }
 
-  // TI: cursos aguardando revisão
+  // Equipe de revisão: cursos aguardando análise
   if (in_array($to, ['Pronto para Análise', 'Pronto para Nova Análise'], true)) {
-    notify_role('TI', "[AutoriaSCS] Curso aguardando revisão: {$nomeCurso}",
+    notify_flag('recebe_email_revisao', "[AutoriaSCS] Curso aguardando revisão: {$nomeCurso}",
       mail_template('Curso aguardando revisão da equipe TI', $base, $link, 'Revisar curso'));
   }
 
-  // MB: curso liberado para inserção
+  // Inserção (MB): curso liberado para inserção
   if ($to === 'Enviado para Inserção') {
-    notify_role('MB', "[AutoriaSCS] Novo curso para inserção: {$nomeCurso}",
+    notify_flag('recebe_email_insercao', "[AutoriaSCS] Novo curso para inserção: {$nomeCurso}",
       mail_template('Curso aprovado e liberado para inserção na plataforma', $base, $link, 'Ver curso'));
   }
 
-  // TI: acompanhamento das etapas finais
+  // Equipe de revisão: acompanhamento das etapas finais
   if (in_array($to, ['Inserido', 'Validado', 'Publicado'], true)) {
-    notify_role('TI', "[AutoriaSCS] {$nomeCurso}: {$to}",
+    notify_flag('recebe_email_revisao', "[AutoriaSCS] {$nomeCurso}: {$to}",
       mail_template("Curso movido para \"{$to}\"", $base, $link, 'Acompanhar'));
   }
 

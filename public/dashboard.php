@@ -40,7 +40,7 @@ $columns  = kanban_columns();
 $params = [];
 $where  = [];
 
-if ($u['role'] === 'PROFESSOR') {
+if (!is_staff()) {
   $where[]  = "c.id_professor = ?";
   $params[] = $u['id_user'];
 } else {
@@ -101,7 +101,7 @@ $cursos = $st->fetchAll();
 // KANBAN (TI/MB/ADMIN): cards por status + pendências
 // ------------------------------------------------------------------
 $kanbanData = [];
-$canDrag = in_array($u['role'], ['TI', 'ADMIN'], true);
+$canDrag = perm('move_kanban');
 
 if ($view === 'kanban' && is_staff()) {
 
@@ -167,12 +167,12 @@ include __DIR__ . '/_layout_top.php';
   <div>
     <h1 class="h4 mb-0">Dashboard</h1>
     <div class="text-muted small">
-      <?= ($u['role'] === 'PROFESSOR') ? "Seus cursos" : "Visão de gestão (Kanban + Tabela)" ?>
+      <?= (!is_staff()) ? "Seus cursos" : "Visão de gestão (Kanban + Tabela)" ?>
     </div>
   </div>
 
   <div class="d-flex gap-2">
-    <?php if ($u['role'] === 'PROFESSOR'): ?>
+    <?php if (!is_staff()): ?>
       <a class="btn btn-success" href="curso_novo.php">+ Propor Novo Curso</a>
     <?php else: ?>
       <a class="btn btn-outline-primary <?= $view==='kanban'?'active':'' ?>" href="?<?= buildQuery(['view'=>'kanban','page'=>1]) ?>">Kanban</a>
@@ -477,7 +477,7 @@ include __DIR__ . '/_layout_top.php';
                 ];
 
                 foreach ($headers as $k => $label):
-                  if ($u['role'] === 'PROFESSOR' && $k === 'professor_nome') continue;
+                  if (!is_staff() && $k === 'professor_nome') continue;
 
                   $newDir = ($sort === $k && $dir === 'asc') ? 'desc' : 'asc';
               ?>

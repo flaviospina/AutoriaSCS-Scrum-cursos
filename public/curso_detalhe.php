@@ -16,7 +16,7 @@ $curso = curso_get($id);
 if (!$curso) { http_response_code(404); echo "Curso não encontrado."; exit; }
 
 // Permissão: professor só vê o próprio
-if ($u['role'] === 'PROFESSOR' && (int)$curso['id_professor'] !== (int)$u['id_user']) {
+if (!is_staff() && (int)$curso['id_professor'] !== (int)$u['id_user']) {
   http_response_code(403); echo "Acesso negado."; exit;
 }
 
@@ -36,8 +36,8 @@ $lk = db()->prepare("SELECT l.*, u.nome AS user_nome FROM tb_curso_links l JOIN 
 $lk->execute([$id]);
 $links = $lk->fetchAll();
 
-$podeGerirLinks = in_array($u['role'], ['TI','ADMIN'], true) ||
-  ($u['role'] === 'PROFESSOR' && (int)$curso['id_professor'] === (int)$u['id_user']);
+$podeGerirLinks = perm('revisa_cursos') ||
+  ((int)$curso['id_professor'] === (int)$u['id_user']);
 
 // apontamentos
 $ap = db()->prepare("SELECT a.*, u.nome AS user_nome FROM tb_curso_apontamentos a JOIN tb_users u ON u.id_user=a.id_user WHERE a.id_curso=? ORDER BY a.created_at DESC");
@@ -53,7 +53,9 @@ if (($_GET['err'] ?? '') !== '') $erro = "Falha no upload (" . htmlspecialchars(
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_checklist') {
   csrf_check();
   try {
-    require_role(['PROFESSOR','TI']);
+    if (!perm('revisa_cursos') && (int)$curso['id_professor'] !== (int)$u['id_user']) {
+      throw new Exception("Sem permissão.");
+    }
 
     $fields = [
       'modulos_definidos','estrutura_introducao','planejamento_videos','planejamento_textos_apoio',
@@ -88,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'recusar_relatorio') {
   csrf_check();
   try {
-    require_role(['TI']);
+    if (!perm('revisa_cursos')) throw new Exception("Sem permissão.");
 
     $itens = $_POST['itens'] ?? [];
     if (!is_array($itens) || count($itens) === 0) {
@@ -159,7 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'del_l
     $l = $stl->fetch();
     if (!$l) throw new Exception("Link não encontrado.");
 
-    $podeRemover = in_array($u['role'], ['TI','ADMIN'], true) || (int)$l['id_user'] === (int)$u['id_user'];
+    $podeRemover = perm('revisa_cursos') || (int)$l['id_user'] === (int)$u['id_user'];
     if (!$podeRemover) throw new Exception("Sem permissão para remover este link.");
 
     db()->prepare("DELETE FROM tb_curso_links WHERE id_link=?")->execute([$idl]);
@@ -216,7 +218,7 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
   </div>
   <div class="d-flex gap-2">
     <a class="btn btn-outline-secondary" href="dashboard.php">Voltar</a>
-    <?php if ($u['role'] !== 'MB'): ?>
+    <?php if (perm('revisa_cursos') || (int)$curso['id_professor'] === (int)$u['id_user']): ?>
       <a class="btn btn-outline-primary" href="curso_editar.php?id=<?= (int)$id ?>">Editar</a>
     <?php endif; ?>
     <a class="btn btn-outline-primary" href="apontamentos.php?id=<?= (int)$id ?>">Apontamentos</a>
@@ -271,7 +273,7 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
             <button class="btn btn-primary">Atualizar Status</button>
           </form>
         <?php endif; ?>
-        <?php if (in_array($u['role'], ['TI','ADMIN'], true) && $curso['status_atual'] === 'Em Revisão'): ?>
+        <?php if (perm('revisa_cursos') && $curso['status_atual'] === 'Em Revisão'): ?>
           <button class="btn btn-outline-danger mt-2" data-bs-toggle="modal" data-bs-target="#modalRecusa">
             Recusar com relatório
           </button>
@@ -555,7 +557,7 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
                     </td>
                     <td class="small"><?= htmlspecialchars($l['user_nome']) ?></td>
                     <td class="text-end">
-                      <?php if (in_array($u['role'], ['TI','ADMIN'], true) || (int)$l['id_user'] === (int)$u['id_user']): ?>
+                      <?php if (perm('revisa_cursos') || (int)$l['id_user'] === (int)$u['id_user']): ?>
                         <form method="post" class="d-inline"
                               data-confirm="Remover o link <b><?= htmlspecialchars($l['titulo']) ?></b>?"
                               data-confirm-title="Remover link" data-confirm-type="danger" data-confirm-btn="Sim, remover">
@@ -611,7 +613,7 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
           </div>
         <?php endif; ?>
 
-        <?php if (in_array($u['role'], ['TI','ADMIN'], true) && $curso['status_atual'] === 'Em Revisão'): ?>
+        <?php if (perm('revisa_cursos') && $curso['status_atual'] === 'Em Revisão'): ?>
         <div class="modal fade" id="modalRecusa" tabindex="-1" aria-hidden="true">
           <div class="modal-dialog modal-lg">
             <form class="modal-content" method="post">

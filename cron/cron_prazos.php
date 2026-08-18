@@ -65,7 +65,7 @@ foreach ($criticos as $c) {
 }
 
 if ($linhasTI !== '') {
-  notify_role('TI', "[AutoriaSCS] Resumo diário: " . count($criticos) . " curso(s) com prazo crítico",
+  notify_flag('recebe_email_revisao', "[AutoriaSCS] Resumo diário: " . count($criticos) . " curso(s) com prazo crítico",
     mail_template('Prazos críticos de hoje', "<ul>{$linhasTI}</ul>", $base . '/relatorios.php', 'Ver relatórios'));
   $enq++;
 }
@@ -79,7 +79,8 @@ if ((int)date('N') === 1) {
   $profs = db()->query("
     SELECT u.id_user, u.nome, u.email
     FROM tb_users u
-    WHERE u.role='PROFESSOR' AND u.ativo=1
+    JOIN tb_perfis pf ON pf.codigo = u.role
+    WHERE pf.propoe_cursos=1 AND pf.admin_total=0 AND u.ativo=1
       AND EXISTS (
         SELECT 1 FROM tb_cursos c
         LEFT JOIN tb_status s ON s.nome=c.status_atual
@@ -118,7 +119,7 @@ if ((int)date('N') === 1) {
     $itens .= "<li>" . htmlspecialchars($r['status_atual']) . ": <b>" . (int)$r['n'] . "</b></li>";
   }
   $pend = (int)db()->query("SELECT COUNT(*) n FROM tb_curso_apontamentos WHERE resolvido=0")->fetch()['n'];
-  notify_role('TI', "[AutoriaSCS] Resumo semanal do painel",
+  notify_flag('recebe_email_revisao', "[AutoriaSCS] Resumo semanal do painel",
     mail_template('Painel geral da produção de cursos',
       "<ul>{$itens}</ul><p>Apontamentos pendentes: <b>{$pend}</b></p>",
       $base . '/relatorios.php', 'Ver relatórios'));
@@ -133,7 +134,7 @@ if ((int)date('N') === 1) {
   if ($fila) {
     $itens = '';
     foreach ($fila as $c) $itens .= "<li>" . htmlspecialchars($c['nome_curso']) . "</li>";
-    notify_role('MB', "[AutoriaSCS] Resumo semanal: " . count($fila) . " curso(s) na fila de inserção",
+    notify_flag('recebe_email_insercao', "[AutoriaSCS] Resumo semanal: " . count($fila) . " curso(s) na fila de inserção",
       mail_template('Cursos aguardando inserção na plataforma', "<ul>{$itens}</ul>", $base . '/dashboard.php', 'Abrir o sistema'));
     $enq++;
   }

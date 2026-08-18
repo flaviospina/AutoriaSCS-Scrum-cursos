@@ -19,7 +19,7 @@ $curso = curso_get((int)$f['id_curso']);
 if (!$curso) { http_response_code(404); exit("Curso não encontrado."); }
 
 // permissão
-if ($u['role'] === 'PROFESSOR' && (int)$curso['id_professor'] !== (int)$u['id_user']) {
+if (!is_staff() && (int)$curso['id_professor'] !== (int)$u['id_user']) {
   http_response_code(403); exit("Sem permissão.");
 }
 

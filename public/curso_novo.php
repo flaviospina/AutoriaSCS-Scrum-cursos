@@ -7,7 +7,7 @@ require_once __DIR__ . '/../app/csrf.php';
 
 require_login();
 $u = auth_user();
-require_role(['PROFESSOR']);
+require_perm('propoe_cursos');
 
 $erro = null;
 

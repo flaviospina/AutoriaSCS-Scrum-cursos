@@ -2,7 +2,9 @@
 require_once __DIR__ . '/_admin_top.php';
 
 $erro = null; $ok = null;
-$roles = ['PROFESSOR', 'TI', 'MB', 'ADMIN'];
+require_once __DIR__ . '/../../app/perfis_repo.php';
+$perfis = perfis_all();               // perfis ativos (dinâmicos, tela Admin > Perfis)
+$roles = array_keys($perfis);
 $u = auth_user();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -41,9 +43,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if ($nome === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) throw new Exception("Dados inválidos.");
       if (!in_array($role, $roles, true)) throw new Exception("Perfil inválido.");
 
-      // não permitir remover o próprio acesso de ADMIN
-      if ($idu === (int)$u['id_user'] && ($role !== 'ADMIN' || !$ativo)) {
-        throw new Exception("Você não pode remover seu próprio acesso de ADMIN.");
+      // não permitir remover o próprio acesso de administrador
+      if ($idu === (int)$u['id_user'] && (!perfil_flag($role, 'admin_total') || !$ativo)) {
+        throw new Exception("Você não pode remover seu próprio acesso de administrador.");
       }
 
       $dup = db()->prepare("SELECT COUNT(*) n FROM tb_users WHERE email=? AND id_user<>?");

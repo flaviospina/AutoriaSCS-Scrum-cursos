@@ -10,7 +10,7 @@ require_once __DIR__ . '/../app/csrf.php';
 require_login();
 $u = auth_user();
 
-if (!in_array($u['role'], ['TI', 'ADMIN'], true)) {
+if (!perm('move_kanban')) {
   http_response_code(403);
   echo json_encode(['ok'=>false,'error'=>'Apenas TI/ADMIN podem mover no Kanban.']);
   exit;

@@ -12,6 +12,11 @@ try {
 } catch (Throwable $e) {
   $nAudit = 0; $nNotifP = 0; // tabelas da V3 ainda não migradas
 }
+try {
+  $nPerfis = (int)db()->query("SELECT COUNT(*) n FROM tb_perfis WHERE ativo=1")->fetch()['n'];
+} catch (Throwable $e) {
+  $nPerfis = 4; // tabela da V4 ainda não migrada
+}
 
 include __DIR__ . '/../_layout_top.php';
 ?>
@@ -31,6 +36,7 @@ include __DIR__ . '/../_layout_top.php';
       ['Status', $nStatus, 'Criar, editar, mover entre colunas, definir cores, status inicial e finais.', 'status.php'],
       ['Transições por perfil', $nTrans, 'Definir quais movimentações cada perfil (PROFESSOR, TI, MB) pode realizar.', 'transicoes.php'],
       ['Usuários', $nUsers, 'Cadastrar formadores, equipe TI, MB Estúdios e administradores.', 'usuarios.php'],
+      ['Perfis de acesso', $nPerfis, 'Criar perfis personalizados e definir as permissões de cada um.', 'perfis.php'],
       ['Auditoria', $nAudit, 'Registro de todas as ações do sistema: quem fez, o quê, quando e de onde. Exportável em CSV.', 'auditoria.php'],
       ['Notificações', $nNotifP, 'Fila de e-mails do sistema (pendentes, enviados, erros) e processamento manual.', 'notificacoes.php'],
     ];

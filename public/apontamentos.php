@@ -16,18 +16,18 @@ $curso = curso_get($id);
 if (!$curso) { http_response_code(404); echo "Curso não encontrado."; exit; }
 
 // professor só vê o próprio
-if ($u['role'] === 'PROFESSOR' && (int)$curso['id_professor'] !== (int)$u['id_user']) {
+if (!is_staff() && (int)$curso['id_professor'] !== (int)$u['id_user']) {
   http_response_code(403); echo "Acesso negado."; exit;
 }
 
 $erro = null;
-$isTI = in_array($u['role'], ['TI','ADMIN'], true);
+$isTI = perm('revisa_cursos');
 
 // criar apontamento (TI/ADMIN)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create') {
   csrf_check();
   try {
-    require_role(['TI']);
+    if (!perm('revisa_cursos')) throw new Exception("Sem permissão.");
     $tipo = $_POST['tipo'] ?? 'OUTRO';
     $conteudo = trim($_POST['conteudo'] ?? '');
     if ($conteudo === '') throw new Exception("Conteúdo é obrigatório.");
@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggle') {
   csrf_check();
   try {
-    require_role(['TI']);
+    if (!perm('revisa_cursos')) throw new Exception("Sem permissão.");
     $id_ap = (int)($_POST['id_apontamento'] ?? 0);
     $val = (int)($_POST['resolvido'] ?? 0);
 

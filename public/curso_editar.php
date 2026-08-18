@@ -14,8 +14,8 @@ if (!$curso) { http_response_code(404); echo "Curso não encontrado."; exit; }
 
 // professor só edita o próprio curso; TI/ADMIN editam qualquer um; MB não edita
 $podeEditar =
-  ($u['role'] === 'PROFESSOR' && (int)$curso['id_professor'] === (int)$u['id_user']) ||
-  in_array($u['role'], ['TI', 'ADMIN'], true);
+  ((int)$curso['id_professor'] === (int)$u['id_user'] && perm('propoe_cursos')) ||
+  perm('revisa_cursos');
 
 if (!$podeEditar) { http_response_code(403); echo "Acesso negado."; exit; }
 

@@ -88,6 +88,7 @@ $LP = $LP ?? '';
                 <li><a class="dropdown-item" href="<?= $LP ?>admin/transicoes.php">Transições por perfil</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="<?= $LP ?>admin/usuarios.php">Usuários</a></li>
+                <li><a class="dropdown-item" href="<?= $LP ?>admin/perfis.php">Perfis de acesso</a></li>
                 <li><a class="dropdown-item" href="<?= $LP ?>admin/auditoria.php">Auditoria</a></li>
                 <li><a class="dropdown-item" href="<?= $LP ?>admin/notificacoes.php">Notificações</a></li>
               </ul>

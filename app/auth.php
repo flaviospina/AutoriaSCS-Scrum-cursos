@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/perfis_repo.php';
 
 function auth_user() {
   return $_SESSION['user'] ?? null;
@@ -12,10 +13,25 @@ function require_login() {
   }
 }
 
+/** O usuário logado possui a permissão do seu perfil? (admin_total concede todas) */
+function perm(string $flag): bool {
+  $u = auth_user();
+  if (!$u) return false;
+  return perfil_flag($u['role'], $flag);
+}
+
+function require_perm(string $flag): void {
+  if (!perm($flag)) {
+    http_response_code(403);
+    echo "Acesso negado.";
+    exit;
+  }
+}
+
+/** Compatibilidade: aceita códigos de perfil; admin_total sempre passa. */
 function require_role(array $roles) {
   $u = auth_user();
-  // ADMIN tem acesso a tudo
-  if ($u && $u['role'] === 'ADMIN') return;
+  if ($u && perfil_flag($u['role'], 'admin_total')) return;
   if (!$u || !in_array($u['role'], $roles, true)) {
     http_response_code(403);
     echo "Acesso negado.";
@@ -24,14 +40,12 @@ function require_role(array $roles) {
 }
 
 function is_admin(): bool {
-  $u = auth_user();
-  return $u && $u['role'] === 'ADMIN';
+  return perm('admin_total');
 }
 
-/** Perfis de gestão que enxergam todos os cursos e o Kanban completo. */
+/** Perfis de gestão: enxergam todos os cursos, o Kanban completo e os relatórios. */
 function is_staff(): bool {
-  $u = auth_user();
-  return $u && in_array($u['role'], ['TI', 'MB', 'ADMIN'], true);
+  return perm('ve_todos_cursos');
 }
 
 function login_attempt(string $email, string $senha): bool {

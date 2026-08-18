@@ -15,7 +15,7 @@ $m = $st->fetch();
 if (!$m) { http_response_code(404); exit("Modelo não encontrado."); }
 
 // usuários comuns só baixam modelos ativos
-if (!$m['ativo'] && !in_array($u['role'], ['TI','ADMIN'], true)) {
+if (!$m['ativo'] && !perm('gerencia_modelos')) {
   http_response_code(403); exit("Modelo desativado.");
 }
 

@@ -2,7 +2,12 @@
 require_once __DIR__ . '/_admin_top.php';
 
 $erro = null; $ok = null;
-$rolesFluxo = ['PROFESSOR', 'TI', 'MB']; // ADMIN não precisa: pode tudo
+require_once __DIR__ . '/../../app/perfis_repo.php';
+// perfis do fluxo: todos os ativos que não são administradores totais (esses podem tudo)
+$rolesFluxo = [];
+foreach (perfis_all() as $cod => $p) {
+  if (empty($p['admin_total'])) $rolesFluxo[] = $cod;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   csrf_check();
@@ -44,7 +49,7 @@ $trans = db()->query("
   FROM tb_status_transicoes t
   JOIN tb_status sd ON sd.id_status = t.id_status_de
   JOIN tb_status sp ON sp.id_status = t.id_status_para
-  ORDER BY FIELD(t.role,'PROFESSOR','TI','MB'), sd.ordem, sp.ordem
+  ORDER BY t.role, sd.ordem, sp.ordem
 ")->fetchAll();
 
 $byRole = [];
