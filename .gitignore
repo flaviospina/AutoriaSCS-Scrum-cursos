@@ -11,3 +11,7 @@ storage/modelos/*
 logs/
 *.log
 error_log
+
+# arquivos de sessão PHP
+storage/sessions/*
+!storage/sessions/.gitkeep

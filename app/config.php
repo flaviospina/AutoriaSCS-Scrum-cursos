@@ -18,6 +18,8 @@ $config = [
   'app' => [
     'base_url' => 'https://cecapescs.com.br/autoriascs/scrum/public',
     'nome'     => 'AutoriaSCS • Gestão de Cursos',
+    // duração da sessão de login (horas); cada clique renova o prazo
+    'sessao_horas' => 8,
   ],
   'n8n' => [
     'webhook_url' => '', // ex.: https://SEU_N8N/webhook/curso-event (vazio = desativado)

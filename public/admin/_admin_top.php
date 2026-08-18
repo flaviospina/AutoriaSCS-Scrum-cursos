@@ -1,6 +1,7 @@
 <?php
 // Cabeçalho comum das páginas Admin: exige login + perfil ADMIN.
-if (session_status() === PHP_SESSION_NONE) session_start();
+require_once __DIR__ . '/../../app/session.php';
+session_boot();
 require_once __DIR__ . '/../../app/auth.php';
 require_once __DIR__ . '/../../app/db.php';
 require_once __DIR__ . '/../../app/status_repo.php';
