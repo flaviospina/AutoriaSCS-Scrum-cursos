@@ -202,6 +202,16 @@ function notify_event_status(array $curso, string $from, string $to, array $byUs
       mail_template('Curso aprovado e liberado para inserção na plataforma', $base, $link, 'Ver curso'));
   }
 
+  // Publicação (MB): TI liberou o curso com a data de entrada na plataforma
+  if ($to === 'Pronto para Publicação') {
+    $dataPub = !empty($curso['publication_due_date'])
+      ? "<p>Data para entrada na plataforma: <b>" . htmlspecialchars($curso['publication_due_date']) . "</b></p>"
+      : "";
+    notify_flag('recebe_email_insercao', "[AutoriaSCS] Curso pronto para publicação: {$nomeCurso}",
+      mail_template('Curso liberado pela TI — realizar a publicação na plataforma',
+        $base . $dataPub, $link, 'Ver curso'));
+  }
+
   // Equipe de revisão: acompanhamento das etapas finais
   if (in_array($to, ['Inserido', 'Validado', 'Publicado'], true)) {
     notify_flag('recebe_email_revisao', "[AutoriaSCS] {$nomeCurso}: {$to}",
@@ -233,10 +243,16 @@ function notify_event_status(array $curso, string $from, string $to, array $byUs
       $titulo = 'Seu curso foi inserido na plataforma — faça a conferência e validação';
       $extra = "<p>Acesse a plataforma, confira os conteúdos, links, vídeos e avaliações e
                 registre a validação no sistema (Guia 01, seção 5).</p>";
+    } elseif ($to === 'Pronto para Publicação') {
+      $titulo = 'Seu curso está pronto para publicação!';
+      if (!empty($curso['publication_due_date'])) {
+        $extra = "<p>Data prevista de entrada na plataforma: <b>"
+               . htmlspecialchars($curso['publication_due_date']) . "</b></p>";
+      }
     } elseif ($to === 'Publicado') {
       $titulo = 'Seu curso foi publicado na Plataforma AutoriaSCS! 🎉';
       if (!empty($curso['publication_due_date'])) {
-        $extra = "<p>Data prevista de publicação: <b>" . htmlspecialchars($curso['publication_due_date']) . "</b></p>";
+        $extra = "<p>Data de publicação: <b>" . htmlspecialchars($curso['publication_due_date']) . "</b></p>";
       }
     } else {
       $titulo = "Atualização no seu curso: {$to}";

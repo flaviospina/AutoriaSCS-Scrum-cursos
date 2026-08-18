@@ -307,7 +307,8 @@ INSERT INTO tb_status (nome, id_coluna, cor, ordem, is_inicial, is_final, ativo)
   ('Inserido',                       (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='MB Estúdio'),      '#495057', 12, 0, 0, 1),
   ('Aguardando Validação',           (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Validação Autor'), '#ffc107', 13, 0, 0, 1),
   ('Validado',                       (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Validação Autor'), '#d39e00', 14, 0, 0, 1),
-  ('Publicado',                      (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Publicado'),       '#198754', 15, 0, 1, 1);
+  ('Pronto para Publicação',         (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Publicado'),       '#fd7e14', 15, 0, 0, 1),
+  ('Publicado',                      (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Publicado'),       '#198754', 16, 0, 1, 1);
 
 -- Transições (mesmas regras do antigo status_rules.php + publicação pela TI)
 INSERT INTO tb_status_transicoes (role, id_status_de, id_status_para)
@@ -325,9 +326,10 @@ FROM (
   SELECT 'TI', 'Em Revisão', 'Aprovado' UNION ALL
   SELECT 'TI', 'Em Revisão', 'Recusado - Ajustes Necessários' UNION ALL
   SELECT 'TI', 'Aprovado', 'Enviado para Inserção' UNION ALL
-  SELECT 'TI', 'Validado', 'Publicado' UNION ALL
+  SELECT 'TI', 'Validado', 'Pronto para Publicação' UNION ALL
   SELECT 'MB', 'Enviado para Inserção', 'Em Inserção' UNION ALL
-  SELECT 'MB', 'Em Inserção', 'Inserido'
+  SELECT 'MB', 'Em Inserção', 'Inserido' UNION ALL
+  SELECT 'MB', 'Pronto para Publicação', 'Publicado'
 ) r
 JOIN tb_status sd ON sd.nome = r.de
 JOIN tb_status sp ON sp.nome = r.para;

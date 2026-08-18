@@ -180,7 +180,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'trans
   try {
     $to = trim($_POST['to'] ?? '');
     $obs = trim($_POST['obs'] ?? '');
-    curso_transition($id, $u, $to, $obs ?: null);
+    $dataPub = trim($_POST['data_publicacao'] ?? '') ?: null;
+    curso_transition($id, $u, $to, $obs ?: null, $dataPub);
     header("Location: curso_detalhe.php?id={$id}");
     exit;
   } catch (Throwable $e) {
@@ -260,7 +261,7 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
             <input type="hidden" name="action" value="transition">
             <div class="row g-2">
               <div class="col-12 col-md-5">
-                <select class="form-select" name="to" required>
+                <select class="form-select" name="to" id="transTo" required>
                   <?php foreach ($possible as $opt): ?>
                     <option value="<?= htmlspecialchars($opt) ?>"><?= htmlspecialchars($opt) ?></option>
                   <?php endforeach; ?>
@@ -269,9 +270,30 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
               <div class="col-12 col-md-7">
                 <input class="form-control" name="obs" placeholder="Observação (opcional)">
               </div>
+              <div class="col-12 d-none" id="transDataPubWrap">
+                <label class="form-label small fw-semibold">Data de entrada na plataforma (obrigatória)</label>
+                <input class="form-control" type="date" name="data_publicacao" id="transDataPub"
+                       value="<?= htmlspecialchars($curso['publication_due_date'] ?? '') ?>">
+                <div class="form-text">Essa data será comunicada ao formador e à MB Estúdios.</div>
+              </div>
             </div>
             <button class="btn btn-primary">Atualizar Status</button>
           </form>
+          <script>
+            (function () {
+              var sel = document.getElementById('transTo');
+              var wrap = document.getElementById('transDataPubWrap');
+              var inp = document.getElementById('transDataPub');
+              if (!sel || !wrap) return;
+              function toggleDataPub() {
+                var precisa = sel.value === 'Pronto para Publicação';
+                wrap.classList.toggle('d-none', !precisa);
+                inp.required = precisa;
+              }
+              sel.addEventListener('change', toggleDataPub);
+              toggleDataPub();
+            })();
+          </script>
         <?php endif; ?>
         <?php if (perm('revisa_cursos') && $curso['status_atual'] === 'Em Revisão'): ?>
           <button class="btn btn-outline-danger mt-2" data-bs-toggle="modal" data-bs-target="#modalRecusa">

@@ -109,13 +109,22 @@ function checklist_get(int $id_curso): array {
   return $st->fetch() ?: [];
 }
 
-function curso_transition(int $id_curso, array $user, string $to, ?string $obs = null): void {
+function curso_transition(int $id_curso, array $user, string $to, ?string $obs = null,
+                          ?string $dataPublicacao = null): void {
   $c = curso_get($id_curso);
   if (!$c) throw new Exception("Curso não encontrado.");
 
   $from = $c['status_atual'];
   if (!can_transition($user['role'], $from, $to)) {
     throw new Exception("Transição inválida: {$from} → {$to} para o perfil {$user['role']}.");
+  }
+
+  // ao liberar para publicação, a data de entrada na plataforma é obrigatória
+  if ($to === 'Pronto para Publicação') {
+    $d = DateTime::createFromFormat('Y-m-d', (string)$dataPublicacao);
+    if (!$d || $d->format('Y-m-d') !== $dataPublicacao) {
+      throw new Exception("Informe a data em que o curso entrará na plataforma.");
+    }
   }
 
   // quem não enxerga todos os cursos (formador) só mexe no próprio
@@ -148,6 +157,12 @@ function curso_transition(int $id_curso, array $user, string $to, ?string $obs =
 
     if ($to === 'Inserido') {
       db()->prepare("UPDATE tb_cursos SET inserted_at=NOW() WHERE id_curso=?")->execute([$id_curso]);
+    }
+
+    // grava a data oficial de publicação informada pela TI
+    if ($to === 'Pronto para Publicação') {
+      db()->prepare("UPDATE tb_cursos SET publication_due_date=? WHERE id_curso=?")
+        ->execute([$dataPublicacao, $id_curso]);
     }
 
     db()->commit();

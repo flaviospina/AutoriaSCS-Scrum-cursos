@@ -352,6 +352,11 @@ include __DIR__ . '/_layout_top.php';
           <label class="form-label small"><b>Para o status:</b></label>
           <select class="form-select" name="to" id="mmToSel" required></select>
         </div>
+        <div class="mt-3 d-none" id="mmDataPubWrap">
+          <label class="form-label small fw-semibold">Data de entrada na plataforma (obrigatória)</label>
+          <input class="form-control" type="date" name="data_publicacao" id="mmDataPub">
+          <div class="form-text">Comunicada ao formador e à MB Estúdios.</div>
+        </div>
         <div class="mt-3">
           <label class="form-label small">Observação (opcional)</label>
           <input class="form-control" name="obs" id="mmObs" placeholder="Ex.: Movido após envio do autor.">
@@ -424,6 +429,18 @@ include __DIR__ . '/_layout_top.php';
           o.value = s; o.textContent = s;
           sel.appendChild(o);
         });
+
+        // data de publicação obrigatória ao mover para "Pronto para Publicação"
+        const dataWrap = document.getElementById('mmDataPubWrap');
+        const dataInp = document.getElementById('mmDataPub');
+        const toggleDataPub = () => {
+          const precisa = sel.value === 'Pronto para Publicação';
+          dataWrap.classList.toggle('d-none', !precisa);
+          dataInp.required = precisa;
+          if (!precisa) dataInp.value = '';
+        };
+        sel.onchange = toggleDataPub;
+        toggleDataPub();
 
         const mm = new bootstrap.Modal(document.getElementById('moveModal'));
         document.getElementById('mmTitle').textContent = dragged.dataset.title;

@@ -24,14 +24,16 @@ FROM (
   SELECT 'TI', 'Em Revisão', 'Aprovado' UNION ALL
   SELECT 'TI', 'Em Revisão', 'Recusado - Ajustes Necessários' UNION ALL
   SELECT 'TI', 'Aprovado', 'Enviado para Inserção' UNION ALL
-  SELECT 'TI', 'Validado', 'Publicado' UNION ALL
+  SELECT 'TI', 'Validado', 'Pronto para Publicação' UNION ALL
   SELECT 'MB', 'Enviado para Inserção', 'Em Inserção' UNION ALL
-  SELECT 'MB', 'Em Inserção', 'Inserido'
+  SELECT 'MB', 'Em Inserção', 'Inserido' UNION ALL
+  SELECT 'MB', 'Pronto para Publicação', 'Publicado'
 ) r
 JOIN tb_status sd ON sd.nome = r.de
 JOIN tb_status sp ON sp.nome = r.para;
 
--- Conferência: deve listar 15 linhas (7 PROFESSOR, 6 TI, 2 MB)
+-- Requer o status "Pronto para Publicação" (upgrade_v5.sql) já criado.
+-- Conferência: deve listar 16 linhas (7 PROFESSOR, 6 TI, 3 MB)
 SELECT t.role, sd.nome AS de, sp.nome AS para
 FROM tb_status_transicoes t
 JOIN tb_status sd ON sd.id_status = t.id_status_de

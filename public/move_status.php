@@ -26,9 +26,10 @@ if (!$sent || !hash_equals(csrf_token(), $sent)) {
 $id  = (int)($_POST['id_curso'] ?? 0);
 $to  = trim($_POST['to'] ?? '');
 $obs = trim($_POST['obs'] ?? '');
+$dataPub = trim($_POST['data_publicacao'] ?? '') ?: null;
 
 try {
-  curso_transition($id, $u, $to, $obs ?: 'Movimentação via Kanban');
+  curso_transition($id, $u, $to, $obs ?: 'Movimentação via Kanban', $dataPub);
   echo json_encode(['ok'=>true]);
 } catch (Throwable $e) {
   http_response_code(400);
