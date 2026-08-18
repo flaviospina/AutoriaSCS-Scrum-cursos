@@ -42,6 +42,30 @@ function formadores_nomes(): array {
   }
 }
 
+/** Nomes de todas as escolas (ativas e inativas) — para buscas administrativas. */
+function escolas_todas_nomes(): array {
+  try {
+    return array_map(
+      fn($r) => $r['nome'],
+      db()->query("SELECT nome FROM tb_escolas ORDER BY nome")->fetchAll()
+    );
+  } catch (Throwable $e) {
+    return []; // tabela ainda não migrada (upgrade_v6.sql)
+  }
+}
+
+/** Nomes de todos os usuários ativos — para filtros administrativos (usuários/auditoria). */
+function usuarios_nomes(): array {
+  try {
+    return array_map(
+      fn($r) => $r['nome'],
+      db()->query("SELECT nome FROM tb_users WHERE ativo=1 ORDER BY nome")->fetchAll()
+    );
+  } catch (Throwable $e) {
+    return [];
+  }
+}
+
 /** Renderiza um <datalist> com as opções informadas. */
 function datalist_html(string $id, array $opcoes): string {
   $html = '<datalist id="' . htmlspecialchars($id) . '">';

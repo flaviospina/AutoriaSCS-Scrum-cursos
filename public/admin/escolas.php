@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/_admin_top.php';
+require_once __DIR__ . '/../../app/escolas_repo.php';
 
 $erro = null; $ok = null;
 
@@ -163,7 +164,10 @@ include __DIR__ . '/../_layout_top.php';
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
           <h2 class="h6 mb-0">Escolas cadastradas (<?= count($escolas) ?>)</h2>
           <form class="d-flex gap-2">
-            <input class="form-control form-control-sm" name="q" value="<?= htmlspecialchars($fQ) ?>" placeholder="Buscar escola...">
+            <input class="form-control form-control-sm" name="q" list="dlEscolasTodas"
+                   value="<?= htmlspecialchars($fQ) ?>" placeholder="Buscar escola..."
+                   autocomplete="off">
+            <?= datalist_html('dlEscolasTodas', escolas_todas_nomes()) ?>
             <button class="btn btn-sm btn-outline-primary">Buscar</button>
           </form>
         </div>

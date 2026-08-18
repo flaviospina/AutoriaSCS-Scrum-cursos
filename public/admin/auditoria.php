@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/_admin_top.php';
+require_once __DIR__ . '/../../app/escolas_repo.php';
 
 // ---- filtros ----
 $fUser  = trim($_GET['usuario'] ?? '');
@@ -99,7 +100,9 @@ include __DIR__ . '/../_layout_top.php';
     <form class="row g-2">
       <div class="col-12 col-md-3">
         <label class="form-label small">Usuário (nome/e-mail)</label>
-        <input class="form-control form-control-sm" name="usuario" value="<?= htmlspecialchars($fUser) ?>">
+        <input class="form-control form-control-sm" name="usuario" list="dlUsuarios"
+               value="<?= htmlspecialchars($fUser) ?>" autocomplete="off">
+        <?= datalist_html('dlUsuarios', usuarios_nomes()) ?>
       </div>
       <div class="col-6 col-md-2">
         <label class="form-label small">Ação</label>

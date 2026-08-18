@@ -3,6 +3,7 @@ require_once __DIR__ . '/_admin_top.php';
 
 $erro = null; $ok = null;
 require_once __DIR__ . '/../../app/perfis_repo.php';
+require_once __DIR__ . '/../../app/escolas_repo.php';
 $perfis = perfis_all();               // perfis ativos (dinâmicos, tela Admin > Perfis)
 $roles = array_keys($perfis);
 $u = auth_user();
@@ -151,7 +152,10 @@ include __DIR__ . '/../_layout_top.php';
         </select>
       </div>
       <div class="col-6 col-md-4">
-        <input class="form-control form-control-sm" name="q" value="<?= htmlspecialchars($fQ) ?>" placeholder="Nome ou e-mail...">
+        <input class="form-control form-control-sm" name="q" list="dlUsuarios"
+               value="<?= htmlspecialchars($fQ) ?>" placeholder="Nome ou e-mail..."
+               autocomplete="off">
+        <?= datalist_html('dlUsuarios', usuarios_nomes()) ?>
       </div>
       <div class="col-12 col-md-2 d-flex gap-2">
         <button class="btn btn-primary btn-sm">Filtrar</button>
