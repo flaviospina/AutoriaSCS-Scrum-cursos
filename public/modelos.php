@@ -129,6 +129,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggl
   }
 }
 
+// ---- excluir modelo definitivamente (TI/ADMIN) ----
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'excluir' && $gerencia) {
+  csrf_check();
+  try {
+    $idm = (int)($_POST['id_modelo'] ?? 0);
+
+    $st = db()->prepare("SELECT * FROM tb_modelos WHERE id_modelo=?");
+    $st->execute([$idm]);
+    $m = $st->fetch();
+    if (!$m) throw new Exception("Modelo não encontrado.");
+
+    db()->prepare("DELETE FROM tb_modelos WHERE id_modelo=?")->execute([$idm]);
+
+    // remove o arquivo físico do storage
+    $base = realpath(__DIR__ . '/../storage');
+    if ($base) {
+      $path = $base . '/modelos/' . $m['stored_name'];
+      if (is_file($path)) @unlink($path);
+    }
+
+    audit_log('modelo_excluido', 'modelo', $idm,
+      ['titulo' => $m['titulo'], 'versao' => $m['versao'], 'arquivo' => $m['original_name']], null);
+
+    $ok = "Modelo \"{$m['titulo']}\" (v{$m['versao']}) excluído definitivamente.";
+  } catch (Throwable $e) {
+    $erro = $e->getMessage();
+  }
+}
+
 // ---- listagem ----
 $sqlAtivo = $gerencia ? "" : "WHERE m.ativo=1";
 $modelos = db()->query("
@@ -259,6 +288,13 @@ include __DIR__ . '/_layout_top.php';
                       <input type="hidden" name="id_modelo" value="<?= (int)$m['id_modelo'] ?>">
                       <input type="hidden" name="campo" value="ativo">
                       <button class="btn btn-sm btn-outline-secondary py-0"><?= $m['ativo'] ? 'Desativar' : 'Reativar' ?></button>
+                    </form>
+                    <form method="post" class="d-inline"
+                          onsubmit="return confirm('EXCLUIR DEFINITIVAMENTE o modelo &quot;<?= htmlspecialchars($m['titulo']) ?>&quot; (v<?= htmlspecialchars($m['versao']) ?>)?\n\nO arquivo será apagado do servidor e a ação não pode ser desfeita.');">
+                      <?= csrf_field() ?>
+                      <input type="hidden" name="action" value="excluir">
+                      <input type="hidden" name="id_modelo" value="<?= (int)$m['id_modelo'] ?>">
+                      <button class="btn btn-sm btn-outline-danger py-0">Excluir</button>
                     </form>
                   </td>
                 <?php endif; ?>
