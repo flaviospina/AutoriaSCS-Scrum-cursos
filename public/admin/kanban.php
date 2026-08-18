@@ -189,7 +189,9 @@ include __DIR__ . '/../_layout_top.php';
               </td>
 
               <td class="text-end">
-                <form method="post" class="d-inline" onsubmit="return confirm('Excluir a coluna <?= htmlspecialchars($c['nome']) ?>?');">
+                <form method="post" class="d-inline"
+                      data-confirm="Excluir a coluna <b><?= htmlspecialchars($c['nome']) ?></b>?"
+                      data-confirm-title="Excluir coluna" data-confirm-type="danger" data-confirm-btn="Sim, excluir">
                   <?= csrf_field() ?>
                   <input type="hidden" name="action" value="delete">
                   <input type="hidden" name="id_coluna" value="<?= (int)$c['id_coluna'] ?>">

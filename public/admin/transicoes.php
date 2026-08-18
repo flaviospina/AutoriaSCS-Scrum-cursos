@@ -122,7 +122,9 @@ include __DIR__ . '/../_layout_top.php';
                     →
                     <span class="badge" style="<?= status_badge_style($t['para_nome']) ?>"><?= htmlspecialchars($t['para_nome']) ?></span>
                   </span>
-                  <form method="post" onsubmit="return confirm('Remover esta transição?');">
+                  <form method="post"
+                        data-confirm="Remover a transição <b><?= htmlspecialchars($t['de_nome']) ?></b> → <b><?= htmlspecialchars($t['para_nome']) ?></b> do perfil <?= $r ?>?"
+                        data-confirm-title="Remover transição" data-confirm-type="danger" data-confirm-btn="Sim, remover">
                     <?= csrf_field() ?>
                     <input type="hidden" name="action" value="delete">
                     <input type="hidden" name="id_transicao" value="<?= (int)$t['id_transicao'] ?>">

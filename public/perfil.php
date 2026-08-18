@@ -102,7 +102,9 @@ include __DIR__ . '/_layout_top.php';
     <div class="card shadow-sm h-100">
       <div class="card-body">
         <h2 class="h6 mb-3">Alterar minha senha</h2>
-        <form method="post" class="row g-2">
+        <form method="post" class="row g-2"
+              data-confirm="Confirmar a alteração da sua senha de acesso?"
+              data-confirm-title="Alterar senha" data-confirm-btn="Sim, alterar">
           <?= csrf_field() ?>
           <input type="hidden" name="action" value="senha">
           <div class="col-12">

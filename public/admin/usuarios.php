@@ -106,7 +106,8 @@ include __DIR__ . '/../_layout_top.php';
 <div class="card shadow-sm mb-3">
   <div class="card-body">
     <h2 class="h6 mb-3">Novo usuário</h2>
-    <form method="post" class="row g-2 align-items-end">
+    <form method="post" class="row g-2 align-items-end"
+          data-confirm="Criar este novo usuário?" data-confirm-title="Novo usuário" data-confirm-btn="Sim, criar">
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="create">
       <div class="col-12 col-md-3">
@@ -175,7 +176,9 @@ include __DIR__ . '/../_layout_top.php';
           <?php foreach ($usuarios as $us): ?>
             <tr>
               <td colspan="4">
-                <form method="post" class="row g-2 align-items-center">
+                <form method="post" class="row g-2 align-items-center"
+                      data-confirm="Salvar as alterações do usuário <b><?= htmlspecialchars($us['nome']) ?></b>?"
+                      data-confirm-title="Salvar usuário" data-confirm-btn="Sim, salvar">
                   <?= csrf_field() ?>
                   <input type="hidden" name="action" value="update">
                   <input type="hidden" name="id_user" value="<?= (int)$us['id_user'] ?>">

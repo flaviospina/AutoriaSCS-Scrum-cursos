@@ -444,7 +444,11 @@ include __DIR__ . '/_layout_top.php';
       try { data = await res.json(); } catch(err) {}
 
       if (!res.ok || !data.ok) {
-        alert(data.error || 'Falha ao mover status.');
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({ icon: 'error', title: 'Não foi possível mover', text: data.error || 'Falha ao mover status.', confirmButtonColor: '#058285' });
+        } else {
+          alert(data.error || 'Falha ao mover status.');
+        }
         return;
       }
       location.reload();

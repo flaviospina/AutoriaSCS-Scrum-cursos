@@ -93,7 +93,9 @@ include __DIR__ . '/_layout_top.php';
   <div class="card shadow-sm mb-3">
     <div class="card-body">
       <h2 class="h6 mb-3">Registrar novo apontamento</h2>
-      <form method="post" class="row g-2">
+      <form method="post" class="row g-2"
+            data-confirm="Registrar este apontamento? O formador será notificado por e-mail."
+            data-confirm-title="Novo apontamento" data-confirm-btn="Sim, registrar">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="create">
 
@@ -154,7 +156,9 @@ include __DIR__ . '/_layout_top.php';
 
                 <?php if ($isTI): ?>
                   <td class="text-end">
-                    <form method="post" class="d-inline">
+                    <form method="post" class="d-inline"
+                          data-confirm="<?= $a['resolvido'] ? 'Reabrir este apontamento?' : 'Marcar este apontamento como resolvido?' ?>"
+                          data-confirm-title="<?= $a['resolvido'] ? 'Reabrir apontamento' : 'Resolver apontamento' ?>">
                       <?= csrf_field() ?>
                       <input type="hidden" name="action" value="toggle">
                       <input type="hidden" name="id_apontamento" value="<?= (int)$a['id_apontamento'] ?>">

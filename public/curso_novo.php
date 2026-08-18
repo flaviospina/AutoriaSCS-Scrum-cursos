@@ -49,7 +49,7 @@ include __DIR__ . '/_layout_top.php';
 
 <div class="card shadow-sm">
   <div class="card-body">
-    <form method="post" class="row g-3">
+    <form method="post" class="row g-3" data-confirm="Confirmar a proposta do novo curso?" data-confirm-title="Propor curso" data-confirm-btn="Sim, propor">
       <?= csrf_field() ?>
       <div class="col-12">
         <label class="form-label">Nome do curso</label>

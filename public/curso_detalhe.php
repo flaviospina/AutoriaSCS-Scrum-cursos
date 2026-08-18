@@ -251,7 +251,9 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
         <?php if (!$possible): ?>
           <div class="text-muted small">Nenhuma transição disponível para seu perfil.</div>
         <?php else: ?>
-          <form method="post" class="d-flex flex-column gap-2">
+          <form method="post" class="d-flex flex-column gap-2"
+                data-confirm="Confirmar a alteração de status do curso?"
+                data-confirm-title="Atualizar status" data-confirm-btn="Sim, atualizar">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="transition">
             <div class="row g-2">
@@ -285,7 +287,9 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
       <div class="card-body">
         <h2 class="h6 mb-3">Checklist (Planejamento, Produção e Entrega)</h2>
 
-        <form method="post">
+        <form method="post"
+              data-confirm="Salvar as alterações do checklist?"
+              data-confirm-title="Salvar checklist" data-confirm-btn="Sim, salvar">
           <?= csrf_field() ?>
           <input type="hidden" name="action" value="save_checklist">
 
@@ -552,7 +556,9 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
                     <td class="small"><?= htmlspecialchars($l['user_nome']) ?></td>
                     <td class="text-end">
                       <?php if (in_array($u['role'], ['TI','ADMIN'], true) || (int)$l['id_user'] === (int)$u['id_user']): ?>
-                        <form method="post" class="d-inline" onsubmit="return confirm('Remover este link?');">
+                        <form method="post" class="d-inline"
+                              data-confirm="Remover o link <b><?= htmlspecialchars($l['titulo']) ?></b>?"
+                              data-confirm-title="Remover link" data-confirm-type="danger" data-confirm-btn="Sim, remover">
                           <?= csrf_field() ?>
                           <input type="hidden" name="action" value="del_link">
                           <input type="hidden" name="id_link" value="<?= (int)$l['id_link'] ?>">

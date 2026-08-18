@@ -191,7 +191,9 @@ include __DIR__ . '/_layout_top.php';
   <div class="card shadow-sm mb-3">
     <div class="card-body">
       <h2 class="h6 mb-3">Publicar novo modelo (TI/ADMIN)</h2>
-      <form method="post" enctype="multipart/form-data" class="row g-2">
+      <form method="post" enctype="multipart/form-data" class="row g-2"
+            data-confirm="Publicar este modelo na Biblioteca? Ele ficará disponível para todos os formadores."
+            data-confirm-title="Publicar modelo" data-confirm-btn="Sim, publicar">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="publicar">
         <div class="col-12 col-md-4">
@@ -290,7 +292,8 @@ include __DIR__ . '/_layout_top.php';
                       <button class="btn btn-sm btn-outline-secondary py-0"><?= $m['ativo'] ? 'Desativar' : 'Reativar' ?></button>
                     </form>
                     <form method="post" class="d-inline"
-                          onsubmit="return confirm('EXCLUIR DEFINITIVAMENTE o modelo &quot;<?= htmlspecialchars($m['titulo']) ?>&quot; (v<?= htmlspecialchars($m['versao']) ?>)?\n\nO arquivo será apagado do servidor e a ação não pode ser desfeita.');">
+                          data-confirm="Excluir <u>definitivamente</u> o modelo <b><?= htmlspecialchars($m['titulo']) ?></b> (v<?= htmlspecialchars($m['versao']) ?>)?<br><br>O arquivo será apagado do servidor e a ação não pode ser desfeita."
+                          data-confirm-title="Excluir modelo" data-confirm-type="danger" data-confirm-btn="Sim, excluir">
                       <?= csrf_field() ?>
                       <input type="hidden" name="action" value="excluir">
                       <input type="hidden" name="id_modelo" value="<?= (int)$m['id_modelo'] ?>">

@@ -60,7 +60,9 @@ include __DIR__ . '/_layout_top.php';
 
 <div class="card shadow-sm">
   <div class="card-body">
-    <form method="post" class="row g-3">
+    <form method="post" class="row g-3"
+          data-confirm="Salvar as alterações do curso <b><?= htmlspecialchars($curso['nome_curso']) ?></b>?"
+          data-confirm-title="Salvar alterações" data-confirm-btn="Sim, salvar">
       <?= csrf_field() ?>
       <div class="col-12">
         <label class="form-label">Nome do curso</label>

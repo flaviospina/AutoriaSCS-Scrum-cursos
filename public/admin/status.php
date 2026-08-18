@@ -279,7 +279,9 @@ include __DIR__ . '/../_layout_top.php';
                     <button class="btn btn-sm btn-outline-success" title="Definir como status inicial dos novos cursos">Tornar inicial</button>
                   </form>
                 <?php endif; ?>
-                <form method="post" class="d-inline" onsubmit="return confirm('Excluir o status <?= htmlspecialchars($s['nome']) ?>? As transições associadas também serão removidas.');">
+                <form method="post" class="d-inline"
+                      data-confirm="Excluir o status <b><?= htmlspecialchars($s['nome']) ?></b>?<br>As transições associadas também serão removidas."
+                      data-confirm-title="Excluir status" data-confirm-type="danger" data-confirm-btn="Sim, excluir">
                   <?= csrf_field() ?>
                   <input type="hidden" name="action" value="delete">
                   <input type="hidden" name="id_status" value="<?= (int)$s['id_status'] ?>">
