@@ -28,9 +28,11 @@ $hst = db()->prepare("SELECT h.*, u.nome AS user_nome FROM tb_curso_status_histo
 $hst->execute([$id]);
 $history = $hst->fetchAll();
 
-$fs = db()->prepare("SELECT * FROM tb_curso_files WHERE id_curso=? ORDER BY modulo, created_at DESC");
-$fs->execute([$id]);
-$files = $fs->fetchAll();
+// arquivos na ordem oficial de entrega (módulo > sequência das categorias),
+// a mesma ordem em que a MB Estúdios baixa o conteúdo
+$files = entregas_arquivos_ordenados($id);
+
+$ehMB = ($u['role'] === 'MB'); // MB baixa tudo de uma vez pelo ZIP, sem downloads avulsos
 
 // links externos (Google Drive / vídeos MB)
 $lk = db()->prepare("SELECT l.*, u.nome AS user_nome FROM tb_curso_links l JOIN tb_users u ON u.id_user=l.id_user WHERE l.id_curso=? ORDER BY l.created_at DESC");
@@ -50,12 +52,14 @@ if (($_GET['ok'] ?? '') === 'edit') $ok = "Curso atualizado com sucesso.";
 if (($_GET['ok'] ?? '') === 'upload') $ok = "Arquivo enviado com sucesso. A próxima categoria foi liberada.";
 if (($_GET['ok'] ?? '') === 'dispensa') $ok = "Categoria registrada como \"sem material\". A próxima foi liberada.";
 if (($_GET['ok'] ?? '') === 'reativa') $ok = "Registro \"sem material\" desfeito. A categoria voltou a aceitar envio.";
+if (($_GET['ok'] ?? '') === 'delarq') $ok = "Arquivo excluído. A sequência de entregas foi recalculada.";
 if (($_GET['err'] ?? '') !== '') {
   $mapErr = [
     'ordem'     => "Envie os materiais na ordem indicada: conclua a categoria anterior antes desta.",
     'categoria' => "Categoria inválida para o módulo selecionado.",
     'size'      => "Arquivo acima do limite de 25MB.",
     'mime'      => "Tipo de arquivo não permitido.",
+    'semarquivos' => "Este curso ainda não possui arquivos para baixar.",
   ];
   $erro = $mapErr[$_GET['err']] ?? "Falha no upload (" . htmlspecialchars($_GET['err']) . "). Verifique tamanho (máx. 25MB) e tipo do arquivo.";
 }
@@ -231,6 +235,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'reati
     audit_log('entrega_sem_material_desfeita', 'curso', $id, ['modulo' => $mod, 'categoria' => $cat], null);
 
     header("Location: curso_detalhe.php?id={$id}&ok=reativa");
+    exit;
+  } catch (Throwable $e) {
+    $erro = $e->getMessage();
+  }
+}
+
+// Excluir arquivo enviado (somente ADMIN)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'del_arquivo') {
+  csrf_check();
+  try {
+    if (!is_admin()) throw new Exception("Somente administradores podem excluir arquivos.");
+    $idf = (int)($_POST['id_file'] ?? 0);
+    $stf = db()->prepare("SELECT * FROM tb_curso_files WHERE id_file=? AND id_curso=?");
+    $stf->execute([$idf, $id]);
+    $f = $stf->fetch();
+    if (!$f) throw new Exception("Arquivo não encontrado.");
+
+    db()->prepare("DELETE FROM tb_curso_files WHERE id_file=?")->execute([$idf]);
+    $fsPath = realpath(__DIR__ . '/../storage') . "/cursos/{$id}/{$f['stored_name']}";
+    if (is_file($fsPath)) @unlink($fsPath);
+
+    audit_log('arquivo_excluido', 'curso', $id, [
+      'arquivo' => $f['original_name'], 'categoria' => $f['categoria'], 'modulo' => (int)$f['modulo'],
+    ], null);
+
+    header("Location: curso_detalhe.php?id={$id}&ok=delarq");
     exit;
   } catch (Throwable $e) {
     $erro = $e->getMessage();
@@ -506,8 +536,13 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
   <div class="col-12">
     <div class="card shadow-sm">
       <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
           <h2 class="h6 mb-0">Arquivos do Curso</h2>
+          <?php if (($ehMB || is_admin()) && $files): ?>
+            <a class="btn btn-sm btn-success" href="download_todos.php?id=<?= (int)$id ?>">
+              ⬇ Baixar todos (ZIP, na ordem de entrega)
+            </a>
+          <?php endif; ?>
         </div>
         <hr class="my-3">
 
@@ -617,12 +652,12 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
             var cats = ENTREGAS[mod] || [];
             fluxoTitulo.textContent = 'Ordem de entrega — ' + (mod === '0' ? 'Geral' : 'Módulo ' + mod);
             fluxoLista.innerHTML = '';
-            cats.forEach(function (c) {
+            cats.forEach(function (c, idx) {
               var li = document.createElement('li');
               var badge;
               if (c.feita)            badge = '<span class="badge bg-success">Enviado</span>';
               else if (c.dispensada)  badge = '<span class="badge bg-secondary">Sem material</span>';
-              else if (c.atual)       badge = '<span class="badge bg-info text-dark">Próxima entrega</span>';
+              else if (c.atual)       badge = '<span class="badge bg-info text-dark">' + (idx === 0 ? 'Primeira entrega' : 'Próxima entrega') + '</span>';
               else                    badge = '<span class="badge bg-dark border">Aguardando anteriores</span>';
               li.innerHTML = escapeHtml(c.nome) +
                 (c.obrigatoria ? '' : ' <span class="text-muted">(opcional)</span>') + ' ' + badge;
@@ -727,8 +762,20 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
                     <td><span class="badge bg-info text-dark"><?= htmlspecialchars($f['categoria']) ?></span></td>
                     <td><?= htmlspecialchars($f['original_name']) ?></td>
                     <td class="text-nowrap"><?= number_format($f['file_size']/1024/1024, 2, ',', '.') ?> MB</td>
-                    <td class="text-end">
-                      <a class="btn btn-sm btn-outline-primary" href="download.php?id=<?= (int)$f['id_file'] ?>">Download</a>
+                    <td class="text-end text-nowrap">
+                      <?php if (!$ehMB): ?>
+                        <a class="btn btn-sm btn-outline-primary" href="download.php?id=<?= (int)$f['id_file'] ?>">Download</a>
+                      <?php endif; ?>
+                      <?php if (is_admin()): ?>
+                        <form method="post" class="d-inline"
+                              data-confirm="Excluir o arquivo <b><?= htmlspecialchars($f['original_name']) ?></b> (<?= ((int)$f['modulo']) ? 'Módulo '.(int)$f['modulo'] : 'Geral' ?> • <?= htmlspecialchars($f['categoria']) ?>)?<br>A sequência de entregas do módulo será recalculada."
+                              data-confirm-title="Excluir arquivo" data-confirm-type="danger" data-confirm-btn="Sim, excluir">
+                          <?= csrf_field() ?>
+                          <input type="hidden" name="action" value="del_arquivo">
+                          <input type="hidden" name="id_file" value="<?= (int)$f['id_file'] ?>">
+                          <button class="btn btn-sm btn-outline-danger">Excluir</button>
+                        </form>
+                      <?php endif; ?>
                     </td>
                   </tr>
                 <?php endforeach; ?>

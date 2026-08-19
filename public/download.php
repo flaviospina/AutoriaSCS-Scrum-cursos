@@ -23,6 +23,12 @@ if (!is_staff() && (int)$curso['id_professor'] !== (int)$u['id_user']) {
   http_response_code(403); exit("Sem permissão.");
 }
 
+// perfil MB baixa os materiais completos (e na ordem) pelo pacote ZIP
+if ($u['role'] === 'MB') {
+  http_response_code(403);
+  exit("O perfil MB baixa os materiais pelo botão \"Baixar todos (ZIP)\" na página do curso.");
+}
+
 $base = realpath(__DIR__ . '/../storage');
 $path = $base . "/cursos/{$f['id_curso']}/{$f['stored_name']}";
 

@@ -12,12 +12,12 @@ require_once __DIR__ . '/db.php';
 
 /** Categorias do módulo, na ordem de entrega. */
 function entregas_categorias(int $modulo): array {
-  if ($modulo === 0) { // módulo Geral — todas obrigatórias
+  if ($modulo === 0) { // módulo Geral
     return [
       ['nome' => 'Apresentação do(s) Formador(es)', 'obrigatoria' => true],
       ['nome' => 'Apresentação do Curso',           'obrigatoria' => true],
       ['nome' => 'Objetivos',                       'obrigatoria' => true],
-      ['nome' => 'Atividade Avaliativa Geral',      'obrigatoria' => true],
+      ['nome' => 'Atividade Avaliativa Geral',      'obrigatoria' => false],
       ['nome' => 'Referência Bibliográfica',        'obrigatoria' => true],
     ];
   }
@@ -72,6 +72,37 @@ function entregas_estado_completo(int $idCurso): array {
   $out = [];
   for ($m = 0; $m <= 8; $m++) $out[$m] = entregas_estado($idCurso, $m);
   return $out;
+}
+
+/**
+ * Posição da categoria na sequência do módulo (0 = primeira).
+ * Categorias legadas/desconhecidas vão para o fim (99).
+ */
+function entregas_ordem_categoria(int $modulo, string $categoria): int {
+  foreach (entregas_categorias($modulo) as $i => $c) {
+    if ($c['nome'] === $categoria) return $i;
+  }
+  return 99;
+}
+
+/**
+ * Arquivos do curso na ordem oficial de entrega — módulo (Geral, 1..8) e,
+ * dentro dele, a sequência das categorias. É a ordem em que a MB Estúdios
+ * baixa o conteúdo para subir na plataforma.
+ */
+function entregas_arquivos_ordenados(int $idCurso): array {
+  $st = db()->prepare("SELECT * FROM tb_curso_files WHERE id_curso=? ORDER BY created_at");
+  $st->execute([$idCurso]);
+  $files = $st->fetchAll();
+  usort($files, function ($a, $b) {
+    $cmp = (int)$a['modulo'] <=> (int)$b['modulo'];
+    if ($cmp !== 0) return $cmp;
+    $cmp = entregas_ordem_categoria((int)$a['modulo'], $a['categoria'])
+       <=> entregas_ordem_categoria((int)$b['modulo'], $b['categoria']);
+    if ($cmp !== 0) return $cmp;
+    return strcmp($a['created_at'], $b['created_at']);
+  });
+  return $files;
 }
 
 /**
