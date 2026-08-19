@@ -76,5 +76,11 @@ docs/       análise completa, proposta de auditoria/e-mails/repositório e road
   pesquisa de boas práticas e roadmap de novas funcionalidades.
 - [`docs/PROPOSTA_LOGS_EMAILS_REPOSITORIO.md`](docs/PROPOSTA_LOGS_EMAILS_REPOSITORIO.md) —
   proposta aprovada de auditoria, notificações e repositório de modelos (V3).
+- [`docs/APRESENTACAO_DIRECAO.md`](docs/APRESENTACAO_DIRECAO.md) — apresentação do
+  funcionamento lógico do sistema para a direção do CECAPE (com diagrama do fluxo).
+- **Tutoriais por perfil** (com imagens das telas): [`docs/tutoriais/TUTORIAL_PROFESSOR.md`](docs/tutoriais/TUTORIAL_PROFESSOR.md),
+  [`docs/tutoriais/TUTORIAL_TI.md`](docs/tutoriais/TUTORIAL_TI.md),
+  [`docs/tutoriais/TUTORIAL_MB.md`](docs/tutoriais/TUTORIAL_MB.md) e
+  [`docs/tutoriais/TUTORIAL_ADMIN.md`](docs/tutoriais/TUTORIAL_ADMIN.md).
 
 Suporte: **ti.cecape@scseduca.com.br**
