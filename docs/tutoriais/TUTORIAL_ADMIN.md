@@ -1,90 +1,186 @@
-# Tutorial — Administrador(a)
+# Tutorial Completo — Administrador(a)
 
-Guia da área administrativa do **AutoriaSCS • Gestão de Cursos**. O perfil ADMIN tem
-todos os poderes dos demais perfis e, além disso, configura o próprio fluxo do sistema.
+**Sistema AutoriaSCS • Gestão de Cursos** — guia passo a passo da área
+administrativa. O perfil ADMIN pode tudo o que os outros perfis podem e, além
+disso, configura o próprio funcionamento do sistema.
 
-> Endereço: `https://cecapescs.com.br/autoriascs/scrum/` • Suporte: **ti.cecape@scseduca.com.br**
+> **Endereço:** `https://cecapescs.com.br/autoriascs/scrum/`
+> **Suporte:** ti.cecape@scseduca.com.br
 
 ---
 
-## 1. Menu Admin
+## 1. O menu Admin
 
-Tudo fica no menu **Admin** do topo:
+Depois de entrar, o menu **Admin** aparece no topo (somente para administradores).
+Clique nele para abrir as opções:
 
 ![Menu Admin](img/admin-menu.png)
 
-A **Visão geral** resume cada área com contadores e atalhos:
+A primeira opção, **Visão geral**, mostra um painel com cartões — cada cartão traz
+um contador e o botão **Gerenciar** que leva à tela correspondente:
 
 ![Cards da administração](img/admin-cards.png)
 
-## 2. Fluxo Kanban configurável
+Vamos ver cada tela, na ordem do menu.
 
-O fluxo **não é fixo no código** — é montado nestas três telas, e as mudanças valem
-imediatamente para todos os perfis:
+## 2. Colunas do Kanban
 
-- **Colunas do Kanban** — criar, renomear, reordenar, colorir, definir limite WIP e
-  ativar/desativar colunas;
-- **Status** — criar/editar status, mover entre colunas, definir cor do badge, status
-  inicial (novos cursos) e finais. Renomear um status atualiza automaticamente todos os
-  cursos e o histórico; excluir só é possível sem cursos no status;
-- **Transições por perfil** — define quem pode mover o quê (ex.: PROFESSOR:
-  Em Planejamento → Em Desenvolvimento). O ADMIN pode todas as movimentações.
+**O que é:** as colunas verticais do quadro (Backlog, Planejamento, Produção...).
 
-> Se as transições forem alteradas por engano, o script `database/reset_transicoes.sql`
-> restaura o fluxo oficial.
+**O que dá para fazer:**
 
-## 3. Usuários
+- **Adicionar** coluna nova: preencha nome, escolha a cor de fundo do cabeçalho e
+  clique em salvar;
+- **Renomear** e **trocar a cor**: edite os campos na própria linha e salve;
+- **Reordenar**: setas ↑ ↓ movem a coluna para a esquerda/direita do quadro;
+- **Limite WIP**: número máximo recomendado de cursos na coluna (o contador fica
+  vermelho quando passa). Vazio = sem limite;
+- **Ativar/desativar**: coluna desativada some do quadro sem perder os dados.
 
-Cadastro de formadores, TI, MB e administradores — com perfil, ativação e redefinição
-de senha. O campo de busca tem autocompletar com os nomes do banco:
+**Efeito:** qualquer mudança vale **na hora** para todos os usuários.
+
+## 3. Status
+
+**O que é:** as fases que os cursos percorrem (Curso Proposto, Em Revisão...).
+Cada status pertence a uma coluna do Kanban.
+
+**O que dá para fazer:**
+
+- **Criar** status: nome, coluna onde aparece, cor da etiqueta (badge);
+- **Editar/mover** entre colunas e **reordenar** dentro da coluna;
+- **Status inicial** (bolinha marcada): é o status que todo curso novo recebe —
+  só pode haver um;
+- **Status finais**: marcam o fim do fluxo (ex.: Publicado);
+- **Renomear**: o sistema atualiza automaticamente todos os cursos e o histórico —
+  não quebra nada;
+- **Excluir**: só é permitido se nenhum curso estiver naquele status (caso
+  contrário, desative ou renomeie).
+
+## 4. Transições por perfil
+
+**O que é:** a tabela que define **quem pode mover o quê**. Cada linha diz:
+o perfil X pode mover um curso do status A para o status B.
+
+**Como adicionar:** escolha o perfil, o status de origem e o de destino nas três
+listas suspensas e clique em adicionar. Para remover, clique no botão de excluir
+da linha.
+
+**Atenção:** é aqui que o fluxo "trava ou destrava". Se um formador reclama que
+não consegue mover um curso, confira se a transição existe para o perfil
+PROFESSOR. O ADMIN não precisa de transição — pode tudo.
+
+> **Socorro rápido:** se as transições ficarem bagunçadas (por testes, por
+> exemplo), rode o script `database/reset_transicoes.sql` no phpMyAdmin — ele
+> restaura o fluxo oficial completo.
+
+## 5. Usuários
+
+**O que é:** o cadastro de todas as pessoas que acessam o sistema.
 
 ![Cadastro de usuários](img/admin-usuarios.png)
 
-## 4. Perfis de acesso
+**Para cadastrar alguém:**
 
-Em **Perfis de acesso** é possível criar perfis personalizados (ex.: COORDENADOR) e
-marcar as permissões de cada um: administração total, ver todos os cursos, propor
-cursos, mover o Kanban, revisar, gerenciar modelos e receber e-mails de revisão/inserção.
-O perfil ADMIN é protegido contra alterações que travariam o sistema.
+1. **Nome** — nome completo (é o que aparece nos cartões e e-mails);
+2. **E-mail** — será o login da pessoa;
+3. **Perfil** — lista suspensa: PROFESSOR, TI, MB, ADMIN (e perfis personalizados,
+   se existirem);
+4. **Senha** — defina uma senha inicial e informe à pessoa (oriente a trocar no
+   primeiro acesso, em Meu Perfil);
+5. Clique em **Criar**.
 
-## 5. Escolas (cadastro em lote)
+**Na lista:** cada linha tem **Editar** (nome, e-mail, perfil, ativo),
+**Redefinir senha** e a chave **Ativo** — desativar impede o login sem apagar o
+histórico da pessoa. O campo de busca aceita digitar ou escolher o nome na lista.
 
-Cole a lista de escolas na caixa de texto — **uma por linha** — e cadastre todas de uma
-vez. Nomes repetidos são ignorados automaticamente. As escolas alimentam o
-autocompletar dos formulários de curso e dos filtros:
+## 6. Perfis de acesso
+
+**O que é:** os "tipos de usuário" e o que cada um pode fazer. Além dos quatro
+padrão, você pode criar outros (ex.: COORDENADOR só-leitura).
+
+**Para criar um perfil:** informe código (ex.: COORDENADOR), nome e descrição, e
+marque as permissões:
+
+| Permissão | O que libera |
+|---|---|
+| Administração total | Tudo, inclusive esta área Admin |
+| Vê todos os cursos | Kanban completo (senão, só os próprios) |
+| Propõe cursos | Botão "Propor Novo Curso" e envio de arquivos |
+| Move o Kanban | Arrastar cartões / Ações de Status |
+| Revisa cursos | Aprovar, recusar com relatório, apontamentos |
+| Gerencia modelos | Publicar na Biblioteca de Modelos |
+| Recebe e-mail de revisão | Avisos de cursos aguardando análise |
+| Recebe e-mail de inserção | Avisos das etapas de inserção/publicação |
+
+O perfil ADMIN é protegido — o sistema impede alterações que travariam o acesso.
+
+## 7. Escolas — cadastro em lote
+
+**O que é:** a lista de unidades escolares que alimenta o autocompletar dos
+formulários (proposta de curso, filtros).
 
 ![Cadastro de escolas em lote](img/admin-escolas.png)
 
-Também é possível renomear (atualiza os cursos vinculados), desativar e excluir.
+**Para cadastrar várias de uma vez:**
 
-## 6. Auditoria
+1. Cole na caixa de texto a lista de escolas, **uma por linha** (pode colar direto
+   de uma planilha);
+2. Clique em **Cadastrar todas**;
+3. O sistema insere tudo de uma vez e informa quantas entraram e quantas eram
+   repetidas (repetidas são ignoradas, sem erro).
 
-Toda ação fica registrada: quem fez, o quê, quando, valores antes/depois e IP —
-inclusive logins, downloads, exclusões e registros "sem material". Filtre por usuário,
-ação, entidade e período, e exporte em CSV:
+**Na lista ao lado:** busca (com autocompletar), **Renomear** (atualiza também os
+cursos que usam o nome antigo), **Desativar** (some do autocompletar sem apagar) e
+**Excluir** (só se nenhum curso estiver vinculado).
+
+## 8. Auditoria — quem fez o quê
+
+**O que é:** o registro automático de todas as ações do sistema: login, criação e
+edição de cursos, mudanças de status, uploads, downloads, exclusões, declarações
+"sem material" — tudo, com data/hora, usuário, valores antes/depois e endereço IP.
 
 ![Filtros da auditoria](img/admin-auditoria.png)
 
-## 7. Notificações
+**Como pesquisar:** combine os filtros — **Usuário** (digite ou escolha na lista),
+**Ação**, **Entidade**, período **De/Até** — e clique em Filtrar.
+**Exportar CSV** baixa o resultado para abrir no Excel.
 
-Monitor da fila de e-mails (pendentes, enviados, erros) com processamento manual.
-Os e-mails saem em tempo real; o cron de 5 minutos reenvia os que falharem
-(`cron/cron_notificacoes.php`), e o cron diário das 7h envia alertas de prazo e o
-resumo semanal (`cron/cron_prazos.php`).
+## 9. Notificações — a fila de e-mails
 
-## 8. Excluir arquivos enviados
+**O que é:** o monitor dos e-mails do sistema. Cada aviso enviado aparece aqui com
+o status: **ENVIADO**, **PENDENTE** (aguardando reenvio) ou **ERRO**.
 
-Somente o ADMIN pode excluir um arquivo enviado por engano pelo formador — botão
-**Excluir** na lista de arquivos do curso, com confirmação:
+**Como funciona o envio:** os e-mails saem **na hora** da ação. Se algum falhar,
+o cron de 5 minutos tenta de novo automaticamente. Nesta tela você também pode
+processar a fila manualmente (botão de processar) e ver o erro exato de cada
+mensagem que falhou.
+
+**Configuração no servidor (cPanel → Cron Jobs):**
+
+- A cada 5 min: `php /home/USUARIO/.../cron/cron_notificacoes.php CHAVE`
+- Diário às 7h: `php /home/USUARIO/.../cron/cron_prazos.php CHAVE`
+  (alertas de prazo + resumo semanal às segundas)
+
+## 10. Excluir arquivos enviados por engano
+
+Somente o ADMIN pode excluir um arquivo que o formador enviou errado. Abra o curso,
+seção **Arquivos do Curso** — cada linha tem o botão vermelho **Excluir**:
 
 ![Botão Excluir na lista de arquivos](img/admin-excluir.png)
 
-A exclusão remove o arquivo do servidor, fica na auditoria e **recalcula a sequência
-de entregas** do módulo (a categoria volta a ser a pendente do formador).
+1. Clique em **Excluir** na linha do arquivo errado;
+2. Confirme na janela (a ação é registrada na auditoria);
+3. O arquivo é apagado do servidor e a **sequência de entregas é recalculada** —
+   se era o único da categoria, ela volta a ser a etapa pendente do formador.
 
-## 9. Boas práticas
+## 11. Rotina e boas práticas do administrador
 
-- Faça **backup do banco** antes de rodar qualquer migração (`database/upgrade_v*.sql`);
-- Troque a senha padrão do usuário inicial e revise usuários inativos periodicamente;
-- Não edite status/transições em produção sem conferir o fluxo com a equipe —
-  a auditoria registra, mas a mudança vale na hora.
+- **Backup do banco** antes de qualquer migração (`database/upgrade_v*.sql`) —
+  no cPanel: phpMyAdmin → Exportar;
+- **Troque a senha padrão** do usuário inicial (`admin@scseduca.com.br`) no
+  primeiro acesso;
+- **Revise usuários** periodicamente: desative quem saiu da rede;
+- **Não teste em produção**: mudanças em colunas/status/transições valem
+  imediatamente para todos. Se precisar experimentar, combine com a equipe;
+- **Acompanhe a Auditoria** e a fila de **Notificações** semanalmente — erros de
+  e-mail aparecem lá primeiro.
