@@ -21,6 +21,11 @@ if (!is_staff() && (int)$curso['id_professor'] !== (int)$u['id_user']) {
   http_response_code(403); exit("Sem permissão.");
 }
 
+// perfil MB apenas baixa os materiais — não envia arquivos
+if ($u['role'] === 'MB') {
+  http_response_code(403); exit("O perfil MB não envia arquivos.");
+}
+
 // módulo do curso a que o arquivo pertence (0 = Geral)
 $modulo = (int)($_POST['modulo'] ?? -1);
 if ($modulo < 0 || $modulo > 8) {

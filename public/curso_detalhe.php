@@ -546,6 +546,7 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
         </div>
         <hr class="my-3">
 
+        <?php if (!$ehMB): // perfil MB apenas baixa os materiais — não envia ?>
         <div class="alert alert-info small">
           Os materiais devem ser enviados <b>na ordem indicada</b> — é a sequência em que a
           MB Estúdios baixa o conteúdo para subir na plataforma. Cada categoria é liberada
@@ -732,6 +733,7 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
           chk.addEventListener('change', aplicaModo);
         })();
         </script>
+        <?php endif; // fim do bloco de upload (oculto para MB) ?>
 
         <hr class="my-3">
 
