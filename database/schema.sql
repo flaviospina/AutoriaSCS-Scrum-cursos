@@ -158,13 +158,30 @@ CREATE TABLE IF NOT EXISTS tb_curso_files (
   stored_name   VARCHAR(100) NOT NULL,
   mime_type     VARCHAR(120) NOT NULL,
   file_size     INT UNSIGNED NOT NULL DEFAULT 0,
-  categoria     ENUM('PLANEJAMENTO','PRODUCAO','ENTREGA','OUTROS') NOT NULL DEFAULT 'OUTROS',
+  categoria     VARCHAR(60) NOT NULL DEFAULT 'OUTROS',
   modulo        TINYINT UNSIGNED NOT NULL DEFAULT 0,
   created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_file),
   KEY ix_files_curso (id_curso),
   CONSTRAINT fk_files_curso FOREIGN KEY (id_curso) REFERENCES tb_cursos (id_curso) ON DELETE CASCADE,
   CONSTRAINT fk_files_user  FOREIGN KEY (id_user)  REFERENCES tb_users (id_user)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- Entregas "sem material" (fluxo ordenado de upload por módulo)
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tb_curso_dispensas (
+  id_dispensa INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  id_curso    INT UNSIGNED NOT NULL,
+  modulo      TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  categoria   VARCHAR(60) NOT NULL,
+  id_user     INT UNSIGNED NOT NULL,
+  created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_dispensa),
+  UNIQUE KEY uq_dispensa (id_curso, modulo, categoria),
+  KEY ix_dispensa_curso (id_curso),
+  CONSTRAINT fk_disp_curso FOREIGN KEY (id_curso) REFERENCES tb_cursos (id_curso) ON DELETE CASCADE,
+  CONSTRAINT fk_disp_user  FOREIGN KEY (id_user)  REFERENCES tb_users (id_user)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------

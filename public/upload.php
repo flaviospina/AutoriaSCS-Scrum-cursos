@@ -4,6 +4,7 @@ session_boot();
 require_once __DIR__ . '/../app/auth.php';
 require_once __DIR__ . '/../app/db.php';
 require_once __DIR__ . '/../app/curso_repo.php';
+require_once __DIR__ . '/../app/entregas_repo.php';
 require_once __DIR__ . '/../app/csrf.php';
 require_once __DIR__ . '/../app/audit.php';
 
@@ -20,13 +21,21 @@ if (!is_staff() && (int)$curso['id_professor'] !== (int)$u['id_user']) {
   http_response_code(403); exit("Sem permissão.");
 }
 
-$categoria = $_POST['categoria'] ?? 'OUTROS';
-$allowedCat = ['PLANEJAMENTO','PRODUCAO','ENTREGA','OUTROS'];
-if (!in_array($categoria, $allowedCat, true)) $categoria = 'OUTROS';
+// módulo do curso a que o arquivo pertence (0 = Geral)
+$modulo = (int)($_POST['modulo'] ?? -1);
+if ($modulo < 0 || $modulo > 8) {
+  header("Location: curso_detalhe.php?id={$id_curso}&err=categoria");
+  exit;
+}
 
-// módulo do curso a que o arquivo pertence (0 = geral)
-$modulo = (int)($_POST['modulo'] ?? 0);
-if ($modulo < 0 || $modulo > 8) $modulo = 0;
+// fluxo ordenado: a categoria precisa existir no módulo e estar liberada
+// (a anterior concluída) — mesma regra aplicada na interface
+$categoria = trim($_POST['categoria'] ?? '');
+$chkFluxo = entrega_pode_receber($id_curso, $modulo, $categoria);
+if ($chkFluxo !== 'ok') {
+  header("Location: curso_detalhe.php?id={$id_curso}&err={$chkFluxo}");
+  exit;
+}
 
 if (!isset($_FILES['arquivo']) || $_FILES['arquivo']['error'] !== UPLOAD_ERR_OK) {
   header("Location: curso_detalhe.php?id={$id_curso}&err=upload");

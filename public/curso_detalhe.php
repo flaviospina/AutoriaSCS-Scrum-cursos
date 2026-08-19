@@ -4,6 +4,7 @@ session_boot();
 require_once __DIR__ . '/../app/auth.php';
 require_once __DIR__ . '/../app/db.php';
 require_once __DIR__ . '/../app/curso_repo.php';
+require_once __DIR__ . '/../app/entregas_repo.php';
 require_once __DIR__ . '/../app/status_repo.php';
 require_once __DIR__ . '/../app/csrf.php';
 require_once __DIR__ . '/../app/audit.php';
@@ -46,8 +47,18 @@ $apont = $ap->fetchAll();
 
 $erro = null; $ok = null;
 if (($_GET['ok'] ?? '') === 'edit') $ok = "Curso atualizado com sucesso.";
-if (($_GET['ok'] ?? '') === 'upload') $ok = "Arquivo enviado com sucesso.";
-if (($_GET['err'] ?? '') !== '') $erro = "Falha no upload (" . htmlspecialchars($_GET['err']) . "). Verifique tamanho (máx. 25MB) e tipo do arquivo.";
+if (($_GET['ok'] ?? '') === 'upload') $ok = "Arquivo enviado com sucesso. A próxima categoria foi liberada.";
+if (($_GET['ok'] ?? '') === 'dispensa') $ok = "Categoria registrada como \"sem material\". A próxima foi liberada.";
+if (($_GET['ok'] ?? '') === 'reativa') $ok = "Registro \"sem material\" desfeito. A categoria voltou a aceitar envio.";
+if (($_GET['err'] ?? '') !== '') {
+  $mapErr = [
+    'ordem'     => "Envie os materiais na ordem indicada: conclua a categoria anterior antes desta.",
+    'categoria' => "Categoria inválida para o módulo selecionado.",
+    'size'      => "Arquivo acima do limite de 25MB.",
+    'mime'      => "Tipo de arquivo não permitido.",
+  ];
+  $erro = $mapErr[$_GET['err']] ?? "Falha no upload (" . htmlspecialchars($_GET['err']) . "). Verifique tamanho (máx. 25MB) e tipo do arquivo.";
+}
 
 // Atualiza checklist (professor dono ou TI/ADMIN)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_checklist') {
@@ -168,6 +179,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'del_l
     audit_log('link_removido', 'curso', $id, ['titulo' => $l['titulo'], 'url' => $l['url']], null);
 
     header("Location: curso_detalhe.php?id={$id}");
+    exit;
+  } catch (Throwable $e) {
+    $erro = $e->getMessage();
+  }
+}
+
+// Registrar categoria opcional como "sem material" (fluxo ordenado de entregas)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'dispensar') {
+  csrf_check();
+  try {
+    if (!perm('revisa_cursos') && (int)$curso['id_professor'] !== (int)$u['id_user']) {
+      throw new Exception("Sem permissão.");
+    }
+    $mod = (int)($_POST['modulo'] ?? -1);
+    $cat = trim($_POST['categoria'] ?? '');
+    if ($mod < 0 || $mod > 8) throw new Exception("Módulo inválido.");
+
+    $alvo = null;
+    foreach (entregas_estado($id, $mod) as $c) {
+      if ($c['nome'] === $cat) { $alvo = $c; break; }
+    }
+    if (!$alvo) throw new Exception("Categoria inválida para o módulo.");
+    if ($alvo['obrigatoria']) throw new Exception("Esta categoria é obrigatória — o envio do arquivo não pode ser dispensado.");
+    if ($alvo['feita']) throw new Exception("Esta categoria já possui arquivo enviado.");
+    if ($alvo['dispensada']) throw new Exception("Esta categoria já está registrada como sem material.");
+    if (!$alvo['atual']) throw new Exception("Conclua as categorias anteriores antes de registrar esta.");
+
+    db()->prepare("INSERT INTO tb_curso_dispensas (id_curso, modulo, categoria, id_user) VALUES (?,?,?,?)")
+      ->execute([$id, $mod, $cat, $u['id_user']]);
+    audit_log('entrega_sem_material', 'curso', $id, null, ['modulo' => $mod, 'categoria' => $cat]);
+
+    header("Location: curso_detalhe.php?id={$id}&ok=dispensa");
+    exit;
+  } catch (Throwable $e) {
+    $erro = $e->getMessage();
+  }
+}
+
+// Desfazer o registro "sem material" (o material foi criado depois)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'reativar') {
+  csrf_check();
+  try {
+    if (!perm('revisa_cursos') && (int)$curso['id_professor'] !== (int)$u['id_user']) {
+      throw new Exception("Sem permissão.");
+    }
+    $mod = (int)($_POST['modulo'] ?? -1);
+    $cat = trim($_POST['categoria'] ?? '');
+    db()->prepare("DELETE FROM tb_curso_dispensas WHERE id_curso=? AND modulo=? AND categoria=?")
+      ->execute([$id, $mod, $cat]);
+    audit_log('entrega_sem_material_desfeita', 'curso', $id, ['modulo' => $mod, 'categoria' => $cat], null);
+
+    header("Location: curso_detalhe.php?id={$id}&ok=reativa");
     exit;
   } catch (Throwable $e) {
     $erro = $e->getMessage();
@@ -448,36 +511,192 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
         </div>
         <hr class="my-3">
 
-        <form class="row g-2" method="post" action="upload.php" enctype="multipart/form-data">
+        <div class="alert alert-info small">
+          Os materiais devem ser enviados <b>na ordem indicada</b> — é a sequência em que a
+          MB Estúdios baixa o conteúdo para subir na plataforma. Cada categoria é liberada
+          quando a anterior for concluída.
+        </div>
+
+        <form class="row g-2" method="post" action="upload.php" enctype="multipart/form-data" id="formUpload">
           <?= csrf_field() ?>
           <input type="hidden" name="id_curso" value="<?= (int)$id ?>">
-          <div class="col-6 col-md-3">
-            <label class="form-label small">Categoria</label>
-            <select class="form-select" name="categoria">
-              <option value="PLANEJAMENTO">Planejamento</option>
-              <option value="PRODUCAO">Produção</option>
-              <option value="ENTREGA">Entrega</option>
-              <option value="OUTROS" selected>Outros</option>
-            </select>
-          </div>
           <div class="col-6 col-md-2">
             <label class="form-label small">Módulo</label>
-            <select class="form-select" name="modulo">
+            <select class="form-select" name="modulo" id="upModulo" required>
+              <option value="" selected disabled>Selecione o módulo</option>
               <option value="0">Geral</option>
               <?php for ($mo = 1; $mo <= 8; $mo++): ?>
                 <option value="<?= $mo ?>">Módulo <?= $mo ?></option>
               <?php endfor; ?>
             </select>
           </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label small">Categoria</label>
+            <select class="form-select" name="categoria" id="upCategoria" required disabled>
+              <option value="" selected disabled>Selecione o módulo primeiro</option>
+            </select>
+          </div>
           <div class="col-12 col-md-5">
             <label class="form-label small">Arquivo</label>
-            <input class="form-control" type="file" name="arquivo" required>
+            <input class="form-control" type="file" name="arquivo" id="upArquivo" required>
             <div class="form-text">Limite 25MB. Tipos comuns: PDF, DOCX, PPTX, MP4, ZIP.</div>
           </div>
           <div class="col-12 col-md-2 d-flex align-items-end">
-            <button class="btn btn-primary w-100">Enviar</button>
+            <button class="btn btn-primary w-100" id="upBtn">Enviar</button>
+          </div>
+          <div class="col-12 d-none" id="upSemMaterialWrap">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="upSemMaterial">
+              <label class="form-check-label small" for="upSemMaterial">
+                Não possuo este material — registrar como <b>sem material</b> e liberar a próxima categoria.
+              </label>
+            </div>
           </div>
         </form>
+
+        <div id="upFluxo" class="mt-3 d-none">
+          <div class="small fw-semibold mb-1" id="upFluxoTitulo">Ordem de entrega</div>
+          <ol class="small mb-0" id="upFluxoLista" style="line-height:2"></ol>
+        </div>
+
+        <script>
+        (function () {
+          var ENTREGAS = <?= json_encode(entregas_estado_completo($id), JSON_UNESCAPED_UNICODE) ?>;
+          var CURSO_ID = <?= (int)$id ?>;
+          var form   = document.getElementById('formUpload');
+          var selMod = document.getElementById('upModulo');
+          var selCat = document.getElementById('upCategoria');
+          var inpArq = document.getElementById('upArquivo');
+          var chkWrap = document.getElementById('upSemMaterialWrap');
+          var chk    = document.getElementById('upSemMaterial');
+          var btn    = document.getElementById('upBtn');
+          var fluxo  = document.getElementById('upFluxo');
+          var fluxoTitulo = document.getElementById('upFluxoTitulo');
+          var fluxoLista  = document.getElementById('upFluxoLista');
+          if (!form) return;
+
+          function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, function (m) {
+              return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+            });
+          }
+
+          function catInfo(mod, nome) {
+            var cats = ENTREGAS[mod] || [];
+            for (var i = 0; i < cats.length; i++) if (cats[i].nome === nome) return cats[i];
+            return null;
+          }
+
+          function renderCategorias() {
+            var mod = selMod.value;
+            var cats = ENTREGAS[mod] || [];
+            selCat.innerHTML = '';
+            var ph = new Option('Selecione a categoria', '');
+            ph.disabled = true;
+            selCat.add(ph);
+
+            var atual = '';
+            cats.forEach(function (c) {
+              var rotulo = c.nome;
+              if (c.feita) rotulo += ' — ✓ enviado';
+              else if (c.dispensada) rotulo += ' — sem material';
+              else if (!c.obrigatoria) rotulo += ' (opcional)';
+              var o = new Option(rotulo, c.nome);
+              o.disabled = !c.habilitada;
+              selCat.add(o);
+              if (c.atual) atual = c.nome;
+            });
+
+            selCat.disabled = false;
+            if (atual) selCat.value = atual; else ph.selected = true;
+            renderFluxo(mod);
+            atualizaSemMaterial();
+          }
+
+          function renderFluxo(mod) {
+            var cats = ENTREGAS[mod] || [];
+            fluxoTitulo.textContent = 'Ordem de entrega — ' + (mod === '0' ? 'Geral' : 'Módulo ' + mod);
+            fluxoLista.innerHTML = '';
+            cats.forEach(function (c) {
+              var li = document.createElement('li');
+              var badge;
+              if (c.feita)            badge = '<span class="badge bg-success">Enviado</span>';
+              else if (c.dispensada)  badge = '<span class="badge bg-secondary">Sem material</span>';
+              else if (c.atual)       badge = '<span class="badge bg-info text-dark">Próxima entrega</span>';
+              else                    badge = '<span class="badge bg-dark border">Aguardando anteriores</span>';
+              li.innerHTML = escapeHtml(c.nome) +
+                (c.obrigatoria ? '' : ' <span class="text-muted">(opcional)</span>') + ' ' + badge;
+              if (c.dispensada) {
+                var bt = document.createElement('button');
+                bt.type = 'button';
+                bt.className = 'btn btn-outline-secondary btn-sm py-0 ms-2';
+                bt.textContent = 'Desfazer';
+                bt.addEventListener('click', function () { postAcao('reativar', mod, c.nome); });
+                li.appendChild(bt);
+              }
+              fluxoLista.appendChild(li);
+            });
+            fluxo.classList.remove('d-none');
+          }
+
+          function atualizaSemMaterial() {
+            var c = catInfo(selMod.value, selCat.value);
+            var mostra = !!(c && !c.obrigatoria && c.atual && !c.feita && !c.dispensada);
+            chkWrap.classList.toggle('d-none', !mostra);
+            if (!mostra) chk.checked = false;
+            aplicaModo();
+          }
+
+          function aplicaModo() {
+            var sem = chk.checked;
+            inpArq.disabled = sem;
+            inpArq.required = !sem;
+            btn.textContent = sem ? 'Registrar sem material' : 'Enviar';
+            btn.classList.toggle('btn-primary', !sem);
+            btn.classList.toggle('btn-outline-info', sem);
+          }
+
+          function postAcao(acao, mod, cat) {
+            var f = document.createElement('form');
+            f.method = 'post';
+            f.action = 'curso_detalhe.php?id=' + CURSO_ID;
+            [['action', acao], ['modulo', mod], ['categoria', cat],
+             ['csrf_token', form.querySelector('[name=csrf_token]').value]
+            ].forEach(function (par) {
+              var i = document.createElement('input');
+              i.type = 'hidden'; i.name = par[0]; i.value = par[1];
+              f.appendChild(i);
+            });
+            document.body.appendChild(f);
+            f.submit();
+          }
+
+          form.addEventListener('submit', function (e) {
+            if (!chk.checked) return; // upload normal segue para upload.php
+            e.preventDefault();
+            var cat = selCat.value;
+            var mod = selMod.value;
+            if (!cat || mod === '') return;
+            var confirmar = function () { postAcao('dispensar', mod, cat); };
+            if (typeof Swal !== 'undefined') {
+              Swal.fire({
+                title: 'Registrar sem material',
+                html: 'Confirmar que <b>' + escapeHtml(cat) + '</b> não possui material?<br>A próxima categoria da sequência será liberada.',
+                icon: 'question', showCancelButton: true,
+                confirmButtonText: 'Sim, registrar', cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#06b6d4', cancelButtonColor: '#374151',
+                background: '#0f2044', color: '#e8edf5', reverseButtons: true
+              }).then(function (r) { if (r.isConfirmed) confirmar(); });
+            } else if (window.confirm('Registrar "' + cat + '" como sem material?')) {
+              confirmar();
+            }
+          });
+
+          selMod.addEventListener('change', renderCategorias);
+          selCat.addEventListener('change', atualizaSemMaterial);
+          chk.addEventListener('change', aplicaModo);
+        })();
+        </script>
 
         <hr class="my-3">
 

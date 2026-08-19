@@ -44,8 +44,9 @@ O fluxo do Kanban não é mais fixo no código — é configurável em `Admin`:
 
 1. Crie o banco e execute `database/schema.sql` (instalação nova). Migrações a partir de banco
    antigo, na ordem: `upgrade_v2.sql` (fluxo dinâmico), `upgrade_v3.sql` (auditoria/e-mails/modelos),
-   `upgrade_v4.sql` (perfis dinâmicos), `upgrade_v5.sql` (etapa Pronto para Publicação) e
-   `upgrade_v6.sql` (cadastro de escolas) — faça backup antes.
+   `upgrade_v4.sql` (perfis dinâmicos), `upgrade_v5.sql` (etapa Pronto para Publicação),
+   `upgrade_v6.sql` (cadastro de escolas) e `upgrade_v7.sql` (fluxo ordenado de entrega
+   de materiais) — faça backup antes.
 2. Copie `app/config.php` para `app/config.local.php` e preencha as credenciais reais do banco,
    a seção `mail` (método `mail` do cPanel ou `smtp`) e a `cron.chave`
    (o arquivo local é ignorado pelo git).
