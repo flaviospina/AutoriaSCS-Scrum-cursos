@@ -40,18 +40,36 @@ O fluxo do Kanban não é mais fixo no código — é configurável em `Admin`:
   marcação "vigente"; todos os formadores baixam (máx. 50MB por arquivo);
 - **Arquivos por módulo** + **links externos** (Google Drive para mídia pesada) em cada curso.
 
+## Revisão de Vídeos (V8)
+
+Ferramenta integrada para análise dos vídeos dos formadores (`🎬 Vídeos` na página do curso):
+
+- o formador envia o vídeo (MP4, até 512MB) e a TI assiste **dentro do sistema**
+  (streaming com suporte a seek);
+- a TI registra **marcações no ponto exato** (minuto/segundo/frame) com classificação
+  (áudio, imagem, conteúdo, acessibilidade, edição, identidade visual, erro técnico),
+  orientação de correção e **captura automática do frame**;
+- o formador vê os apontamentos na sua área, **responde** e marca o andamento
+  (Pendente → Em correção → Corrigido); reenvia a **nova versão** pelo sistema;
+- **controle de versões** com histórico completo das análises e comparação entre versões;
+- **aprovação final** pela TI quando todas as correções estiverem concluídas;
+- e-mails automáticos a cada evento (novos apontamentos, resposta, nova versão, aprovação).
+
+> Vídeos grandes: ajuste no servidor `upload_max_filesize` e `post_max_size`
+> (ex.: `512M`) no cPanel → *MultiPHP INI Editor*.
+
 ## Instalação
 
 1. Crie o banco e execute `database/schema.sql` (instalação nova). Migrações a partir de banco
    antigo, na ordem: `upgrade_v2.sql` (fluxo dinâmico), `upgrade_v3.sql` (auditoria/e-mails/modelos),
    `upgrade_v4.sql` (perfis dinâmicos), `upgrade_v5.sql` (etapa Pronto para Publicação),
-   `upgrade_v6.sql` (cadastro de escolas) e `upgrade_v7.sql` (fluxo ordenado de entrega
-   de materiais) — faça backup antes.
+   `upgrade_v6.sql` (cadastro de escolas), `upgrade_v7.sql` (fluxo ordenado de entrega
+   de materiais) e `upgrade_v8.sql` (revisão de vídeos) — faça backup antes.
 2. Copie `app/config.php` para `app/config.local.php` e preencha as credenciais reais do banco,
    a seção `mail` (método `mail` do cPanel ou `smtp`) e a `cron.chave`
    (o arquivo local é ignorado pelo git).
 3. Publique o projeto no servidor (o *document root* deve apontar para `public/`).
-4. Garanta permissão de escrita em `storage/cursos/` e `storage/modelos/`.
+4. Garanta permissão de escrita em `storage/cursos/`, `storage/modelos/` e `storage/videos/`.
 5. Agende os crons no cPanel:
    - a cada 5 min: `php /home/USUARIO/caminho/cron/cron_notificacoes.php SUA_CHAVE`
    - 1x ao dia (07h): `php /home/USUARIO/caminho/cron/cron_prazos.php SUA_CHAVE`

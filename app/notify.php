@@ -395,3 +395,64 @@ function smtp_send(array $cfg, string $fromEmail, string $fromName,
     return $e->getMessage();
   }
 }
+
+/* ============================================================
+ * Revisão de vídeos (V8) — notificações automáticas
+ * ============================================================ */
+
+/** E-mail ao formador quando a TI registra novas marcações no vídeo. */
+function notify_video_marcacao(array $video, int $novas): void {
+  $link = app_base_url() . '/video_revisao.php?id=' . (int)$video['id_video'];
+  $txt = $novas === 1 ? 'um novo apontamento' : "{$novas} novos apontamentos";
+  $html = mail_template(
+    'Novos apontamentos no seu vídeo',
+    "<p>A equipe de revisão registrou <b>{$txt}</b> no vídeo
+     \"<b>" . htmlspecialchars($video['titulo']) . "</b>\" do curso
+     \"<b>" . htmlspecialchars($video['nome_curso']) . "</b>\".</p>
+     <p>Cada apontamento indica o momento exato do vídeo, o problema identificado
+     e a orientação para correção. Após ajustar, reenvie a nova versão pelo próprio sistema.</p>",
+    $link, 'Ver os apontamentos'
+  );
+  notify_queue($video['professor_email'], $video['professor_nome'], 'Vídeo com apontamentos da revisão', $html);
+}
+
+/** E-mail à TI quando o formador envia uma nova versão do vídeo. */
+function notify_video_nova_versao(array $video, int $numero): void {
+  $link = app_base_url() . '/video_revisao.php?id=' . (int)$video['id_video'];
+  $html = mail_template(
+    "Nova versão de vídeo para análise (v{$numero})",
+    "<p>O(a) formador(a) <b>" . htmlspecialchars($video['professor_nome']) . "</b> enviou a
+     <b>versão {$numero}</b> do vídeo \"<b>" . htmlspecialchars($video['titulo']) . "</b>\"
+     do curso \"<b>" . htmlspecialchars($video['nome_curso']) . "</b>\".</p>
+     <p>Assista no sistema e registre os apontamentos, ou aprove o vídeo.</p>",
+    $link, 'Abrir a revisão'
+  );
+  notify_queue(ti_email(), 'Equipe TI CECAPE', "Nova versão de vídeo para análise", $html);
+  notify_flag('recebe_email_revisao', "Nova versão de vídeo para análise", $html);
+}
+
+/** E-mail ao formador quando a TI aprova o vídeo. */
+function notify_video_aprovado(array $video): void {
+  $link = app_base_url() . '/video_revisao.php?id=' . (int)$video['id_video'];
+  $html = mail_template(
+    'Vídeo aprovado! 🎉',
+    "<p>O vídeo \"<b>" . htmlspecialchars($video['titulo']) . "</b>\" do curso
+     \"<b>" . htmlspecialchars($video['nome_curso']) . "</b>\" foi <b>aprovado</b> pela equipe de revisão.</p>
+     <p>Todas as correções foram concluídas — nenhuma ação adicional é necessária.</p>",
+    $link, 'Ver o vídeo'
+  );
+  notify_queue($video['professor_email'], $video['professor_nome'], 'Vídeo aprovado', $html);
+}
+
+/** E-mail à TI quando o formador responde a um apontamento. */
+function notify_video_resposta(array $video, string $autor): void {
+  $link = app_base_url() . '/video_revisao.php?id=' . (int)$video['id_video'];
+  $html = mail_template(
+    'Resposta em apontamento de vídeo',
+    "<p><b>" . htmlspecialchars($autor) . "</b> respondeu a um apontamento do vídeo
+     \"<b>" . htmlspecialchars($video['titulo']) . "</b>\" do curso
+     \"<b>" . htmlspecialchars($video['nome_curso']) . "</b>\".</p>",
+    $link, 'Ver a conversa'
+  );
+  notify_queue(ti_email(), 'Equipe TI CECAPE', 'Resposta em apontamento de vídeo', $html);
+}

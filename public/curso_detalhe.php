@@ -316,6 +316,7 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
       <a class="btn btn-outline-primary" href="curso_editar.php?id=<?= (int)$id ?>">Editar</a>
     <?php endif; ?>
     <a class="btn btn-outline-primary" href="apontamentos.php?id=<?= (int)$id ?>">Apontamentos</a>
+    <a class="btn btn-outline-info" href="curso_videos.php?id=<?= (int)$id ?>">🎬 Vídeos</a>
   </div>
 </div>
 
