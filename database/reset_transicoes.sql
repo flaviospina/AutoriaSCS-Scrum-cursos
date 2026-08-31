@@ -12,13 +12,14 @@ DELETE FROM tb_status_transicoes;
 INSERT INTO tb_status_transicoes (role, id_status_de, id_status_para)
 SELECT r.role, sd.id_status, sp.id_status
 FROM (
-  SELECT 'PROFESSOR' role, 'Curso Proposto' de, 'Em Planejamento' para UNION ALL
+  SELECT 'PROFESSOR' role, 'Projeto Aprovado' de, 'Em Planejamento' para UNION ALL
   SELECT 'PROFESSOR', 'Em Planejamento', 'Em Desenvolvimento' UNION ALL
   SELECT 'PROFESSOR', 'Em Desenvolvimento', 'Pronto para Análise' UNION ALL
   SELECT 'PROFESSOR', 'Recusado - Ajustes Necessários', 'Em Ajuste' UNION ALL
   SELECT 'PROFESSOR', 'Em Ajuste', 'Pronto para Nova Análise' UNION ALL
   SELECT 'PROFESSOR', 'Inserido', 'Aguardando Validação' UNION ALL
   SELECT 'PROFESSOR', 'Aguardando Validação', 'Validado' UNION ALL
+  SELECT 'TI', 'Curso Proposto', 'Projeto Aprovado' UNION ALL
   SELECT 'TI', 'Pronto para Análise', 'Em Revisão' UNION ALL
   SELECT 'TI', 'Pronto para Nova Análise', 'Em Revisão' UNION ALL
   SELECT 'TI', 'Em Revisão', 'Aprovado' UNION ALL
@@ -32,8 +33,9 @@ FROM (
 JOIN tb_status sd ON sd.nome = r.de
 JOIN tb_status sp ON sp.nome = r.para;
 
--- Requer o status "Pronto para Publicação" (upgrade_v5.sql) já criado.
--- Conferência: deve listar 16 linhas (7 PROFESSOR, 6 TI, 3 MB)
+-- Requer os status "Pronto para Publicação" (upgrade_v5.sql) e
+-- "Projeto Aprovado" (upgrade_v9.sql) já criados.
+-- Conferência: deve listar 17 linhas (7 PROFESSOR, 7 TI, 3 MB)
 SELECT t.role, sd.nome AS de, sp.nome AS para
 FROM tb_status_transicoes t
 JOIN tb_status sd ON sd.id_status = t.id_status_de

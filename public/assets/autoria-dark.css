@@ -505,6 +505,114 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.72); cur
 .swal2-close { color: var(--text-muted) !important; }
 .swal2-timer-progress-bar { background: rgba(34,211,238,.5) !important; }
 
+
+/* ── REVISÃO DE VÍDEOS ─────────────────────────────────────── */
+
+/* Identificação oficial do curso (nome - formador(a) - carga horária) */
+.curso-identificacao {
+  display: inline-block;
+  margin: 6px 0 4px;
+  padding: 5px 12px;
+  background-color: rgba(34,211,238,.10);
+  border: 1px solid rgba(34,211,238,.30);
+  border-radius: var(--radius-sm);
+  color: var(--cyan);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .01em;
+}
+
+/* Descrição do vídeo enviada pela MB Estúdios */
+.video-descricao {
+  margin-top: 10px;
+  padding: 12px 16px;
+  background-color: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 14.5px;
+  line-height: 1.55;
+  max-width: 760px;
+}
+.video-descricao-titulo {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--cyan);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+/* Cartão de cada apontamento */
+.marc-card {
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  background-color: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* Tags grandes: a classificação e a situação são a informação principal
+   do apontamento — ficam maiores que os controles de ação. */
+.marc-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 15px;
+  border-radius: 999px;
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: .01em;
+  white-space: nowrap;
+}
+.marc-tag-categoria {
+  background-color: rgba(34,211,238,.16);
+  border: 1px solid rgba(34,211,238,.45);
+  color: var(--cyan);
+}
+.marc-tag-status {
+  background-color: var(--marc-cor, var(--cyan));
+  border: 1px solid var(--marc-cor, var(--cyan));
+  color: #08131f;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--marc-cor, #22d3ee) 18%, transparent);
+}
+
+/* "Em correção" precisa saltar aos olhos: é o item que está sendo tratado */
+.marc-status-em_correcao {
+  border-color: rgba(34,211,238,.55);
+  background-color: rgba(34,211,238,.06);
+}
+.marc-status-em_correcao .marc-tag-status {
+  animation: marc-pulse 2.4s ease-in-out infinite;
+}
+@keyframes marc-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(34,211,238,.20); }
+  50%      { box-shadow: 0 0 0 7px rgba(34,211,238,.06); }
+}
+.marc-status-pendente { border-color: rgba(251,191,36,.45); }
+.marc-status-corrigido,
+.marc-status-aprovado  { border-color: rgba(52,211,153,.40); }
+
+/* Descrição do problema: é o texto que o outro lado precisa ler e executar */
+.marc-desc {
+  padding: 10px 14px;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--cyan);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+/* Controles de ação: discretos, sempre menores que as tags e a descrição */
+.marc-acoes .btn { font-size: 12px; padding: 4px 10px; }
+.marc-acoes .form-control,
+.marc-acoes .form-select { font-size: 12.5px; padding: 5px 10px; }
+.marc-acoes .form-select { padding-right: 30px; background-position: right 9px center; }
+
 /* ── RESPONSIVO ────────────────────────────────────────────── */
 @media (max-width: 700px) {
   .brand-title { display: none; }

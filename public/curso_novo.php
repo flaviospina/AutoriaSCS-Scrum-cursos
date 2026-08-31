@@ -59,13 +59,14 @@ include __DIR__ . '/_layout_top.php';
       </div>
 
       <div class="col-12 col-md-3">
-        <label class="form-label">Carga horária</label>
+        <label class="form-label">Carga horária sugerida</label>
         <select class="form-select" name="carga_horaria" required>
           <option value="10">10 horas (1-2 módulos, ~40 min de vídeo)</option>
           <option value="20">20 horas (3-4 módulos, ~80 min de vídeo)</option>
           <option value="30">30 horas (5-6 módulos, ~120 min de vídeo)</option>
           <option value="40">40 horas (7-8 módulos, ~160 min de vídeo)</option>
         </select>
+        <div class="form-text">A carga horária oficial é definida pela equipe de TI ao aprovar o projeto.</div>
       </div>
 
       <div class="col-12 col-md-5">

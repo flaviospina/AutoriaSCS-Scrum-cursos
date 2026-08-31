@@ -99,6 +99,7 @@ CREATE TABLE IF NOT EXISTS tb_cursos (
   descricao_breve             TEXT NULL,
   status_atual                VARCHAR(80) NOT NULL,
   publication_due_date        DATE NULL,
+  projeto_aprovado_em         DATETIME NULL,
   validated_at                DATETIME NULL,
   inserted_at                 DATETIME NULL,
   created_at                  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -193,6 +194,7 @@ CREATE TABLE IF NOT EXISTS tb_videos (
   id_curso   INT UNSIGNED NOT NULL,
   modulo     TINYINT UNSIGNED NOT NULL DEFAULT 0,
   titulo     VARCHAR(180) NOT NULL,
+  descricao  TEXT NULL,
   status     ENUM('EM_ANALISE','EM_CORRECAO','APROVADO') NOT NULL DEFAULT 'EM_ANALISE',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_video),
@@ -389,27 +391,29 @@ INSERT INTO tb_kanban_colunas (nome, cor, ordem, wip_limit, ativo) VALUES
 
 INSERT INTO tb_status (nome, id_coluna, cor, ordem, is_inicial, is_final, ativo) VALUES
   ('Curso Proposto',                 (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Backlog'),         '#adb5bd', 1,  1, 0, 1),
-  ('Em Planejamento',                (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Planejamento'),    '#ffc107', 2,  0, 0, 1),
-  ('Em Desenvolvimento',             (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Produção'),        '#0dcaf0', 3,  0, 0, 1),
-  ('Pronto para Análise',            (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Entrega'),         '#058285', 4,  0, 0, 1),
-  ('Em Revisão',                     (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Revisão TI'),      '#6c757d', 5,  0, 0, 1),
-  ('Recusado - Ajustes Necessários', (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Ajustes'),         '#dc3545', 6,  0, 0, 1),
-  ('Em Ajuste',                      (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Ajustes'),         '#e35d6a', 7,  0, 0, 1),
-  ('Pronto para Nova Análise',       (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Ajustes'),         '#b02a37', 8,  0, 0, 1),
-  ('Aprovado',                       (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Aprovado'),        '#198754', 9,  0, 0, 1),
-  ('Enviado para Inserção',          (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='MB Estúdio'),      '#212529', 10, 0, 0, 1),
-  ('Em Inserção',                    (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='MB Estúdio'),      '#343a40', 11, 0, 0, 1),
-  ('Inserido',                       (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='MB Estúdio'),      '#495057', 12, 0, 0, 1),
-  ('Aguardando Validação',           (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Validação Autor'), '#ffc107', 13, 0, 0, 1),
-  ('Validado',                       (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Validação Autor'), '#d39e00', 14, 0, 0, 1),
-  ('Pronto para Publicação',         (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Publicado'),       '#fd7e14', 15, 0, 0, 1),
-  ('Publicado',                      (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Publicado'),       '#198754', 16, 0, 1, 1);
+  ('Projeto Aprovado',               (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Backlog'),         '#0d9488', 2,  0, 0, 1),
+  ('Em Planejamento',                (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Planejamento'),    '#ffc107', 3,  0, 0, 1),
+  ('Em Desenvolvimento',             (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Produção'),        '#0dcaf0', 4,  0, 0, 1),
+  ('Pronto para Análise',            (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Entrega'),         '#058285', 5,  0, 0, 1),
+  ('Em Revisão',                     (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Revisão TI'),      '#6c757d', 6,  0, 0, 1),
+  ('Recusado - Ajustes Necessários', (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Ajustes'),         '#dc3545', 7,  0, 0, 1),
+  ('Em Ajuste',                      (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Ajustes'),         '#e35d6a', 8,  0, 0, 1),
+  ('Pronto para Nova Análise',       (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Ajustes'),         '#b02a37', 9,  0, 0, 1),
+  ('Aprovado',                       (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Aprovado'),        '#198754', 10, 0, 0, 1),
+  ('Enviado para Inserção',          (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='MB Estúdio'),      '#212529', 11, 0, 0, 1),
+  ('Em Inserção',                    (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='MB Estúdio'),      '#343a40', 12, 0, 0, 1),
+  ('Inserido',                       (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='MB Estúdio'),      '#495057', 13, 0, 0, 1),
+  ('Aguardando Validação',           (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Validação Autor'), '#ffc107', 14, 0, 0, 1),
+  ('Validado',                       (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Validação Autor'), '#d39e00', 15, 0, 0, 1),
+  ('Pronto para Publicação',         (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Publicado'),       '#fd7e14', 16, 0, 0, 1),
+  ('Publicado',                      (SELECT id_coluna FROM tb_kanban_colunas WHERE nome='Publicado'),       '#198754', 17, 0, 1, 1);
 
 -- Transições (mesmas regras do antigo status_rules.php + publicação pela TI)
 INSERT INTO tb_status_transicoes (role, id_status_de, id_status_para)
 SELECT r.role, sd.id_status, sp.id_status
 FROM (
-  SELECT 'PROFESSOR' role, 'Curso Proposto' de, 'Em Planejamento' para UNION ALL
+  SELECT 'TI' role, 'Curso Proposto' de, 'Projeto Aprovado' para UNION ALL
+  SELECT 'PROFESSOR', 'Projeto Aprovado', 'Em Planejamento' UNION ALL
   SELECT 'PROFESSOR', 'Em Planejamento', 'Em Desenvolvimento' UNION ALL
   SELECT 'PROFESSOR', 'Em Desenvolvimento', 'Pronto para Análise' UNION ALL
   SELECT 'PROFESSOR', 'Recusado - Ajustes Necessários', 'Em Ajuste' UNION ALL

@@ -90,7 +90,8 @@ if ($incluidos === 0) {
 
 audit_log('arquivos_baixados_zip', 'curso', $id, null, ['arquivos' => $incluidos]);
 
-$nomeZip = 'materiais-curso-' . $id . '.zip';
+// nome do pacote = identificação oficial "Nome do curso - Formador(a) - Carga horária"
+$nomeZip = zip_safe(curso_identificacao($curso)) . '.zip';
 header('Content-Type: application/zip');
 header('Content-Length: ' . filesize($tmpZip));
 header('Content-Disposition: attachment; filename="' . $nomeZip . '"');

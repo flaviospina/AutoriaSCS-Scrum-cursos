@@ -364,6 +364,15 @@ include __DIR__ . '/_layout_top.php';
           <input class="form-control" type="date" name="data_publicacao" id="mmDataPub">
           <div class="form-text">Comunicada ao formador e à MB Estúdios.</div>
         </div>
+        <div class="mt-3 d-none" id="mmCargaWrap">
+          <label class="form-label small fw-semibold">Carga horária do curso (obrigatória)</label>
+          <select class="form-select" name="carga_horaria" id="mmCarga">
+            <?php foreach (carga_horaria_opcoes() as $h): ?>
+              <option value="<?= $h ?>"><?= htmlspecialchars(carga_horaria_label($h)) ?></option>
+            <?php endforeach; ?>
+          </select>
+          <div class="form-text">Compõe a identificação oficial do curso comunicada à MB e à TI.</div>
+        </div>
         <div class="mt-3">
           <label class="form-label small">Observação (opcional)</label>
           <input class="form-control" name="obs" id="mmObs" placeholder="Ex.: Movido após envio do autor.">
@@ -437,17 +446,26 @@ include __DIR__ . '/_layout_top.php';
           sel.appendChild(o);
         });
 
-        // data de publicação obrigatória ao mover para "Pronto para Publicação"
+        // campos obrigatórios conforme o status de destino:
+        // data de publicação ("Pronto para Publicação") e carga horária ("Projeto Aprovado")
         const dataWrap = document.getElementById('mmDataPubWrap');
         const dataInp = document.getElementById('mmDataPub');
-        const toggleDataPub = () => {
+        const cargaWrap = document.getElementById('mmCargaWrap');
+        const cargaSel = document.getElementById('mmCarga');
+        const toggleCampos = () => {
           const precisa = sel.value === 'Pronto para Publicação';
           dataWrap.classList.toggle('d-none', !precisa);
           dataInp.required = precisa;
           if (!precisa) dataInp.value = '';
+
+          const precisaCarga = sel.value === 'Projeto Aprovado';
+          if (cargaWrap) {
+            cargaWrap.classList.toggle('d-none', !precisaCarga);
+            cargaSel.required = precisaCarga;
+          }
         };
-        sel.onchange = toggleDataPub;
-        toggleDataPub();
+        sel.onchange = toggleCampos;
+        toggleCampos();
 
         const mm = new bootstrap.Modal(document.getElementById('moveModal'));
         document.getElementById('mmTitle').textContent = dragged.dataset.title;

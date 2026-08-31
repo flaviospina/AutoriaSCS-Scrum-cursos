@@ -9,9 +9,9 @@ para Formadores*.
 
 | Perfil | O que faz |
 |---|---|
-| `PROFESSOR` (formador) | Propõe e edita seus cursos, preenche checklist, envia arquivos, move seus status permitidos |
-| `TI` | Revisão técnica/pedagógica, apontamentos, aprovação/recusa, Kanban completo, relatórios |
-| `MB` | Acompanha e move os status de inserção na plataforma (MB Estúdios) |
+| `PROFESSOR` (formador) | Propõe e edita seus cursos, preenche checklist, envia arquivos, **analisa e aprova os vídeos da MB**, move seus status permitidos |
+| `TI` | **Aprova o projeto e define a carga horária**, revisão técnica/pedagógica, apontamentos, aprovação/recusa, Kanban completo, relatórios |
+| `MB` | **Produz e disponibiliza os vídeos para análise**, acompanha e move os status de inserção na plataforma (MB Estúdios) |
 | `ADMIN` | Tudo acima + **área Admin**: colunas do Kanban, status, transições e usuários |
 
 ## Área Admin (Kanban dinâmico)
@@ -40,20 +40,37 @@ O fluxo do Kanban não é mais fixo no código — é configurável em `Admin`:
   marcação "vigente"; todos os formadores baixam (máx. 50MB por arquivo);
 - **Arquivos por módulo** + **links externos** (Google Drive para mídia pesada) em cada curso.
 
-## Revisão de Vídeos (V8)
+## Aprovação do projeto e carga horária (V9)
 
-Ferramenta integrada para análise dos vídeos dos formadores (`🎬 Vídeos` na página do curso):
+No **Backlog** o formador apresenta o projeto do curso; a **equipe de TI aprova e define a
+carga horária oficial** movendo o curso de `Curso Proposto` → `Projeto Aprovado`
+(a carga horária é obrigatória nessa transição). Ao aprovar, a **MB Estúdios e a TI**
+recebem e-mail com a **identificação oficial do curso**:
 
-- o formador envia o vídeo (MP4, até 512MB) e a TI assiste **dentro do sistema**
-  (streaming com suporte a seek);
-- a TI registra **marcações no ponto exato** (minuto/segundo/frame) com classificação
-  (áudio, imagem, conteúdo, acessibilidade, edição, identidade visual, erro técnico),
-  orientação de correção e **captura automática do frame**;
-- o formador vê os apontamentos na sua área, **responde** e marca o andamento
-  (Pendente → Em correção → Corrigido); reenvia a **nova versão** pelo sistema;
+```
+Nome do curso - Nome dos formadores - Carga Horária do curso
+```
+
+Essa identificação aparece na página do curso e nomeia o pacote ZIP entregue à MB.
+Só depois da aprovação o formador pode seguir para `Em Planejamento`.
+
+## Revisão de Vídeos (V8/V9)
+
+Ferramenta integrada de análise de vídeos (`🎬 Vídeos` na página do curso). Quem produz é a
+**MB Estúdios**; quem analisa é o(a) **formador(a)**:
+
+- a **MB disponibiliza** o vídeo (MP4, até 512MB) com a **descrição exata do material**;
+  o formador recebe e-mail com essa descrição e o link do vídeo já liberado na plataforma;
+- o **formador assiste dentro do sistema** (streaming com suporte a seek) e registra
+  **marcações no ponto exato** (minuto/segundo/frame) com classificação (áudio, imagem,
+  conteúdo, acessibilidade, edição, identidade visual, erro técnico), orientação de
+  correção e **captura automática do frame**;
+- a **MB vê os apontamentos**, **responde** e marca o andamento (Pendente → Em correção →
+  Corrigido); disponibiliza a **nova versão** pelo sistema;
 - **controle de versões** com histórico completo das análises e comparação entre versões;
-- **aprovação final** pela TI quando todas as correções estiverem concluídas;
-- e-mails automáticos a cada evento (novos apontamentos, resposta, nova versão, aprovação).
+- **aprovação final pelo(a) formador(a)** quando todas as correções estiverem concluídas;
+- e-mails automáticos a cada evento (vídeo disponível, novos apontamentos, resposta,
+  nova versão, aprovação).
 
 > Vídeos grandes: ajuste no servidor `upload_max_filesize` e `post_max_size`
 > (ex.: `512M`) no cPanel → *MultiPHP INI Editor*.
@@ -64,7 +81,8 @@ Ferramenta integrada para análise dos vídeos dos formadores (`🎬 Vídeos` na
    antigo, na ordem: `upgrade_v2.sql` (fluxo dinâmico), `upgrade_v3.sql` (auditoria/e-mails/modelos),
    `upgrade_v4.sql` (perfis dinâmicos), `upgrade_v5.sql` (etapa Pronto para Publicação),
    `upgrade_v6.sql` (cadastro de escolas), `upgrade_v7.sql` (fluxo ordenado de entrega
-   de materiais) e `upgrade_v8.sql` (revisão de vídeos) — faça backup antes.
+   de materiais), `upgrade_v8.sql` (revisão de vídeos) e `upgrade_v9.sql` (aprovação do
+   projeto com carga horária + inversão do fluxo de vídeos) — faça backup antes.
 2. Copie `app/config.php` para `app/config.local.php` e preencha as credenciais reais do banco,
    a seção `mail` (método `mail` do cPanel ou `smtp`) e a `cron.chave`
    (o arquivo local é ignorado pelo git).

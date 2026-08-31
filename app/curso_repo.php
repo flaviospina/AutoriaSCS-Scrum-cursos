@@ -103,6 +103,20 @@ function curso_get(int $id_curso): ?array {
   return $c ?: null;
 }
 
+/**
+ * Identificação oficial do curso, usada em e-mails, no cabeçalho da página e
+ * no nome da pasta/pacote entregue à MB:
+ *   "Nome do curso - Nome dos formadores - Carga Horária do curso"
+ */
+function curso_identificacao(array $curso): string {
+  $partes = [
+    trim($curso['nome_curso'] ?? ''),
+    trim($curso['professor_nome'] ?? ''),
+    ((int)($curso['carga_horaria'] ?? 0)) . ' horas',
+  ];
+  return implode(' - ', array_filter($partes, fn($p) => $p !== '' && $p !== ' horas'));
+}
+
 function checklist_get(int $id_curso): array {
   $st = db()->prepare("SELECT * FROM tb_curso_checklist WHERE id_curso=?");
   $st->execute([$id_curso]);
@@ -110,7 +124,7 @@ function checklist_get(int $id_curso): array {
 }
 
 function curso_transition(int $id_curso, array $user, string $to, ?string $obs = null,
-                          ?string $dataPublicacao = null): void {
+                          ?string $dataPublicacao = null, ?int $cargaHoraria = null): void {
   $c = curso_get($id_curso);
   if (!$c) throw new Exception("Curso não encontrado.");
 
@@ -124,6 +138,13 @@ function curso_transition(int $id_curso, array $user, string $to, ?string $obs =
     $d = DateTime::createFromFormat('Y-m-d', (string)$dataPublicacao);
     if (!$d || $d->format('Y-m-d') !== $dataPublicacao) {
       throw new Exception("Informe a data em que o curso entrará na plataforma.");
+    }
+  }
+
+  // ao aprovar o projeto, a TI define oficialmente a carga horária do curso
+  if ($to === 'Projeto Aprovado') {
+    if (!in_array($cargaHoraria, carga_horaria_opcoes(), true)) {
+      throw new Exception("Informe a carga horária do curso (10, 20, 30 ou 40 horas).");
     }
   }
 
@@ -163,6 +184,12 @@ function curso_transition(int $id_curso, array $user, string $to, ?string $obs =
     if ($to === 'Pronto para Publicação') {
       db()->prepare("UPDATE tb_cursos SET publication_due_date=? WHERE id_curso=?")
         ->execute([$dataPublicacao, $id_curso]);
+    }
+
+    // grava a carga horária oficial definida pela TI ao aprovar o projeto
+    if ($to === 'Projeto Aprovado') {
+      db()->prepare("UPDATE tb_cursos SET carga_horaria=?, projeto_aprovado_em=NOW() WHERE id_curso=?")
+        ->execute([$cargaHoraria, $id_curso]);
     }
 
     db()->commit();

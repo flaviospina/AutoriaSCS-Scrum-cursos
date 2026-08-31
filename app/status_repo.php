@@ -161,3 +161,19 @@ function niveis_ensino(): array {
 function prioridades(): array {
   return ['BAIXA', 'MEDIA', 'ALTA', 'URGENTE'];
 }
+
+/** Cargas horárias possíveis (Guia 01, seção 3.1) — definidas pela TI ao aprovar o projeto. */
+function carga_horaria_opcoes(): array {
+  return [10, 20, 30, 40];
+}
+
+/** Rótulo com a quantidade de módulos e minutos de vídeo de cada carga horária. */
+function carga_horaria_label(int $h): string {
+  $mapa = [
+    10 => '10 horas (1-2 módulos, ~40 min de vídeo)',
+    20 => '20 horas (3-4 módulos, ~80 min de vídeo)',
+    30 => '30 horas (5-6 módulos, ~120 min de vídeo)',
+    40 => '40 horas (7-8 módulos, ~160 min de vídeo)',
+  ];
+  return $mapa[$h] ?? "{$h} horas";
+}

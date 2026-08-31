@@ -24,16 +24,17 @@ $idCurso = (int)$video['id_curso'];
 $ehDono = (int)$video['id_professor'] === (int)$u['id_user'];
 if (!is_staff() && !$ehDono) { http_response_code(403); echo "Acesso negado."; exit; }
 
-$ehRevisor = perm('revisa_cursos');           // a análise do vídeo é feita pela TI
-$podeReenviar = $ehDono || is_admin();
+// A análise do vídeo é feita pelo(a) formador(a); a MB produz e reenvia as versões.
+$ehAnalista   = $ehDono || is_admin();
+$ehProdutor   = perm('recebe_email_insercao') || is_admin();
 
 $erro = null; $ok = null;
 $okMap = [
-  'marcado'   => 'Apontamento registrado. O(a) formador(a) foi avisado(a) por e-mail.',
+  'marcado'   => 'Apontamento registrado. A MB Estúdios foi avisada por e-mail.',
   'respondido'=> 'Resposta registrada.',
   'status'    => 'Status do apontamento atualizado.',
-  'versao'    => 'Nova versão enviada. A equipe de revisão foi avisada por e-mail.',
-  'aprovado'  => 'Vídeo aprovado! O(a) formador(a) foi avisado(a) por e-mail. 🎉',
+  'versao'    => 'Nova versão disponibilizada. O(a) formador(a) foi avisado(a) por e-mail.',
+  'aprovado'  => 'Vídeo aprovado! A MB Estúdios e a TI foram avisadas por e-mail. 🎉',
   'excluido'  => 'Apontamento excluído.',
 ];
 if (isset($okMap[$_GET['ok'] ?? ''])) $ok = $okMap[$_GET['ok']];
@@ -47,7 +48,7 @@ $versaoAtualId = $versoes ? (int)$versoes[0]['id_versao'] : 0;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add_marcacao') {
   csrf_check();
   try {
-    if (!$ehRevisor) throw new Exception("Somente a equipe de revisão (TI) registra apontamentos.");
+    if (!$ehAnalista) throw new Exception("Somente o(a) formador(a) do curso registra apontamentos no vídeo.");
     if (!$versaoAtualId) throw new Exception("Nenhuma versão enviada ainda.");
 
     $tempo = (float)str_replace(',', '.', $_POST['tempo_seg'] ?? '-1');
@@ -106,7 +107,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'respo
     db()->prepare("INSERT INTO tb_video_respostas (id_marcacao, id_user, conteudo) VALUES (?,?,?)")
       ->execute([$idMarc, $u['id_user'], $conteudo]);
     audit_log('video_marcacao_respondida', 'curso', $idCurso, null, ['video' => $video['titulo'], 'marcacao' => $idMarc]);
-    if ($ehDono && !$ehRevisor) notify_video_resposta($video, $u['nome']);
+    // avisa a outra parte da conversa
+    notify_video_resposta($video, $u['nome'], !$ehDono);
 
     header("Location: video_revisao.php?id={$idVideo}&ok=respondido#marc-{$idMarc}");
     exit;
@@ -121,9 +123,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'statu
     $novo = $_POST['novo_status'] ?? '';
     if (!isset(VIDEO_MARC_STATUS[$novo])) throw new Exception("Status inválido.");
 
-    // formador marca o andamento da correção; a aprovação é da TI
-    $permitidosFormador = ['EM_CORRECAO', 'CORRIGIDO'];
-    if (!$ehRevisor && (!$ehDono || !in_array($novo, $permitidosFormador, true))) {
+    // a MB marca o andamento da correção; a aprovação do apontamento é do(a) formador(a)
+    $permitidosProdutor = ['EM_CORRECAO', 'CORRIGIDO'];
+    if (!$ehAnalista && (!$ehProdutor || !in_array($novo, $permitidosProdutor, true))) {
       throw new Exception("Sem permissão para definir este status.");
     }
 
@@ -150,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'statu
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'nova_versao') {
   csrf_check();
   try {
-    if (!$podeReenviar) throw new Exception("Somente o(a) formador(a) do curso reenvia o vídeo.");
+    if (!$ehProdutor) throw new Exception("Somente a MB Estúdios disponibiliza novas versões do vídeo.");
     $obs = trim($_POST['observacao'] ?? '') ?: null;
     $arq = video_receber_upload($idCurso, $_FILES['arquivo'] ?? null);
 
@@ -164,7 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'nova_
     db()->prepare("UPDATE tb_videos SET status='EM_ANALISE' WHERE id_video=?")->execute([$idVideo]);
     audit_log('video_nova_versao', 'curso', $idCurso, null,
       ['video' => $video['titulo'], 'versao' => $numero, 'arquivo' => $arq['original'], 'observacao' => $obs]);
-    notify_video_nova_versao($video, $numero);
+    notify_video_disponivel($video, $numero, $obs);
 
     header("Location: video_revisao.php?id={$idVideo}&ok=versao");
     exit;
@@ -175,7 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'nova_
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'aprovar_video') {
   csrf_check();
   try {
-    if (!$ehRevisor) throw new Exception("Somente a equipe de revisão (TI) aprova o vídeo.");
+    if (!$ehAnalista) throw new Exception("Somente o(a) formador(a) do curso aprova o vídeo.");
     if (!$versaoAtualId) throw new Exception("Nenhuma versão enviada ainda.");
     $sm = db()->prepare("SELECT COUNT(*) n FROM tb_video_marcacoes WHERE id_versao=? AND status IN ('PENDENTE','EM_CORRECAO')");
     $sm->execute([$versaoAtualId]);
@@ -208,7 +210,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'exclu
     $st->execute([$idMarc, $idVideo]);
     $m = $st->fetch();
     if (!$m) throw new Exception("Apontamento não encontrado.");
-    $podeExcluir = is_admin() || ($ehRevisor && (int)$m['id_user'] === (int)$u['id_user'] && (int)$m['n_resp'] === 0);
+    $podeExcluir = is_admin() || ($ehAnalista && (int)$m['id_user'] === (int)$u['id_user'] && (int)$m['n_resp'] === 0);
     if (!$podeExcluir) throw new Exception("Apontamentos com respostas só podem ser excluídos pelo admin.");
 
     db()->prepare("DELETE FROM tb_video_marcacoes WHERE id_marcacao=?")->execute([$idMarc]);
@@ -250,10 +252,16 @@ include __DIR__ . '/_layout_top.php';
       Formador(a): <b><?= htmlspecialchars($video['professor_nome']) ?></b> •
       <span class="badge" style="background:<?= $stv['cor'] ?>;color:#08131f"><?= $stv['label'] ?></span>
     </div>
+    <?php if (!empty($video['descricao'])): ?>
+      <div class="video-descricao">
+        <span class="video-descricao-titulo">Descrição enviada pela MB Estúdios</span>
+        <?= nl2br(htmlspecialchars($video['descricao'])) ?>
+      </div>
+    <?php endif; ?>
   </div>
   <div class="d-flex gap-2">
     <a class="btn btn-outline-secondary" href="curso_videos.php?id=<?= (int)$idCurso ?>">Vídeos do curso</a>
-    <?php if ($ehRevisor && $vendoAtual && $video['status'] !== 'APROVADO'): ?>
+    <?php if ($ehAnalista && $vendoAtual && $video['status'] !== 'APROVADO'): ?>
       <form method="post" class="d-inline"
             data-confirm="Aprovar este vídeo? O(a) formador(a) será avisado(a) por e-mail."
             data-confirm-title="Aprovação final" data-confirm-btn="Sim, aprovar">
@@ -311,7 +319,7 @@ include __DIR__ . '/_layout_top.php';
           <?php if ($versaoVer['observacao']): ?><span>Obs.: <?= htmlspecialchars($versaoVer['observacao']) ?></span><?php endif; ?>
         </div>
 
-        <?php if ($ehRevisor && $vendoAtual): ?>
+        <?php if ($ehAnalista && $vendoAtual): ?>
           <hr class="my-3">
           <h3 class="h6 mb-2">Registrar apontamento neste ponto</h3>
           <form method="post" id="formMarcacao">
@@ -358,7 +366,7 @@ include __DIR__ . '/_layout_top.php';
               </div>
             </div>
           </form>
-        <?php elseif ($ehRevisor && !$vendoAtual): ?>
+        <?php elseif ($ehAnalista && !$vendoAtual): ?>
           <div class="alert alert-warning small mt-3 mb-0">
             Você está vendo uma versão antiga — apontamentos só podem ser registrados na versão atual.
           </div>
@@ -366,13 +374,13 @@ include __DIR__ . '/_layout_top.php';
       </div>
     </div>
 
-    <?php if ($podeReenviar && $video['status'] !== 'APROVADO'): ?>
+    <?php if ($ehProdutor && $video['status'] !== 'APROVADO'): ?>
       <div class="card shadow-sm mt-3">
         <div class="card-body">
-          <h3 class="h6 mb-2">Reenviar nova versão corrigida</h3>
+          <h3 class="h6 mb-2">Disponibilizar nova versão corrigida</h3>
           <form method="post" enctype="multipart/form-data" class="row g-2"
-                data-confirm="Enviar a nova versão? A equipe de revisão será avisada e a análise recomeça sobre ela."
-                data-confirm-title="Nova versão" data-confirm-btn="Sim, enviar">
+                data-confirm="Disponibilizar a nova versão? O(a) formador(a) será avisado(a) e a análise recomeça sobre ela."
+                data-confirm-title="Nova versão" data-confirm-btn="Sim, disponibilizar">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="nova_versao">
             <div class="col-12 col-md-5">
@@ -434,24 +442,24 @@ include __DIR__ . '/_layout_top.php';
 
         <?php if (!$marcacoes): ?>
           <div class="text-muted small">
-            Nenhum apontamento nesta versão<?= $ehRevisor && $vendoAtual ? ' — assista ao vídeo e use "Registrar apontamento".' : '.' ?>
+            Nenhum apontamento nesta versão<?= $ehAnalista && $vendoAtual ? ' — assista ao vídeo e use "Registrar apontamento".' : '.' ?>
           </div>
         <?php endif; ?>
 
         <?php foreach ($marcacoes as $m):
           $sm = VIDEO_MARC_STATUS[$m['status']];
         ?>
-          <div class="border rounded p-2 mb-2" id="marc-<?= (int)$m['id_marcacao'] ?>">
-            <div class="d-flex flex-wrap gap-2 align-items-center">
-              <button type="button" class="btn btn-sm btn-outline-info py-0 marc-seek" data-t="<?= (float)$m['tempo_seg'] ?>">
+          <div class="marc-card marc-status-<?= strtolower($m['status']) ?>" id="marc-<?= (int)$m['id_marcacao'] ?>">
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+              <button type="button" class="btn btn-sm btn-outline-info marc-seek" data-t="<?= (float)$m['tempo_seg'] ?>">
                 ▶ <?= video_fmt_tempo((float)$m['tempo_seg']) ?>
               </button>
               <?php if ($m['frame'] !== null): ?><span class="small text-muted">frame <?= (int)$m['frame'] ?></span><?php endif; ?>
-              <span class="badge bg-info text-dark"><?= VIDEO_CATEGORIAS[$m['categoria']] ?? $m['categoria'] ?></span>
-              <span class="badge" style="background:<?= $sm['cor'] ?>;color:#08131f"><?= $sm['label'] ?></span>
+              <span class="marc-tag marc-tag-categoria"><?= VIDEO_CATEGORIAS[$m['categoria']] ?? $m['categoria'] ?></span>
+              <span class="marc-tag marc-tag-status" style="--marc-cor:<?= $sm['cor'] ?>"><?= $sm['label'] ?></span>
             </div>
-            <div class="small mt-1"><?= nl2br(htmlspecialchars($m['descricao'])) ?></div>
-            <div class="small text-muted">Por <?= htmlspecialchars($m['user_nome']) ?> em <?= htmlspecialchars($m['created_at']) ?></div>
+            <div class="marc-desc"><?= nl2br(htmlspecialchars($m['descricao'])) ?></div>
+            <div class="small text-muted mt-1">Por <?= htmlspecialchars($m['user_nome']) ?> em <?= htmlspecialchars($m['created_at']) ?></div>
 
             <?php if ($m['captura']): ?>
               <a href="video_captura.php?id=<?= (int)$m['id_marcacao'] ?>" target="_blank">
@@ -468,7 +476,7 @@ include __DIR__ . '/_layout_top.php';
               </div>
             <?php endforeach; ?>
 
-            <div class="d-flex flex-wrap gap-1 mt-2 align-items-center">
+            <div class="d-flex flex-wrap gap-1 mt-2 align-items-center marc-acoes">
               <!-- resposta -->
               <form method="post" class="d-flex gap-1 flex-grow-1">
                 <?= csrf_field() ?>
@@ -481,8 +489,8 @@ include __DIR__ . '/_layout_top.php';
               <!-- status -->
               <?php
                 $opcoes = [];
-                if ($ehRevisor) $opcoes = ['PENDENTE','EM_CORRECAO','CORRIGIDO','APROVADO'];
-                elseif ($ehDono) $opcoes = ['EM_CORRECAO','CORRIGIDO'];
+                if ($ehAnalista) $opcoes = ['PENDENTE','EM_CORRECAO','CORRIGIDO','APROVADO'];
+                elseif ($ehProdutor) $opcoes = ['EM_CORRECAO','CORRIGIDO'];
                 $opcoes = array_values(array_diff($opcoes, [$m['status']]));
               ?>
               <?php if ($opcoes): ?>
@@ -499,7 +507,7 @@ include __DIR__ . '/_layout_top.php';
                 </form>
               <?php endif; ?>
 
-              <?php if (is_admin() || ($ehRevisor && (int)$m['id_user'] === (int)$u['id_user'] && !$m['respostas'])): ?>
+              <?php if (is_admin() || ($ehAnalista && (int)$m['id_user'] === (int)$u['id_user'] && !$m['respostas'])): ?>
                 <form method="post" class="d-inline"
                       data-confirm="Excluir este apontamento?" data-confirm-title="Excluir apontamento"
                       data-confirm-type="danger" data-confirm-btn="Sim, excluir">

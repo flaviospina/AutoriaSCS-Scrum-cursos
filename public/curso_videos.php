@@ -25,28 +25,31 @@ if (!is_staff() && (int)$curso['id_professor'] !== (int)$u['id_user']) {
 }
 
 $ehDono = (int)$curso['id_professor'] === (int)$u['id_user'];
-$podeEnviar = $ehDono || is_admin(); // o envio de vídeos é do formador
+// A MB Estúdios produz e disponibiliza os vídeos; o(a) formador(a) analisa.
+$podeEnviar = perm('recebe_email_insercao') || is_admin();
 
 $erro = null; $ok = null;
-if (($_GET['ok'] ?? '') === 'criado') $ok = "Vídeo enviado para análise. A equipe de revisão foi avisada por e-mail.";
+if (($_GET['ok'] ?? '') === 'criado') $ok = "Vídeo disponibilizado. O(a) formador(a) foi avisado(a) por e-mail com a descrição do vídeo.";
 
 // Enviar um novo vídeo (cria o vídeo + versão 1)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'criar_video') {
   csrf_check();
   try {
-    if (!$podeEnviar) throw new Exception("Somente o(a) formador(a) do curso envia vídeos.");
-    $titulo = trim($_POST['titulo'] ?? '');
-    $modulo = (int)($_POST['modulo'] ?? -1);
-    $obs    = trim($_POST['observacao'] ?? '') ?: null;
+    if (!$podeEnviar) throw new Exception("Somente a MB Estúdios disponibiliza vídeos para análise.");
+    $titulo    = trim($_POST['titulo'] ?? '');
+    $modulo    = (int)($_POST['modulo'] ?? -1);
+    $descricao = trim($_POST['descricao'] ?? '');
+    $obs       = trim($_POST['observacao'] ?? '') ?: null;
     if ($titulo === '') throw new Exception("Informe o título do vídeo.");
+    if ($descricao === '') throw new Exception("Descreva o vídeo — a descrição vai no e-mail enviado ao(à) formador(a).");
     if ($modulo < 0 || $modulo > 8) throw new Exception("Módulo inválido.");
 
     $arq = video_receber_upload($id, $_FILES['arquivo'] ?? null);
 
     db()->beginTransaction();
     try {
-      db()->prepare("INSERT INTO tb_videos (id_curso, modulo, titulo) VALUES (?,?,?)")
-        ->execute([$id, $modulo, $titulo]);
+      db()->prepare("INSERT INTO tb_videos (id_curso, modulo, titulo, descricao) VALUES (?,?,?,?)")
+        ->execute([$id, $modulo, $titulo, $descricao]);
       $idVideo = (int)db()->lastInsertId();
       db()->prepare("
         INSERT INTO tb_video_versoes (id_video, numero, id_user, original_name, stored_name, mime_type, file_size, observacao)
@@ -58,9 +61,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'criar
       throw $e;
     }
 
-    audit_log('video_enviado', 'curso', $id, null, ['video' => $titulo, 'modulo' => $modulo, 'arquivo' => $arq['original']]);
+    audit_log('video_disponibilizado', 'curso', $id, null,
+      ['video' => $titulo, 'modulo' => $modulo, 'arquivo' => $arq['original'], 'descricao' => $descricao]);
     $video = video_get($idVideo);
-    notify_video_nova_versao($video, 1);
+    notify_video_disponivel($video, 1, $obs);
 
     header("Location: curso_videos.php?id={$id}&ok=criado");
     exit;
@@ -93,10 +97,10 @@ include __DIR__ . '/_layout_top.php';
     <div class="col-12 col-lg-4">
       <div class="card shadow-sm">
         <div class="card-body">
-          <h2 class="h6 mb-3">Enviar vídeo para análise</h2>
+          <h2 class="h6 mb-3">Disponibilizar vídeo para análise</h2>
           <form method="post" enctype="multipart/form-data"
-                data-confirm="Enviar o vídeo para análise da equipe de revisão?"
-                data-confirm-title="Enviar vídeo" data-confirm-btn="Sim, enviar">
+                data-confirm="Disponibilizar o vídeo? O(a) formador(a) receberá o e-mail com a descrição e o link."
+                data-confirm-title="Disponibilizar vídeo" data-confirm-btn="Sim, disponibilizar">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="criar_video">
             <div class="mb-2">
@@ -114,6 +118,12 @@ include __DIR__ . '/_layout_top.php';
               </select>
             </div>
             <div class="mb-2">
+              <label class="form-label small">Descrição do vídeo <span class="text-danger">*</span></label>
+              <textarea class="form-control form-control-sm" name="descricao" rows="3" required
+                        placeholder="Descreva exatamente o conteúdo do vídeo — este texto vai no e-mail do(a) formador(a)."></textarea>
+              <div class="form-text">Ex.: "Videoaula 1 do Módulo 2 — gravação em estúdio, com vinheta e legendas."</div>
+            </div>
+            <div class="mb-2">
               <label class="form-label small">Arquivo de vídeo</label>
               <input class="form-control form-control-sm" type="file" name="arquivo" accept="video/mp4,video/webm,video/quicktime" required>
               <div class="form-text">Formato recomendado: MP4 (H.264). Limite: 512MB.</div>
@@ -123,7 +133,7 @@ include __DIR__ . '/_layout_top.php';
               <input class="form-control form-control-sm" name="observacao" maxlength="500"
                      placeholder="Ex.: Áudio regravado no minuto 3">
             </div>
-            <button class="btn btn-primary btn-sm w-100">Enviar para análise</button>
+            <button class="btn btn-primary btn-sm w-100">Disponibilizar para análise</button>
           </form>
         </div>
       </div>
@@ -137,8 +147,8 @@ include __DIR__ . '/_layout_top.php';
 
         <?php if (!$videos): ?>
           <div class="text-muted small">
-            Nenhum vídeo em revisão ainda.
-            <?= $podeEnviar ? 'Use o formulário ao lado para enviar o primeiro.' : '' ?>
+            Nenhum vídeo disponibilizado ainda.
+            <?= $podeEnviar ? 'Use o formulário ao lado para publicar o primeiro.' : 'Assim que a MB Estúdios publicar um vídeo, você receberá um e-mail e ele aparecerá aqui.' ?>
           </div>
         <?php else: ?>
           <div class="table-responsive">
@@ -184,9 +194,10 @@ include __DIR__ . '/_layout_top.php';
         <?php endif; ?>
 
         <div class="alert alert-info small mt-3 mb-0">
-          <b>Como funciona:</b> o(a) formador(a) envia o vídeo → a equipe de TI assiste no sistema e
-          registra apontamentos no ponto exato do vídeo → o(a) formador(a) corrige e reenvia a nova
-          versão → a TI aprova. Todo o histórico fica registrado aqui, sem e-mails paralelos.
+          <b>Como funciona:</b> a <b>MB Estúdios</b> disponibiliza o vídeo (o(a) formador(a) recebe e-mail
+          com a descrição e o link) → o(a) <b>formador(a)</b> assiste no sistema e marca o ponto exato de
+          cada problema → a MB corrige e reenvia a nova versão → o(a) formador(a) aprova.
+          Todo o histórico fica registrado aqui, sem e-mails paralelos.
         </div>
       </div>
     </div>

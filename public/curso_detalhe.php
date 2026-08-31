@@ -274,7 +274,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'trans
     $to = trim($_POST['to'] ?? '');
     $obs = trim($_POST['obs'] ?? '');
     $dataPub = trim($_POST['data_publicacao'] ?? '') ?: null;
-    curso_transition($id, $u, $to, $obs ?: null, $dataPub);
+    $carga = ($_POST['carga_horaria'] ?? '') !== '' ? (int)$_POST['carga_horaria'] : null;
+    curso_transition($id, $u, $to, $obs ?: null, $dataPub, $carga);
     header("Location: curso_detalhe.php?id={$id}");
     exit;
   } catch (Throwable $e) {
@@ -296,6 +297,11 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
   <div>
     <h1 class="h4 mb-0"><?= htmlspecialchars($curso['nome_curso']) ?></h1>
+    <?php if (!empty($curso['projeto_aprovado_em'])): ?>
+      <div class="curso-identificacao" title="Identificação oficial — use este nome na pasta do curso">
+        📁 <?= htmlspecialchars(curso_identificacao($curso)) ?>
+      </div>
+    <?php endif; ?>
     <div class="text-muted small">
       Formador(a): <b><?= htmlspecialchars($curso['professor_nome']) ?></b> •
       Carga horária: <b><?= htmlspecialchars($curso['carga_horaria']) ?> horas</b> •
@@ -370,6 +376,20 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
                        value="<?= htmlspecialchars($curso['publication_due_date'] ?? '') ?>">
                 <div class="form-text">Essa data será comunicada ao formador e à MB Estúdios.</div>
               </div>
+              <div class="col-12 d-none" id="transCargaWrap">
+                <label class="form-label small fw-semibold">Carga horária do curso (obrigatória)</label>
+                <select class="form-select" name="carga_horaria" id="transCarga">
+                  <?php foreach (carga_horaria_opcoes() as $h): ?>
+                    <option value="<?= $h ?>" <?= (int)$curso['carga_horaria'] === $h ? 'selected' : '' ?>>
+                      <?= htmlspecialchars(carga_horaria_label($h)) ?>
+                    </option>
+                  <?php endforeach; ?>
+                </select>
+                <div class="form-text">
+                  A carga horária definida aqui é a oficial e compõe a identificação do curso
+                  (<i>nome do curso - formador(a) - carga horária</i>), comunicada por e-mail à MB Estúdios e à TI.
+                </div>
+              </div>
             </div>
             <button class="btn btn-primary">Atualizar Status</button>
           </form>
@@ -378,14 +398,22 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
               var sel = document.getElementById('transTo');
               var wrap = document.getElementById('transDataPubWrap');
               var inp = document.getElementById('transDataPub');
+              var wrapC = document.getElementById('transCargaWrap');
+              var selC = document.getElementById('transCarga');
               if (!sel || !wrap) return;
-              function toggleDataPub() {
-                var precisa = sel.value === 'Pronto para Publicação';
-                wrap.classList.toggle('d-none', !precisa);
-                inp.required = precisa;
+              function toggleCampos() {
+                var precisaData = sel.value === 'Pronto para Publicação';
+                wrap.classList.toggle('d-none', !precisaData);
+                inp.required = precisaData;
+
+                var precisaCarga = sel.value === 'Projeto Aprovado';
+                if (wrapC) {
+                  wrapC.classList.toggle('d-none', !precisaCarga);
+                  selC.required = precisaCarga;
+                }
               }
-              sel.addEventListener('change', toggleDataPub);
-              toggleDataPub();
+              sel.addEventListener('change', toggleCampos);
+              toggleCampos();
             })();
           </script>
         <?php endif; ?>

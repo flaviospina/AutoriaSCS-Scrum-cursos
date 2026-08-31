@@ -29,7 +29,8 @@ $obs = trim($_POST['obs'] ?? '');
 $dataPub = trim($_POST['data_publicacao'] ?? '') ?: null;
 
 try {
-  curso_transition($id, $u, $to, $obs ?: 'Movimentação via Kanban', $dataPub);
+  $carga = ($_POST['carga_horaria'] ?? '') !== '' ? (int)$_POST['carga_horaria'] : null;
+  curso_transition($id, $u, $to, $obs ?: 'Movimentação via Kanban', $dataPub, $carga);
   echo json_encode(['ok'=>true]);
 } catch (Throwable $e) {
   http_response_code(400);
