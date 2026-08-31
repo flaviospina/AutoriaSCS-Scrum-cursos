@@ -83,7 +83,7 @@ No Dashboard, clique em:
 | Campo | Como preencher | Obrigatório? |
 |---|---|---|
 | **Nome do curso** | Escreva um nome objetivo, que descreva o conteúdo (Guia 01, seção 2) | Sim |
-| **Carga horária** | Lista suspensa. Escolha 10, 20, 30 ou 40 horas — a própria lista mostra quantos módulos e minutos de vídeo correspondem a cada opção | Sim |
+| **Carga horária sugerida** | Lista suspensa (10, 20, 30 ou 40 horas). É apenas a sua sugestão: **a carga horária oficial é definida pela equipe de TI** ao aprovar o projeto | Sim |
 | **Público-alvo** | Para quem é o curso (ex.: "Professores dos Anos Iniciais") | Sim |
 | **Nível de ensino** | Lista suspensa com os níveis (Educação Infantil, Fundamental...) | Não |
 | **Unidade escolar** | Comece a digitar e o sistema mostra a lista das escolas cadastradas — clique na sua. Também aceita digitação livre | Não |
@@ -96,6 +96,14 @@ No Dashboard, clique em:
 Clique no botão verde **Salvar**. Uma janelinha pergunta *"Confirmar a proposta do
 novo curso?"* — clique em **Sim, propor**. Pronto: o curso é criado com o status
 **Curso Proposto** e a equipe do CECAPE recebe um e-mail avisando.
+
+A TI analisa o projeto, define a carga horária oficial e move o curso para
+**Projeto Aprovado**. A partir daí o curso passa a ter uma **identificação oficial**,
+que também dá nome à pasta do curso:
+
+![Identificação oficial do curso](img/curso-identificacao.png)
+
+> Formato: *Nome do curso - Nome do(a) formador(a) - Carga horária*
 
 ## 4. A página do curso
 
@@ -121,9 +129,15 @@ ordem — você nunca verá uma opção errada.
 2. Se quiser, escreva uma observação no campo ao lado (opcional);
 3. Clique em **Atualizar Status** e confirme na janelinha.
 
+**Antes de tudo — a aprovação do projeto:** ao propor o curso, ele fica em
+**Curso Proposto** (Backlog). A **equipe de TI analisa o projeto e define a carga
+horária oficial**, movendo o curso para **Projeto Aprovado**. Só depois disso você
+consegue seguir com o planejamento. Você não precisa fazer nada nessa etapa — apenas
+aguardar (a MB Estúdios e a TI são avisadas por e-mail com a identificação do curso).
+
 **As suas fases, na ordem normal do trabalho:**
 
-1. **Curso Proposto → Em Planejamento** — você começou a planejar;
+1. **Projeto Aprovado → Em Planejamento** — a TI aprovou e você começou a planejar;
 2. **Em Planejamento → Em Desenvolvimento** — você começou a produzir o material;
 3. **Em Desenvolvimento → Pronto para Análise** — terminou! O CECAPE recebe um
    e-mail e inicia a revisão. *Antes de mover para cá, envie todos os materiais
@@ -245,7 +259,79 @@ Use a seção **Links Externos**, logo abaixo dos arquivos:
 3. Cole o link no campo **URL**;
 4. Escolha o **Tipo** (Google Drive, Vídeo ou Outro) e clique em **Adicionar**.
 
-## 7. Biblioteca de Modelos
+## 7. Analisar os vídeos da MB Estúdios
+
+Os vídeos do seu curso são **produzidos pela MB Estúdios**. Quando um vídeo fica pronto,
+a MB o disponibiliza na plataforma e **você recebe um e-mail** com a descrição exata do
+material e o link direto. Sua função é **assistir e conferir** — se algo estiver errado,
+você marca o ponto exato do vídeo.
+
+### 7.1 Onde encontrar
+
+Abra o curso e clique no botão **🎬 Vídeos** (no topo da página, ao lado de
+"Apontamentos"). A lista mostra todos os vídeos do curso, a situação de cada um e
+quantos apontamentos estão em aberto:
+
+![Lista de vídeos do curso](img/video-lista.png)
+
+Clique em **Abrir revisão** no vídeo que deseja analisar.
+
+### 7.2 A tela de análise
+
+À esquerda fica o **player** (o vídeo toca dentro do sistema, não precisa baixar).
+Logo abaixo do título aparece a **descrição enviada pela MB**, dizendo exatamente o que
+é aquele vídeo:
+
+![Descrição enviada pela MB](img/video-descricao-mb.png)
+
+### 7.3 Marcar um problema no vídeo
+
+1. **Dê play** e assista;
+2. Quando encontrar um problema, **pause** e clique no botão **◉ agora** — o sistema
+   preenche sozinho o minuto, o segundo e o **frame** exatos;
+3. Escolha a **classificação** do problema na lista: Áudio, Imagem, Conteúdo,
+   Acessibilidade, Edição, Identidade visual ou Erro técnico;
+4. Escreva **o que está errado e o que precisa ser corrigido** — seja específico,
+   é essa orientação que a MB vai seguir;
+5. Deixe marcada a caixa **"Anexar captura do frame atual"** (o sistema tira uma foto
+   da imagem exata que está na tela e anexa ao apontamento);
+6. Clique em **Registrar apontamento**.
+
+![Formulário de marcação](img/video-form-marcacao.png)
+
+A MB Estúdios recebe um e-mail imediatamente a cada apontamento registrado.
+
+### 7.4 Acompanhar as correções
+
+Os apontamentos ficam listados à direita, em ordem de tempo do vídeo. Cada um mostra a
+classificação, a situação e a orientação que você escreveu:
+
+![Apontamentos registrados](img/video-apontamentos.png)
+
+- Clique no **botão azul com o tempo** (ex.: ▶ 1:08.500) e o player pula direto
+  para aquele ponto do vídeo;
+- **Pendente** (amarelo) = a MB ainda não começou; **Em correção** (azul) = a MB está
+  trabalhando nisso; **Corrigido** (verde) = a MB concluiu e aguarda sua conferência;
+- Você pode **responder** cada apontamento na caixinha "Responder..." — a MB é avisada;
+- Quando conferir que ficou certo, mude a situação para **Aprovado** usando a lista e
+  o botão **OK**.
+
+### 7.5 Nova versão do vídeo
+
+Depois de corrigir, a MB **envia uma nova versão** (v2, v3...) e você recebe outro
+e-mail. A tela sempre abre na versão mais recente; a lista suspensa **"Comparar versão"**
+permite rever as versões anteriores e os apontamentos de cada uma. O histórico completo
+fica guardado.
+
+### 7.6 Aprovação final
+
+Quando **todos os apontamentos** da versão atual estiverem resolvidos, o botão verde
+**✓ Aprovar vídeo** (canto superior direito) é liberado. Clique nele para encerrar a
+análise — a MB Estúdios e a equipe de TI recebem o aviso de aprovação.
+
+> Enquanto houver apontamento **Pendente** ou **Em correção**, o botão fica desabilitado.
+
+## 8. Biblioteca de Modelos
 
 No menu **Modelos** ficam os templates oficiais (modelo de slides, estrutura de
 curso, guia, minibiografia...). Os marcados com **★ vigente** são as versões
@@ -253,7 +339,7 @@ atuais que você deve usar. Clique em **Baixar** para salvar no seu computador:
 
 ![Biblioteca de modelos](img/modelos-lista.png)
 
-## 8. Meu Perfil — senha e e-mails
+## 9. Meu Perfil — senha e e-mails
 
 Clique no **👤 seu nome** no topo da tela.
 
@@ -270,7 +356,7 @@ em salvar:
 
 ![Alterar senha](img/perfil-senha.png)
 
-## 9. Perguntas frequentes
+## 10. Perguntas frequentes
 
 **Enviei um arquivo errado. E agora?**
 Envie o arquivo certo na mesma categoria (ela continua aceitando envios) e escreva
@@ -287,3 +373,14 @@ exemplo, a bola está com o CECAPE — você não tem ação a fazer.
 
 **O sistema me desconectou.**
 A sessão dura 8 horas renovada a cada clique. Entre novamente com e-mail e senha.
+
+**Propus o curso mas não consigo movê-lo para "Em Planejamento".**
+O projeto precisa primeiro ser aprovado pela equipe de TI, que define a carga horária
+oficial. Assim que isso acontecer, a opção aparece para você.
+
+**Recebi um e-mail dizendo que há um vídeo para analisar. Onde vejo?**
+Clique no link do próprio e-mail, ou abra o curso e use o botão **🎬 Vídeos**.
+
+**Não consigo enviar um vídeo.**
+Os vídeos são produzidos e enviados pela MB Estúdios — o formador analisa e aprova.
+Se precisar enviar material bruto para a MB, use a seção **Links Externos** do curso.

@@ -114,6 +114,9 @@ docs/       análise completa, proposta de auditoria/e-mails/repositório e road
   proposta aprovada de auditoria, notificações e repositório de modelos (V3).
 - [`docs/APRESENTACAO_DIRECAO.md`](docs/APRESENTACAO_DIRECAO.md) — apresentação do
   funcionamento lógico do sistema para a direção do CECAPE (com diagrama do fluxo).
+- **Vídeo tutorial do formador** (2 min, Full HD): [`docs/tutoriais/video/`](docs/tutoriais/video/) —
+  com [roteiro de narração](docs/tutoriais/video/ROTEIRO_NARRACAO.md) para gravar a locução.
+- **Apresentações em slides** (PPTX) para treinamento, uma por perfil, em `docs/tutoriais/`.
 - **Tutoriais por perfil** (com imagens das telas): [`docs/tutoriais/TUTORIAL_PROFESSOR.md`](docs/tutoriais/TUTORIAL_PROFESSOR.md),
   [`docs/tutoriais/TUTORIAL_TI.md`](docs/tutoriais/TUTORIAL_TI.md),
   [`docs/tutoriais/TUTORIAL_MB.md`](docs/tutoriais/TUTORIAL_MB.md) e

@@ -69,6 +69,17 @@ da linha.
 não consegue mover um curso, confira se a transição existe para o perfil
 PROFESSOR. O ADMIN não precisa de transição — pode tudo.
 
+**Fases especiais (com campo obrigatório):**
+
+| Transição | Quem faz | Campo exigido |
+|---|---|---|
+| Curso Proposto → **Projeto Aprovado** | TI | Carga horária do curso (10/20/30/40 h) |
+| Validado → **Pronto para Publicação** | TI | Data de entrada na plataforma |
+
+Ao aprovar o projeto, o sistema monta a **identificação oficial do curso**
+(*nome do curso - formador(a) - carga horária*) e comunica por e-mail à MB Estúdios e
+à TI. Essa identificação nomeia a pasta do curso e o pacote ZIP dos materiais.
+
 > **Socorro rápido:** se as transições ficarem bagunçadas (por testes, por
 > exemplo), rode o script `database/reset_transicoes.sql` no phpMyAdmin — ele
 > restaura o fluxo oficial completo.
@@ -161,7 +172,22 @@ mensagem que falhou.
 - Diário às 7h: `php /home/USUARIO/.../cron/cron_prazos.php CHAVE`
   (alertas de prazo + resumo semanal às segundas)
 
-## 10. Excluir arquivos enviados por engano
+## 10. Vídeos: quem faz o quê
+
+A tela **🎬 Vídeos** de cada curso segue esta divisão de papéis (o ADMIN pode tudo):
+
+| Ação | Quem faz |
+|---|---|
+| Disponibilizar o vídeo (com descrição obrigatória) e novas versões | MB Estúdios |
+| Assistir, marcar os pontos com problema e aprovar o vídeo | Formador(a) do curso |
+| Responder apontamentos e marcar Em correção / Corrigido | MB Estúdios |
+| Acompanhar e receber cópia dos e-mails | Equipe TI |
+
+Os arquivos ficam em `storage/videos/` (fora da pasta pública) e as capturas de frame em
+`storage/videos/<id_curso>/capturas/`. Para vídeos grandes, confira no cPanel →
+**MultiPHP INI Editor** se `upload_max_filesize` e `post_max_size` estão em `512M`.
+
+## 11. Excluir arquivos enviados por engano
 
 Somente o ADMIN pode excluir um arquivo que o formador enviou errado. Abra o curso,
 seção **Arquivos do Curso** — cada linha tem o botão vermelho **Excluir**:
@@ -173,7 +199,7 @@ seção **Arquivos do Curso** — cada linha tem o botão vermelho **Excluir**:
 3. O arquivo é apagado do servidor e a **sequência de entregas é recalculada** —
    se era o único da categoria, ela volta a ser a etapa pendente do formador.
 
-## 11. Rotina e boas práticas do administrador
+## 12. Rotina e boas práticas do administrador
 
 - **Backup do banco** antes de qualquer migração (`database/upgrade_v*.sql`) —
   no cPanel: phpMyAdmin → Exportar;

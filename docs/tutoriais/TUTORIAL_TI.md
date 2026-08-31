@@ -54,7 +54,33 @@ Acima do quadro há a barra de filtros:
 
 Clique em **Filtrar** para aplicar e em **Limpar** para remover tudo.
 
-## 3. Revisar um curso — o coração do trabalho da TI
+## 3. Aprovar o projeto e definir a carga horária
+
+Esta é a **primeira decisão da TI** no ciclo de um curso. No Backlog, o formador
+apresenta o projeto (**Curso Proposto**); cabe à TI analisar e, se aprovar, **definir a
+carga horária oficial**.
+
+1. Abra o curso que está em **Curso Proposto**;
+2. Em **Ações de Status**, escolha **Projeto Aprovado**;
+3. Aparece o campo **Carga horária do curso (obrigatória)** — escolha entre 10, 20, 30
+   ou 40 horas (a lista mostra quantos módulos e minutos de vídeo cada opção comporta);
+4. Clique em **Atualizar Status** e confirme.
+
+![Aprovação do projeto com carga horária](img/ti-projeto-aprovado.png)
+
+**O que o sistema faz automaticamente:**
+
+- grava a carga horária oficial no curso (substituindo a sugestão do formador);
+- monta a **identificação oficial do curso**, no formato
+  *Nome do curso - Nome do(a) formador(a) - Carga horária*;
+- envia e-mail para a **MB Estúdios** e para a **equipe de TI** com essa identificação —
+  é o nome que deve ser usado na pasta do curso;
+- libera o formador para seguir de **Projeto Aprovado → Em Planejamento**.
+
+> A identificação também aparece no topo da página do curso e dá nome ao pacote ZIP
+> que a MB baixa com os materiais.
+
+## 4. Revisar um curso — o coração do trabalho da TI
 
 ### Passo 1 — assumir a revisão
 
@@ -71,8 +97,11 @@ Na página do curso você encontra tudo o que precisa:
 - **Arquivos do Curso** — os materiais, listados **na ordem oficial de entrega**
   (módulo Geral primeiro, depois Módulo 1, 2...; dentro de cada módulo, na
   sequência das categorias). O botão **Baixar todos (ZIP)** baixa o pacote completo
-  já organizado em pastas numeradas;
-- **Links Externos** — vídeos brutos e materiais pesados no Google Drive.
+  já organizado em pastas numeradas (o arquivo recebe a identificação oficial do curso);
+- **Links Externos** — vídeos brutos e materiais pesados no Google Drive;
+- **🎬 Vídeos** — a análise dos vídeos é feita pelo(a) **formador(a)**, sobre o material
+  produzido pela **MB Estúdios**. A TI acompanha por essa tela e recebe cópia dos
+  e-mails de apontamento e de aprovação.
 
 ### Passo 3 — decidir
 
@@ -111,13 +140,13 @@ apontamentos avulsos por lá a qualquer momento.
 Quando o formador devolve (**Pronto para Nova Análise**), repita o ciclo:
 mova para **Em Revisão** e decida de novo.
 
-## 4. Encaminhar para a MB Estúdios
+## 5. Encaminhar para a MB Estúdios
 
 Curso aprovado? Mova **Aprovado → Enviado para Inserção**. A MB recebe o aviso por
 e-mail e assume: baixa o pacote ZIP e insere o conteúdo na plataforma. Durante a
 inserção você acompanha pelo Kanban (colunas da MB), sem precisar agir.
 
-## 5. Agendar a publicação — a data é obrigatória
+## 6. Agendar a publicação — a data é obrigatória
 
 Depois da inserção, o formador confere o curso na plataforma e marca **Validado**.
 Aí entra a última ação da TI:
@@ -133,10 +162,11 @@ Aí entra a última ação da TI:
 O formador e a MB recebem e-mail com a data. A MB então publica e marca
 **Publicado** — fim do fluxo. 🎉
 
-## 6. Resumo das suas movimentações
+## 7. Resumo das suas movimentações
 
 | De | Para | Quando |
 |---|---|---|
+| Curso Proposto | Projeto Aprovado | Ao aprovar o projeto (informando a carga horária) |
 | Pronto para Análise | Em Revisão | Ao iniciar a análise |
 | Pronto para Nova Análise | Em Revisão | Ao iniciar a reanálise |
 | Em Revisão | Aprovado | Material aprovado |
@@ -144,7 +174,7 @@ O formador e a MB recebem e-mail com a data. A MB então publica e marca
 | Aprovado | Enviado para Inserção | Encaminhar à MB |
 | Validado | Pronto para Publicação | Com a data de publicação |
 
-## 7. Biblioteca de Modelos — publicar templates
+## 8. Biblioteca de Modelos — publicar templates
 
 Menu **Modelos** → quadro **Publicar novo modelo**:
 
@@ -161,12 +191,12 @@ Menu **Modelos** → quadro **Publicar novo modelo**:
 Na lista, o botão **★/☆** marca qual versão é a **vigente** (a que os formadores
 devem usar); **Desativar** esconde o modelo sem apagar; **Excluir** remove de vez.
 
-## 8. Relatórios
+## 9. Relatórios
 
 Menu **Relatórios**: cursos por status, produção por formador(a) e a lista de
 cursos com prazo estourado ou próximo. Tabelas exportáveis em CSV (abre no Excel).
 
-## 9. E-mails automáticos que a TI recebe
+## 10. E-mails automáticos que a TI recebe
 
 - Qualquer mudança de status feita por **formador** ou pela **MB** → aviso para
   ti.cecape@scseduca.com.br;
