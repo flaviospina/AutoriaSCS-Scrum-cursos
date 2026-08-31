@@ -506,6 +506,38 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.72); cur
 .swal2-timer-progress-bar { background: rgba(34,211,238,.5) !important; }
 
 
+
+/* Campo de arquivo: o botão nativo do navegador fica branco sobre branco no
+   tema escuro — estilizamos para ficar legível em todos os navegadores. */
+.form-control[type="file"] { padding: 5px 10px; }
+.form-control[type="file"]::file-selector-button {
+  margin: 0 12px 0 0;
+  padding: 6px 16px;
+  background-color: var(--cyan);
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: #08131f;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter .15s;
+}
+.form-control[type="file"]::file-selector-button:hover { filter: brightness(1.12); }
+/* fallback para navegadores antigos (WebKit legado) */
+.form-control[type="file"]::-webkit-file-upload-button {
+  margin: 0 12px 0 0;
+  padding: 6px 16px;
+  background-color: var(--cyan);
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: #08131f;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 /* ── REVISÃO DE VÍDEOS ─────────────────────────────────────── */
 
 /* Identificação oficial do curso (nome - formador(a) - carga horária) */
