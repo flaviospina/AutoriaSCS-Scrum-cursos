@@ -26,6 +26,9 @@ O fluxo do Kanban não é mais fixo no código — é configurável em `Admin`:
 - **Transições por perfil** (`admin/transicoes.php`): define quais movimentações PROFESSOR,
   TI e MB podem fazer (ADMIN pode todas).
 - **Usuários** (`admin/usuarios.php`): cadastro, perfil, ativação e redefinição de senha.
+- **Níveis de ensino** (`admin/niveis.php`) e **Categorias de entrega** (`admin/categorias.php`) — V10:
+  cadastros administráveis (criar, renomear, reordenar, obrigatória/opcional, ativar/inativar).
+  Renomear atualiza cursos/arquivos vinculados; itens em uso não podem ser excluídos, apenas inativados.
 
 ## Auditoria, E-mails e Biblioteca de Modelos (V3)
 
@@ -81,8 +84,9 @@ Ferramenta integrada de análise de vídeos (`🎬 Vídeos` na página do curso)
    antigo, na ordem: `upgrade_v2.sql` (fluxo dinâmico), `upgrade_v3.sql` (auditoria/e-mails/modelos),
    `upgrade_v4.sql` (perfis dinâmicos), `upgrade_v5.sql` (etapa Pronto para Publicação),
    `upgrade_v6.sql` (cadastro de escolas), `upgrade_v7.sql` (fluxo ordenado de entrega
-   de materiais), `upgrade_v8.sql` (revisão de vídeos) e `upgrade_v9.sql` (aprovação do
-   projeto com carga horária + inversão do fluxo de vídeos) — faça backup antes.
+   de materiais), `upgrade_v8.sql` (revisão de vídeos), `upgrade_v9.sql` (aprovação do
+   projeto com carga horária + inversão do fluxo de vídeos) e `upgrade_v10.sql` (cadastros de
+   níveis de ensino e categorias de entrega) — faça backup antes.
 2. Copie `app/config.php` para `app/config.local.php` e preencha as credenciais reais do banco,
    a seção `mail` (método `mail` do cPanel ou `smtp`) e a `cron.chave`
    (o arquivo local é ignorado pelo git).

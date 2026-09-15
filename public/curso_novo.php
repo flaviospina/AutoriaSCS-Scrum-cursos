@@ -10,6 +10,10 @@ require_login();
 $u = auth_user();
 require_perm('propoe_cursos');
 
+// prioridade é definida apenas pela equipe de TI/ADMIN; o formador propõe com MEDIA
+$podePrioridade = perm('revisa_cursos');
+$escolas = escolas_ativas();
+
 $erro = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -21,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       'publico_alvo' => trim($_POST['publico_alvo'] ?? ''),
       'nivel_ensino' => trim($_POST['nivel_ensino'] ?? ''),
       'unidade_escolar' => trim($_POST['unidade_escolar'] ?? ''),
-      'prioridade' => $_POST['prioridade'] ?? 'MEDIA',
+      'prioridade' => $podePrioridade ? ($_POST['prioridade'] ?? 'MEDIA') : 'MEDIA', // regra no backend
       'data_prevista_inicio' => $_POST['data_prevista_inicio'] ?? null,
       'data_prevista_entrega_final' => $_POST['data_prevista_entrega_final'] ?? null,
       'descricao_breve' => trim($_POST['descricao_breve'] ?? ''),
@@ -86,19 +90,27 @@ include __DIR__ . '/_layout_top.php';
 
       <div class="col-12 col-md-5">
         <label class="form-label">Unidade escolar</label>
-        <input class="form-control" name="unidade_escolar" maxlength="120" list="dlEscolas"
-               placeholder="Digite ou escolha na lista" autocomplete="off">
-        <?= datalist_html('dlEscolas', escolas_ativas()) ?>
-      </div>
-
-      <div class="col-6 col-md-3">
-        <label class="form-label">Prioridade</label>
-        <select class="form-select" name="prioridade">
-          <?php foreach (prioridades() as $p): ?>
-            <option value="<?= $p ?>" <?= $p==='MEDIA'?'selected':'' ?>><?= prioridade_badge($p)['label'] ?></option>
+        <select class="form-select" name="unidade_escolar">
+          <option value="">Selecione...</option>
+          <?php foreach ($escolas as $e): ?>
+            <option value="<?= htmlspecialchars($e) ?>"><?= htmlspecialchars($e) ?></option>
           <?php endforeach; ?>
         </select>
+        <?php if (!$escolas): ?>
+          <div class="form-text">Nenhuma escola cadastrada ainda — solicite o cadastro à equipe de TI.</div>
+        <?php endif; ?>
       </div>
+
+      <?php if ($podePrioridade): ?>
+        <div class="col-6 col-md-3">
+          <label class="form-label">Prioridade</label>
+          <select class="form-select" name="prioridade">
+            <?php foreach (prioridades() as $p): ?>
+              <option value="<?= $p ?>" <?= $p==='MEDIA'?'selected':'' ?>><?= prioridade_badge($p)['label'] ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+      <?php endif; ?>
 
       <div class="col-6 col-md-2">
         <label class="form-label">Prev. início</label>

@@ -4,9 +4,19 @@ require_once __DIR__ . '/status_repo.php';
 require_once __DIR__ . '/n8n_client.php';
 require_once __DIR__ . '/audit.php';
 require_once __DIR__ . '/notify.php';
+require_once __DIR__ . '/escolas_repo.php';
 
 function curso_create(int $id_prof, array $d): int {
   $inicial = status_inicial();
+
+  // valores de cadastro: nível ativo e escola ativa (ou em branco)
+  if (!nivel_valido_para_curso($d['nivel_ensino'] ?? '')) {
+    throw new Exception("Nível de ensino inválido. Escolha um nível da lista.");
+  }
+  $escolas = escolas_ativas();
+  if (($d['unidade_escolar'] ?? '') !== '' && $escolas && !in_array($d['unidade_escolar'], $escolas, true)) {
+    throw new Exception("Unidade escolar inválida. Escolha uma escola da lista.");
+  }
 
   $st = db()->prepare("
     INSERT INTO tb_cursos

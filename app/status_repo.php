@@ -9,6 +9,7 @@
  */
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/perfis_repo.php';
+require_once __DIR__ . '/niveis_repo.php';
 
 /** Colunas ativas do Kanban, em ordem, cada uma com a lista de status ativos. */
 function kanban_columns(bool $onlyActive = true): array {
@@ -148,14 +149,12 @@ function prazo_flag(?string $dataEntrega, string $statusAtual): ?string {
 }
 
 /** Níveis de ensino padronizados (Guia 01, seção 7.1-b). */
-function niveis_ensino(): array {
-  return [
-    'Educação Infantil',
-    'Ensino Fundamental - Anos Iniciais',
-    'Ensino Fundamental - Anos Finais',
-    'Ensino Médio',
-    'Formação Transversal / Complementar',
-  ];
+/**
+ * Níveis de ensino — cadastro administrável (tb_niveis_ensino, V10).
+ * $incluirInativos=true para filtros/relatórios (cursos antigos podem usar níveis inativos).
+ */
+function niveis_ensino(bool $incluirInativos = false): array {
+  return niveis_nomes($incluirInativos);
 }
 
 function prioridades(): array {

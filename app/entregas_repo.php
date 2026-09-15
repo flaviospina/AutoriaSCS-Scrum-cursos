@@ -9,26 +9,19 @@
  * categorias opcionais, registrada como "sem material" (tb_curso_dispensas).
  */
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/categorias_repo.php';
 
-/** Categorias do módulo, na ordem de entrega. */
-function entregas_categorias(int $modulo): array {
-  if ($modulo === 0) { // módulo Geral
-    return [
-      ['nome' => 'Apresentação do(s) Formador(es)', 'obrigatoria' => true],
-      ['nome' => 'Apresentação do Curso',           'obrigatoria' => true],
-      ['nome' => 'Objetivos',                       'obrigatoria' => true],
-      ['nome' => 'Atividade Avaliativa Geral',      'obrigatoria' => false],
-      ['nome' => 'Referência Bibliográfica',        'obrigatoria' => true],
-    ];
+/**
+ * Categorias ATIVAS do módulo, na ordem de entrega (cadastro Admin → Categorias;
+ * V10). $incluirInativas=true serve para ordenar/exibir arquivos antigos cuja
+ * categoria foi inativada.
+ */
+function entregas_categorias(int $modulo, bool $incluirInativas = false): array {
+  $out = [];
+  foreach (categorias_lista($incluirInativas, categoria_escopo_modulo($modulo)) as $c) {
+    $out[] = ['nome' => $c['nome'], 'obrigatoria' => (bool)$c['obrigatoria'], 'ativo' => (bool)$c['ativo']];
   }
-  return [ // Módulos 1..8
-    ['nome' => 'Apresentação do Módulo', 'obrigatoria' => true],
-    ['nome' => 'Slide',                  'obrigatoria' => true],
-    ['nome' => 'Vídeo',                  'obrigatoria' => true],
-    ['nome' => 'Anexo',                  'obrigatoria' => true],
-    ['nome' => 'Texto Complementar',     'obrigatoria' => false],
-    ['nome' => 'Atividade Avaliativa',   'obrigatoria' => false],
-  ];
+  return $out;
 }
 
 /**
@@ -79,7 +72,7 @@ function entregas_estado_completo(int $idCurso): array {
  * Categorias legadas/desconhecidas vão para o fim (99).
  */
 function entregas_ordem_categoria(int $modulo, string $categoria): int {
-  foreach (entregas_categorias($modulo) as $i => $c) {
+  foreach (entregas_categorias($modulo, true) as $i => $c) {
     if ($c['nome'] === $categoria) return $i;
   }
   return 99;

@@ -22,6 +22,12 @@ try {
 } catch (Throwable $e) {
   $nEscolas = 0; // tabela da V6 ainda não migrada
 }
+try {
+  $nNiveis = (int)db()->query("SELECT COUNT(*) n FROM tb_niveis_ensino WHERE ativo=1")->fetch()['n'];
+  $nCateg  = (int)db()->query("SELECT COUNT(*) n FROM tb_categorias WHERE ativo=1")->fetch()['n'];
+} catch (Throwable $e) {
+  $nNiveis = 0; $nCateg = 0; // tabelas da V10 ainda não migradas
+}
 
 include __DIR__ . '/../_layout_top.php';
 ?>
@@ -42,7 +48,9 @@ include __DIR__ . '/../_layout_top.php';
       ['Transições por perfil', $nTrans, 'Definir quais movimentações cada perfil (PROFESSOR, TI, MB) pode realizar.', 'transicoes.php'],
       ['Usuários', $nUsers, 'Cadastrar formadores, equipe TI, MB Estúdios e administradores.', 'usuarios.php'],
       ['Perfis de acesso', $nPerfis, 'Criar perfis personalizados e definir as permissões de cada um.', 'perfis.php'],
-      ['Escolas', $nEscolas, 'Cadastrar as unidades escolares em lote; alimentam o autocompletar dos cursos.', 'escolas.php'],
+      ['Escolas', $nEscolas, 'Cadastrar as unidades escolares em lote; alimentam a lista "Unidade escolar" dos cursos.', 'escolas.php'],
+      ['Níveis de ensino', $nNiveis, 'Cadastrar, renomear, ordenar e ativar/inativar os níveis de ensino dos cursos.', 'niveis.php'],
+      ['Categorias de entrega', $nCateg, 'Categorias de material (Geral e Módulos): ordem de entrega e obrigatoriedade.', 'categorias.php'],
       ['Auditoria', $nAudit, 'Registro de todas as ações do sistema: quem fez, o quê, quando e de onde. Exportável em CSV.', 'auditoria.php'],
       ['Notificações', $nNotifP, 'Fila de e-mails do sistema (pendentes, enviados, erros) e processamento manual.', 'notificacoes.php'],
     ];

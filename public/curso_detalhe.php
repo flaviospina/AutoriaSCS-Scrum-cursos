@@ -535,7 +535,7 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
                 <tr>
                   <th>Data</th>
                   <th>Tipo</th>
-                  <th>Conteúdo</th>
+                  <th>Apontamento</th>
                   <th>Por</th>
                   <th>Status</th>
                 </tr>

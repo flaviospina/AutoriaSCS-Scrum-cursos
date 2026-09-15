@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
     if (!perm('revisa_cursos')) throw new Exception("Sem permissão.");
     $tipo = $_POST['tipo'] ?? 'OUTRO';
     $conteudo = trim($_POST['conteudo'] ?? '');
-    if ($conteudo === '') throw new Exception("Conteúdo é obrigatório.");
+    if ($conteudo === '') throw new Exception("O texto do apontamento é obrigatório.");
     if (!in_array($tipo, ['TECNICO','PEDAGOGICO','ABNT','OUTRO'], true)) $tipo = 'OUTRO';
 
     db()->prepare("INSERT INTO tb_curso_apontamentos (id_curso, id_user, tipo, conteudo) VALUES (?,?,?,?)")
@@ -110,7 +110,7 @@ include __DIR__ . '/_layout_top.php';
         </div>
 
         <div class="col-12 col-md-9">
-          <label class="form-label small">Conteúdo</label>
+          <label class="form-label small">Apontamento</label>
           <textarea class="form-control" name="conteudo" rows="2" required></textarea>
         </div>
 
@@ -135,7 +135,7 @@ include __DIR__ . '/_layout_top.php';
             <tr>
               <th>Data</th>
               <th>Tipo</th>
-              <th>Conteúdo</th>
+              <th>Apontamento</th>
               <th>Por</th>
               <th>Status</th>
               <?php if ($isTI): ?><th></th><?php endif; ?>

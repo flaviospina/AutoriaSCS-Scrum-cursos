@@ -220,7 +220,7 @@ include __DIR__ . '/_layout_top.php';
           <label class="form-label small">Nível de ensino</label>
           <select class="form-select form-select-sm" name="nivel">
             <option value="">Todos</option>
-            <?php foreach (niveis_ensino() as $n): ?>
+            <?php foreach (niveis_ensino(true) as $n): ?>
               <option value="<?= htmlspecialchars($n) ?>" <?= $fNivel===$n ? 'selected':'' ?>><?= htmlspecialchars($n) ?></option>
             <?php endforeach; ?>
           </select>

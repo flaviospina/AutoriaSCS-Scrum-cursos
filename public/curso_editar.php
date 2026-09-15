@@ -88,7 +88,7 @@ include __DIR__ . '/_layout_top.php';
         <label class="form-label">Nível de ensino</label>
         <select class="form-select" name="nivel_ensino">
           <option value="">Selecione...</option>
-          <?php foreach (niveis_ensino() as $n): ?>
+          <?php foreach (niveis_opcoes_para($curso['nivel_ensino'] ?? null) as $n): ?>
             <option value="<?= htmlspecialchars($n) ?>" <?= ($curso['nivel_ensino'] ?? '')===$n?'selected':'' ?>><?= htmlspecialchars($n) ?></option>
           <?php endforeach; ?>
         </select>
