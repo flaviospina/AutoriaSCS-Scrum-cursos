@@ -343,6 +343,40 @@ CREATE TABLE IF NOT EXISTS tb_escolas (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------
+-- Níveis de ensino (V10) — cadastro administrável; vínculo pelo nome
+-- (tb_cursos.nivel_ensino), como os status do Kanban
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tb_niveis_ensino (
+  id_nivel   INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  nome       VARCHAR(60) NOT NULL,
+  ordem      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  ativo      TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_nivel),
+  UNIQUE KEY uq_niveis_nome (nome)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- Categorias de entrega de material (V10) — cadastro administrável;
+-- escopo GERAL = módulo 0, MODULO = módulos 1..8; vínculo pelo nome
+-- (tb_curso_files.categoria / tb_curso_dispensas.categoria)
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tb_categorias (
+  id_categoria INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  escopo       ENUM('GERAL','MODULO') NOT NULL DEFAULT 'MODULO',
+  nome         VARCHAR(60) NOT NULL,
+  obrigatoria  TINYINT(1) NOT NULL DEFAULT 1,
+  ordem        SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  ativo        TINYINT(1) NOT NULL DEFAULT 1,
+  created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_categoria),
+  UNIQUE KEY uq_categorias_escopo_nome (escopo, nome),
+  KEY ix_categorias_escopo (escopo, ativo, ordem)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
 -- Links externos por curso (Google Drive / vídeos MB / outros)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS tb_curso_links (
@@ -432,6 +466,29 @@ FROM (
 ) r
 JOIN tb_status sd ON sd.nome = r.de
 JOIN tb_status sp ON sp.nome = r.para;
+
+-- Níveis de ensino (V10)
+INSERT IGNORE INTO tb_niveis_ensino (nome, ordem, ativo) VALUES
+  ('Educação Infantil',                   1, 1),
+  ('Ensino Fundamental - Anos Iniciais',  2, 1),
+  ('Ensino Fundamental - Anos Finais',    3, 1),
+  ('Ensino Fundamental - Médio',          4, 1),
+  ('Ensino Médio',                        5, 1),
+  ('Formação Transversal / Complementar', 6, 1);
+
+-- Categorias de entrega (V10) — mesma sequência do fluxo ordenado (V7)
+INSERT IGNORE INTO tb_categorias (escopo, nome, obrigatoria, ordem, ativo) VALUES
+  ('GERAL',  'Apresentação do(s) Formador(es)', 1, 1, 1),
+  ('GERAL',  'Apresentação do Curso',           1, 2, 1),
+  ('GERAL',  'Objetivos',                       1, 3, 1),
+  ('GERAL',  'Atividade Avaliativa Geral',      0, 4, 1),
+  ('GERAL',  'Referência Bibliográfica',        1, 5, 1),
+  ('MODULO', 'Apresentação do Módulo',          1, 1, 1),
+  ('MODULO', 'Slide',                           1, 2, 1),
+  ('MODULO', 'Vídeo',                           1, 3, 1),
+  ('MODULO', 'Anexo',                           1, 4, 1),
+  ('MODULO', 'Texto Complementar',              0, 5, 1),
+  ('MODULO', 'Atividade Avaliativa',            0, 6, 1);
 
 -- Usuário administrador inicial
 -- E-mail: admin@scseduca.com.br | Senha: admin123  (TROQUE NO PRIMEIRO ACESSO)
