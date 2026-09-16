@@ -9,6 +9,7 @@ require_once __DIR__ . '/../app/status_repo.php';
 require_once __DIR__ . '/../app/csrf.php';
 require_once __DIR__ . '/../app/audit.php';
 require_once __DIR__ . '/../app/apontamento_repo.php';
+require_once __DIR__ . '/../app/checklist_repo.php';
 
 require_login();
 $u = auth_user();
@@ -66,37 +67,33 @@ if (($_GET['err'] ?? '') !== '') {
   $erro = $mapErr[$_GET['err']] ?? "Falha no upload (" . htmlspecialchars($_GET['err']) . "). Verifique tamanho (máx. 25MB) e tipo do arquivo.";
 }
 
-// Atualiza checklist (professor dono ou TI/ADMIN)
+// Atualiza checklist (V11: por perfil; o backend só aceita itens do checklist autorizado)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_checklist') {
   csrf_check();
   try {
-    if (!perm('revisa_cursos') && !$ehProfessor) {
-      throw new Exception("Sem permissão.");
+    if (checklists_disponivel()) {
+      $codigo = $_POST['checklist'] ?? '';
+      if (!in_array($codigo, ['PROFESSOR', 'TI'], true)) throw new Exception("Checklist inválido.");
+      $marcados = array_keys(array_filter((array)($_POST['item'] ?? []), fn($v) => (string)$v === '1'));
+      checklist_salvar($id, $codigo, $marcados, $u, $curso);
+    } else {
+      // banco ainda sem a V11: comportamento anterior (tabela tb_curso_checklist)
+      if (!perm('revisa_cursos') && !$ehProfessor) throw new Exception("Sem permissão.");
+      $fields = [
+        'modulos_definidos','estrutura_introducao','planejamento_videos','planejamento_textos_apoio',
+        'planejamento_avaliacoes','referencias_abnt',
+        'videos_produzidos','textos_escritos','avaliacoes_criadas','revisao_interna_professor',
+        'criterios_atendidos','material_enviado'
+      ];
+      $sets = []; $vals = [];
+      foreach ($fields as $f) { $sets[] = "{$f}=?"; $vals[] = isset($_POST[$f]) ? 1 : 0; }
+      $vals[] = $id;
+      $antesCheck = $check;
+      db()->prepare("UPDATE tb_curso_checklist SET ".implode(',', $sets)." WHERE id_curso=?")->execute($vals);
+      $check = checklist_get($id);
+      [$da, $dd] = audit_diff(array_intersect_key($antesCheck, array_flip($fields)), array_intersect_key($check, array_flip($fields)));
+      if ($dd) audit_log('checklist_atualizado', 'curso', $id, $da, $dd);
     }
-
-    $fields = [
-      'modulos_definidos','estrutura_introducao','planejamento_videos','planejamento_textos_apoio',
-      'planejamento_avaliacoes','referencias_abnt',
-      'videos_produzidos','textos_escritos','avaliacoes_criadas','revisao_interna_professor',
-      'criterios_atendidos','material_enviado'
-    ];
-
-    $sets = [];
-    $vals = [];
-    foreach ($fields as $f) {
-      $sets[] = "{$f}=?";
-      $vals[] = isset($_POST[$f]) ? 1 : 0;
-    }
-    $vals[] = $id;
-
-    $antesCheck = $check;
-    db()->prepare("UPDATE tb_curso_checklist SET ".implode(',', $sets)." WHERE id_curso=?")->execute($vals);
-    $check = checklist_get($id);
-    [$da, $dd] = audit_diff(
-      array_intersect_key($antesCheck, array_flip($fields)),
-      array_intersect_key($check, array_flip($fields))
-    );
-    if ($dd) audit_log('checklist_atualizado', 'curso', $id, $da, $dd);
     $ok = "Checklist atualizado com sucesso.";
   } catch (Throwable $e) {
     $erro = $e->getMessage();
@@ -481,8 +478,50 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
     </div>
   </div>
 
-  <!-- Checklist -->
+  <!-- Checklist(s) por perfil -->
   <div class="col-12 col-lg-6">
+    <?php if (checklists_disponivel()): $visiveis = checklists_visiveis($u, $curso); $listasChk = checklists_all(); ?>
+      <?php if (!$visiveis): ?>
+        <div class="card shadow-sm"><div class="card-body">
+          <h2 class="h6 mb-2">Checklist</h2>
+          <div class="text-muted small">Seu perfil não possui checklist neste curso.</div>
+        </div></div>
+      <?php endif; ?>
+      <?php foreach ($visiveis as $codigo): $itensChk = checklist_itens($codigo); $respChk = checklist_respostas($id, $codigo); $prog = checklist_progresso($id, $codigo); $podeChk = checklist_pode_editar($codigo, $u, $curso); ?>
+        <div class="card shadow-sm mb-3">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h2 class="h6 mb-0"><?= htmlspecialchars($listasChk[$codigo]['nome'] ?? $codigo) ?></h2>
+              <span class="badge <?= $prog['total'] && $prog['marcados'] === $prog['total'] ? 'bg-success' : 'bg-secondary' ?> rounded-pill"><?= $prog['marcados'] ?>/<?= $prog['total'] ?></span>
+            </div>
+            <form method="post" data-confirm="Salvar as alterações do checklist?" data-confirm-title="Salvar checklist" data-confirm-btn="Sim, salvar">
+              <?= csrf_field() ?>
+              <input type="hidden" name="action" value="save_checklist">
+              <input type="hidden" name="checklist" value="<?= htmlspecialchars($codigo) ?>">
+              <?php $grupoAtual = null; foreach ($itensChk as $it): ?>
+                <?php if ($it['grupo'] !== $grupoAtual): if ($grupoAtual !== null) echo '</div><hr class="my-3">'; $grupoAtual = $it['grupo']; ?>
+                  <div class="mb-2 fw-semibold"><?= htmlspecialchars($it['grupo'] ?: 'Itens') ?></div>
+                  <div class="row g-2">
+                <?php endif; ?>
+                <div class="col-12 col-md-6">
+                  <div class="form-check">
+                    <input type="hidden" name="item[<?= (int)$it['id_item'] ?>]" value="0">
+                    <input class="form-check-input" type="checkbox" id="chk_<?= $codigo ?>_<?= (int)$it['id_item'] ?>"
+                           name="item[<?= (int)$it['id_item'] ?>]" value="1" <?= !empty($respChk[(int)$it['id_item']]) ? 'checked' : '' ?> <?= $podeChk ? '' : 'disabled' ?>>
+                    <label class="form-check-label" for="chk_<?= $codigo ?>_<?= (int)$it['id_item'] ?>"><?= htmlspecialchars($it['descricao']) ?></label>
+                  </div>
+                </div>
+              <?php endforeach; if ($grupoAtual !== null) echo '</div>'; ?>
+              <?php if (!$itensChk): ?><div class="text-muted small">Nenhum item cadastrado (Admin → Checklists).</div><?php endif; ?>
+              <?php if ($podeChk && $itensChk): ?>
+                <div class="mt-3 d-flex gap-2"><button class="btn btn-success">Salvar Checklist</button></div>
+              <?php endif; ?>
+              <div class="text-muted small mt-2">Dica: use o checklist como critério de passagem de sprint.</div>
+            </form>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    <?php else: ?>
     <div class="card shadow-sm">
       <div class="card-body">
         <h2 class="h6 mb-3">Checklist (Planejamento, Produção e Entrega)</h2>
@@ -567,6 +606,7 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
         </form>
       </div>
     </div>
+    <?php endif; ?>
   </div>
 
   <!-- Apontamentos (resumo) -->

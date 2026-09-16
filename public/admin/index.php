@@ -28,6 +28,11 @@ try {
 } catch (Throwable $e) {
   $nNiveis = 0; $nCateg = 0; // tabelas da V10 ainda não migradas
 }
+try {
+  $nChk = (int)db()->query("SELECT COUNT(*) n FROM tb_checklist_itens WHERE ativo=1")->fetch()['n'];
+} catch (Throwable $e) {
+  $nChk = 0; // tabelas da V11 ainda não migradas
+}
 
 include __DIR__ . '/../_layout_top.php';
 ?>
@@ -51,6 +56,7 @@ include __DIR__ . '/../_layout_top.php';
       ['Escolas', $nEscolas, 'Cadastrar as unidades escolares em lote; alimentam a lista "Unidade escolar" dos cursos.', 'escolas.php'],
       ['Níveis de ensino', $nNiveis, 'Cadastrar, renomear, ordenar e ativar/inativar os níveis de ensino dos cursos.', 'niveis.php'],
       ['Categorias de entrega', $nCateg, 'Categorias de material (Geral e Módulos): ordem de entrega e obrigatoriedade.', 'categorias.php'],
+      ['Checklists', $nChk, 'Itens do Checklist do Professor e do Checklist TI/Admin (critérios internos).', 'checklists.php'],
       ['Auditoria', $nAudit, 'Registro de todas as ações do sistema: quem fez, o quê, quando e de onde. Exportável em CSV.', 'auditoria.php'],
       ['Notificações', $nNotifP, 'Fila de e-mails do sistema (pendentes, enviados, erros) e processamento manual.', 'notificacoes.php'],
       ['Diagnóstico do sistema', '✓', 'Confere se a última atualização foi aplicada: arquivos, migrações do banco e cache do PHP.', 'diagnostico_sistema.php'],
