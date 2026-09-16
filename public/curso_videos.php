@@ -20,11 +20,11 @@ $id = (int)($_GET['id'] ?? 0);
 $curso = curso_get($id);
 if (!$curso) { http_response_code(404); echo "Curso não encontrado."; exit; }
 
-if (!is_staff() && (int)$curso['id_professor'] !== (int)$u['id_user']) {
+if (!is_staff() && !curso_eh_professor($curso, (int)$u['id_user'])) {
   http_response_code(403); echo "Acesso negado."; exit;
 }
 
-$ehDono = (int)$curso['id_professor'] === (int)$u['id_user'];
+$ehDono = curso_eh_professor($curso, (int)$u['id_user']);
 // A MB Estúdios produz e disponibiliza os vídeos; o(a) formador(a) analisa.
 $podeEnviar = perm('recebe_email_insercao') || is_admin();
 

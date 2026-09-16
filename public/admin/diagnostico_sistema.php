@@ -4,8 +4,7 @@
  * realmente aplicada no servidor: arquivos (versão/assinatura), banco de
  * dados (migrações) e cache do PHP (OPcache).
  *
- * Referência: commit 36ccfd7 (Bloco A — níveis de ensino, categorias,
- * rótulo Apontamento e regras do Propor Curso).
+ * Referência: entrega V11 (PROMPT MESTRE — Blocos A a G).
  */
 require_once __DIR__ . '/_admin_top.php';
 
@@ -32,22 +31,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 //    um "marcador" — trecho de código que só existe na versão nova.
 // ------------------------------------------------------------------
 $arquivos = [
-  ['app/niveis_repo.php',            '43fd6beb60e20f12c7c8ce58a355fd3b', 'function niveis_lista('],
-  ['app/categorias_repo.php',        'f91e222e7d7945d3a2d0f93294b67aee', 'function categorias_lista('],
-  ['app/status_repo.php',            '2ca8a21929b36614d5a0642bedade037', 'return niveis_nomes('],
-  ['app/entregas_repo.php',          'bd6a22f450c2e5b0fefd6b5755f570f3', 'categorias_lista('],
-  ['app/curso_repo.php',             '52486ae545afe69e2d95e29ff07c4261', 'nivel_valido_para_curso('],
-  ['public/admin/niveis.php',        '5e20090d9ba7112fa7255efa3c7c6f2c', 'Níveis de Ensino'],
-  ['public/admin/categorias.php',    'd238f6d7543f770396a7f51cfff60073', 'Categorias de Entrega'],
-  ['public/admin/index.php',         '2e31b835237cb21c0a09d206f490c8a8', "'niveis.php'"],
-  ['public/_layout_top.php',         '8bc5d1b2c6a92ded83b1aaa723e2b4b0', 'admin/categorias.php'],
-  ['public/curso_novo.php',          '7fbeb83fe9af0c58f21e6956d7a98087', '$podePrioridade'],
-  ['public/curso_editar.php',        'cae54f0e2913754a97222840a20dfa7d', 'niveis_opcoes_para('],
-  ['public/curso_detalhe.php',       '091623451ef721241c665c0695009041', '<th>Apontamento</th>'],
-  ['public/apontamentos.php',        'aceb26a58a566be51d7173b8fca244bc', '<th>Apontamento</th>'],
-  ['public/dashboard.php',           'a0be7caeb0e9f4b7c49649670fadc13f', 'niveis_ensino(true)'],
-  ['public/assets/autoria-dark.css', '23208af7de865e7457649a0c58d8bce2', 'file-selector-button'],
-  ['database/upgrade_v10.sql',       '47519a5fcc046333f168f8904fe4c30d', 'tb_niveis_ensino'],
+  ['app/apontamento_repo.php', 'e6279f082fb09ec02a4f0f8356caa1c4', 'function apont_criar('],
+  ['app/auth.php', '5ae623857bd0fd85a0ea58a9ab565e3c', 'function visao_alternar('],
+  ['app/categorias_repo.php', '054ff959a0ed0f9a63b3ca531c609993', 'excluida_em'],
+  ['app/checklist_repo.php', '9374cd1d2654f5ad94e6abeb183ee0dd', 'function checklist_salvar('],
+  ['app/curso_repo.php', 'f693bdb1c8fae80a41079bba38b31799', 'function curso_coautor_adicionar('],
+  ['app/entregas_repo.php', '315bf7b9103b57d9329a700612d89322', 'function entregas_pendentes('],
+  ['app/niveis_repo.php', '43fd6beb60e20f12c7c8ce58a355fd3b', 'function niveis_lista('],
+  ['app/notify.php', '393456e1a3431d3e3341f9c9a5488f2e', 'function notify_apontamento_evento('],
+  ['app/status_repo.php', '2ca8a21929b36614d5a0642bedade037', 'return niveis_nomes('],
+  ['public/_layout_bottom.php', 'e94ab6de52815f317b9fff6d944666db', 'data-etapa-regra'],
+  ['public/_layout_top.php', '7b238350264477122412868e51580c91', 'trocar_visao.php'],
+  ['public/admin/categorias.php', '1eb567da87c6f042cabccaa0a91e8bee', 'tipo_especial'],
+  ['public/admin/checklists.php', '6d7b0418eec23acdfcd19507b5b91d5f', 'Checklists'],
+  ['public/admin/index.php', 'b9f524c69fb7918fb20bb98880eaa128', 'checklists.php'],
+  ['public/admin/niveis.php', '5e20090d9ba7112fa7255efa3c7c6f2c', 'Níveis de Ensino'],
+  ['public/admin/status.php', '290038baceefe4923c186b183cc91b69', 'exige_entregas'],
+  ['public/apontamento_detalhe.php', '0c15146082ab673dd72298ad3011a83d', 'Registrar objeção'],
+  ['public/apontamentos.php', '9f7f92e00377bdbbf4238fc005b06f93', '<th>Arquivo</th>'],
+  ['public/assets/autoria-dark.css', '2c2e6c9ee50ca75b70a626d0145c97f4', 'aviso-apontamentos'],
+  ['public/curso_detalhe.php', 'c9742f2d55be336746cf8b76a044939c', 'avisaPendencias'],
+  ['public/curso_editar.php', '48f0e68583051e05fc920090dad53282', 'campo-ro'],
+  ['public/curso_novo.php', '6f76063474dcb6b0279fdb1dcf9b632e', 'coautores'],
+  ['public/curso_videos.php', '5ee073b9c810c138d61fbd52cb1a1f77', 'curso_eh_professor('],
+  ['public/dashboard.php', 'be88da4a8dc845c41a359957043e7488', 'apont_pendentes_por_curso('],
+  ['public/download.php', '28b48691153a77cb34b65b4b1e163806', 'curso_eh_professor('],
+  ['public/download_todos.php', '223f918db4a6c3472740defbce48719b', 'curso_eh_professor('],
+  ['public/move_status.php', '65d36720706a15aab61c03f63e96ddc9', 'EntregasPendentesException'],
+  ['public/trocar_visao.php', 'edfe1f047eb980e24117950c6c267536', 'visao_alternar('],
+  ['public/upload.php', '09a46da585ddf03174d97ffd0692af47', 'curso_eh_professor('],
+  ['public/video_captura.php', 'e70e1c568e0e5ac9b14d886bc78be4c5', 'curso_eh_professor('],
+  ['public/video_revisao.php', '2f22ee7f664c6c45712c4235a50628e1', 'curso_eh_professor('],
+  ['public/video_stream.php', 'b56e520623777a290de8c8f5b0312f38', 'curso_eh_professor('],
+  ['database/upgrade_v10.sql', '47519a5fcc046333f168f8904fe4c30d', 'tb_niveis_ensino'],
+  ['database/upgrade_v11.sql', '323e6271d2ee3d01e7b775da0584dc96', 'tb_apontamento_historico'],
 ];
 
 $resArq = []; $arqOk = 0;
@@ -91,6 +108,9 @@ $migracoes = [
   ['V8',  'Revisão de vídeos',              diag_tabela('tb_videos') && diag_tabela('tb_video_marcacoes')],
   ['V9',  'Projeto aprovado + descrição do vídeo', diag_coluna('tb_cursos', 'projeto_aprovado_em') && diag_coluna('tb_videos', 'descricao')],
   ['V10', 'Níveis de ensino + categorias',  diag_tabela('tb_niveis_ensino') && diag_tabela('tb_categorias')],
+  ['V11', 'Checklists, apontamentos (status/histórico), coautores, slide/vídeo, soft delete',
+          diag_tabela('tb_checklist_itens') && diag_tabela('tb_apontamento_historico') && diag_tabela('tb_curso_professores')
+          && diag_coluna('tb_curso_apontamentos', 'status') && diag_coluna('tb_curso_files', 'aprovado') && diag_coluna('tb_status', 'exige_entregas')],
 ];
 $dbInfo = db()->query("SELECT DATABASE() db, VERSION() v, @@character_set_database cs, USER() u")->fetch();
 $nNiveis = diag_count("SELECT COUNT(*) n FROM tb_niveis_ensino");
@@ -116,8 +136,13 @@ $validateTs = ini_get('opcache.validate_timestamps');
 // funções da versão nova realmente carregadas nesta execução?
 $funcNovas = [
   'niveis_lista'       => function_exists('niveis_lista'),
-  'niveis_nomes'       => function_exists('niveis_nomes'),
+  'visao_alternar'     => function_exists('visao_alternar'),
 ];
+require_once __DIR__ . '/../../app/apontamento_repo.php';
+require_once __DIR__ . '/../../app/checklist_repo.php';
+$funcNovas['apont_criar'] = function_exists('apont_criar');
+$funcNovas['checklist_salvar'] = function_exists('checklist_salvar');
+$funcNovas['entregas_pendentes'] = function_exists('entregas_pendentes');
 require_once __DIR__ . '/../../app/entregas_repo.php';
 $funcNovas['categorias_lista'] = function_exists('categorias_lista');
 $niveisCarregados = function_exists('niveis_ensino') ? niveis_ensino() : [];
@@ -129,7 +154,7 @@ include __DIR__ . '/../_layout_top.php';
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
   <div>
     <h1 class="h4 mb-0">Diagnóstico do Sistema</h1>
-    <div class="text-muted small">Confere se a última entrega (Bloco A — commit <code>36ccfd7</code>) está aplicada neste servidor.</div>
+    <div class="text-muted small">Confere se a última entrega (V11 — PROMPT MESTRE, Blocos A a G) está aplicada neste servidor.</div>
   </div>
   <a class="btn btn-outline-secondary" href="index.php">Voltar</a>
 </div>
@@ -148,8 +173,8 @@ include __DIR__ . '/../_layout_top.php';
   </div>
   <div class="col-12 col-md-4">
     <div class="card shadow-sm h-100"><div class="card-body">
-      <div class="small text-muted">Migração V10 (banco)</div>
-      <div class="h4 mb-0 <?= end($migracoes)[2] ? 'text-success' : 'text-danger' ?>"><?= end($migracoes)[2] ? 'Aplicada' : 'NÃO aplicada' ?></div>
+      <div class="small text-muted">Migrações V10 + V11 (banco)</div>
+      <div class="h4 mb-0 <?= ($migracoes[7][2] && $migracoes[8][2]) ? 'text-success' : 'text-danger' ?>"><?= ($migracoes[7][2] && $migracoes[8][2]) ? 'Aplicadas' : 'NÃO aplicadas' ?></div>
       <div class="small text-muted">níveis: <?= $nNiveis ?> • categorias: <?= $nCateg ?> • "Ensino Fundamental - Médio": <?= $temFundMedio ?></div>
     </div></div>
   </div>

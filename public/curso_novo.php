@@ -13,12 +13,16 @@ require_perm('propoe_cursos');
 // prioridade é definida apenas pela equipe de TI/ADMIN; o formador propõe com MEDIA
 $podePrioridade = perm('revisa_cursos');
 $escolas = escolas_ativas();
+$formadores = curso_professores_disponivel()
+  ? array_values(array_filter(formadores_usuarios(), fn($f) => (int)$f['id_user'] !== (int)$u['id_user']))
+  : [];
 
 $erro = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   csrf_check();
   try {
+    $coautores = array_map('intval', (array)($_POST['coautores'] ?? []));
     $id = curso_create((int)$u['id_user'], [
       'nome_curso' => trim($_POST['nome_curso'] ?? ''),
       'carga_horaria' => $_POST['carga_horaria'] ?? '10',
@@ -29,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       'data_prevista_inicio' => $_POST['data_prevista_inicio'] ?? null,
       'data_prevista_entrega_final' => $_POST['data_prevista_entrega_final'] ?? null,
       'descricao_breve' => trim($_POST['descricao_breve'] ?? ''),
-    ]);
+    ], $coautores);
     header("Location: curso_detalhe.php?id={$id}");
     exit;
   } catch (Throwable $e) {
@@ -126,6 +130,51 @@ include __DIR__ . '/_layout_top.php';
         <label class="form-label">Breve descrição</label>
         <textarea class="form-control" name="descricao_breve" rows="4" placeholder="Objetivo geral (inicie com verbo no infinitivo: Capacitar, Desenvolver, Compreender...)"></textarea>
       </div>
+
+      <?php if ($formadores): ?>
+        <div class="col-12">
+          <label class="form-label">Outros professores / autores participantes <span class="text-muted">(opcional)</span></label>
+          <div class="row g-2" id="coautoresWrap">
+            <div class="col-12 col-md-6">
+              <select class="form-select" id="coautorSel">
+                <option value="">Adicionar professor(a)...</option>
+                <?php foreach ($formadores as $f): ?>
+                  <option value="<?= (int)$f['id_user'] ?>"><?= htmlspecialchars($f['nome']) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+            <div class="col-12 col-md-2">
+              <button type="button" class="btn btn-outline-primary w-100" id="coautorAdd">+ Adicionar professor</button>
+            </div>
+            <div class="col-12">
+              <div class="d-flex flex-wrap gap-2" id="coautoresLista"></div>
+            </div>
+          </div>
+          <div class="form-text">
+            Professor responsável: <b><?= htmlspecialchars($u['nome']) ?></b>. Os demais entram como coautores
+            (acessam o curso, recebem os e-mails e compõem a identificação oficial).
+          </div>
+        </div>
+        <script>
+        (function () {
+          var sel = document.getElementById('coautorSel'), add = document.getElementById('coautorAdd'), lista = document.getElementById('coautoresLista');
+          function adicionar() {
+            var id = sel.value; if (!id) return;
+            if (lista.querySelector('[data-id="' + id + '"]')) { sel.value = ''; return; }
+            var nome = sel.options[sel.selectedIndex].text;
+            var chip = document.createElement('span');
+            chip.className = 'badge bg-info text-dark d-inline-flex align-items-center gap-2'; chip.dataset.id = id;
+            chip.style.fontSize = '13px';
+            chip.innerHTML = '<span></span><input type="hidden" name="coautores[]" value="' + id + '"><button type="button" class="btn-close btn-close-white" style="font-size:9px" title="Remover"></button>';
+            chip.querySelector('span').textContent = nome;
+            chip.querySelector('button').addEventListener('click', function () { chip.remove(); });
+            lista.appendChild(chip); sel.value = '';
+          }
+          add.addEventListener('click', adicionar);
+          sel.addEventListener('change', adicionar);
+        })();
+        </script>
+      <?php endif; ?>
 
       <div class="col-12 d-flex gap-2">
         <button class="btn btn-success">Salvar (<?= htmlspecialchars(status_inicial()) ?>)</button>

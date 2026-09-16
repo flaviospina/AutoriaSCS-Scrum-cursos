@@ -64,7 +64,9 @@ CREATE TABLE IF NOT EXISTS tb_status (
   ordem      INT NOT NULL DEFAULT 0,
   is_inicial TINYINT(1) NOT NULL DEFAULT 0,        -- status dos cursos recém-criados (apenas um)
   is_final   TINYINT(1) NOT NULL DEFAULT 0,        -- encerra o fluxo (sem alerta de prazo)
+  exige_entregas TINYINT(1) NOT NULL DEFAULT 0,    -- V11: só recebe o curso com documentos obrigatórios entregues
   ativo      TINYINT(1) NOT NULL DEFAULT 1,
+  excluido_em DATETIME NULL,                       -- V11: soft delete (exclusão protegida)
   PRIMARY KEY (id_status),
   UNIQUE KEY uq_status_nome (nome),
   KEY ix_status_coluna (id_coluna),
@@ -100,6 +102,7 @@ CREATE TABLE IF NOT EXISTS tb_cursos (
   status_atual                VARCHAR(80) NOT NULL,
   publication_due_date        DATE NULL,
   projeto_aprovado_em         DATETIME NULL,
+  aviso_pendencias_em         DATETIME NULL,                           -- V11: cooldown do e-mail de documentos pendentes
   validated_at                DATETIME NULL,
   inserted_at                 DATETIME NULL,
   created_at                  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -161,6 +164,9 @@ CREATE TABLE IF NOT EXISTS tb_curso_files (
   file_size     INT UNSIGNED NOT NULL DEFAULT 0,
   categoria     VARCHAR(60) NOT NULL DEFAULT 'OUTROS',
   modulo        TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  aprovado      TINYINT(1) NOT NULL DEFAULT 0,      -- V11: slide aprovado pela TI (libera o vídeo do módulo)
+  aprovado_por  INT UNSIGNED NULL,
+  aprovado_em   DATETIME NULL,
   created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_file),
   KEY ix_files_curso (id_curso),
@@ -259,14 +265,48 @@ CREATE TABLE IF NOT EXISTS tb_curso_apontamentos (
   id_apontamento INT UNSIGNED NOT NULL AUTO_INCREMENT,
   id_curso       INT UNSIGNED NOT NULL,
   id_user        INT UNSIGNED NOT NULL,
+  id_file        INT UNSIGNED NULL,                 -- V11: arquivo/material relacionado
   tipo           ENUM('TECNICO','PEDAGOGICO','ABNT','OUTRO') NOT NULL DEFAULT 'OUTRO',
   conteudo       TEXT NOT NULL,
-  resolvido      TINYINT(1) NOT NULL DEFAULT 0,
+  resolvido      TINYINT(1) NOT NULL DEFAULT 0,     -- espelho: 1 quando APROVADO/CONCLUIDO
+  status         ENUM('PENDENTE_ANALISE','CORRECAO_SOLICITADA','EM_CORRECAO','REENVIADO_ANALISE','APROVADO','CONCLUIDO') NOT NULL DEFAULT 'PENDENTE_ANALISE',
   created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id_apontamento),
   KEY ix_apont_curso (id_curso),
+  KEY ix_apont_file (id_file),
+  KEY ix_apont_status (id_curso, status),
   CONSTRAINT fk_apont_curso FOREIGN KEY (id_curso) REFERENCES tb_cursos (id_curso) ON DELETE CASCADE,
-  CONSTRAINT fk_apont_user  FOREIGN KEY (id_user)  REFERENCES tb_users (id_user)
+  CONSTRAINT fk_apont_user  FOREIGN KEY (id_user)  REFERENCES tb_users (id_user),
+  CONSTRAINT fk_apont_file  FOREIGN KEY (id_file)  REFERENCES tb_curso_files (id_file) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- V11: histórico de status e manifestações (concordância/objeção) do professor
+CREATE TABLE IF NOT EXISTS tb_apontamento_historico (
+  id_historico   INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  id_apontamento INT UNSIGNED NOT NULL,
+  status_de      VARCHAR(30) NULL,
+  status_para    VARCHAR(30) NOT NULL,
+  id_user        INT UNSIGNED NULL,
+  observacao     TEXT NULL,
+  created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_historico),
+  KEY ix_aphist_apont (id_apontamento, created_at),
+  CONSTRAINT fk_aphist_apont FOREIGN KEY (id_apontamento) REFERENCES tb_curso_apontamentos (id_apontamento) ON DELETE CASCADE,
+  CONSTRAINT fk_aphist_user  FOREIGN KEY (id_user) REFERENCES tb_users (id_user)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS tb_apontamento_manifestacoes (
+  id_manifestacao INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  id_apontamento  INT UNSIGNED NOT NULL,
+  id_user         INT UNSIGNED NOT NULL,
+  tipo            ENUM('CONCORDO','OBJECAO') NOT NULL,
+  justificativa   TEXT NULL,
+  created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_manifestacao),
+  KEY ix_apman_apont (id_apontamento, created_at),
+  CONSTRAINT fk_apman_apont FOREIGN KEY (id_apontamento) REFERENCES tb_curso_apontamentos (id_apontamento) ON DELETE CASCADE,
+  CONSTRAINT fk_apman_user  FOREIGN KEY (id_user) REFERENCES tb_users (id_user)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------
@@ -367,13 +407,71 @@ CREATE TABLE IF NOT EXISTS tb_categorias (
   escopo       ENUM('GERAL','MODULO') NOT NULL DEFAULT 'MODULO',
   nome         VARCHAR(60) NOT NULL,
   obrigatoria  TINYINT(1) NOT NULL DEFAULT 1,
+  tipo_especial ENUM('NENHUM','SLIDE','VIDEO') NOT NULL DEFAULT 'NENHUM', -- V11: slide aprovado libera o vídeo
   ordem        SMALLINT UNSIGNED NOT NULL DEFAULT 0,
   ativo        TINYINT(1) NOT NULL DEFAULT 1,
+  excluida_em  DATETIME NULL,                      -- V11: soft delete (exclusão protegida)
   created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id_categoria),
   UNIQUE KEY uq_categorias_escopo_nome (escopo, nome),
   KEY ix_categorias_escopo (escopo, ativo, ordem)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- Checklists por perfil (V11): Professor × TI/Admin
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tb_checklists (
+  id_checklist   INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  codigo         VARCHAR(20) NOT NULL,
+  nome           VARCHAR(120) NOT NULL,
+  perfil_destino VARCHAR(20) NOT NULL,
+  ativo          TINYINT(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (id_checklist),
+  UNIQUE KEY uq_checklists_codigo (codigo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS tb_checklist_itens (
+  id_item      INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  id_checklist INT UNSIGNED NOT NULL,
+  chave        VARCHAR(60) NULL,
+  grupo        VARCHAR(80) NOT NULL DEFAULT '',
+  descricao    VARCHAR(200) NOT NULL,
+  obrigatorio  TINYINT(1) NOT NULL DEFAULT 0,
+  ordem        SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  ativo        TINYINT(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (id_item),
+  KEY ix_chkitem_lista (id_checklist, ativo, ordem),
+  UNIQUE KEY uq_chkitem_chave (id_checklist, chave),
+  CONSTRAINT fk_chkitem_lista FOREIGN KEY (id_checklist) REFERENCES tb_checklists (id_checklist)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS tb_curso_checklist_respostas (
+  id_curso   INT UNSIGNED NOT NULL,
+  id_item    INT UNSIGNED NOT NULL,
+  marcado    TINYINT(1) NOT NULL DEFAULT 0,
+  id_user    INT UNSIGNED NULL,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_curso, id_item),
+  CONSTRAINT fk_chkresp_curso FOREIGN KEY (id_curso) REFERENCES tb_cursos (id_curso) ON DELETE CASCADE,
+  CONSTRAINT fk_chkresp_item  FOREIGN KEY (id_item)  REFERENCES tb_checklist_itens (id_item),
+  CONSTRAINT fk_chkresp_user  FOREIGN KEY (id_user)  REFERENCES tb_users (id_user)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- Professores do curso (V11): responsável + coautores
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tb_curso_professores (
+  id_curso_professor INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  id_curso   INT UNSIGNED NOT NULL,
+  id_usuario INT UNSIGNED NOT NULL,
+  tipo       ENUM('RESPONSAVEL','COAUTOR') NOT NULL DEFAULT 'COAUTOR',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_curso_professor),
+  UNIQUE KEY uq_curso_prof (id_curso, id_usuario),
+  KEY ix_cprof_usuario (id_usuario),
+  CONSTRAINT fk_cprof_curso FOREIGN KEY (id_curso)   REFERENCES tb_cursos (id_curso) ON DELETE CASCADE,
+  CONSTRAINT fk_cprof_user  FOREIGN KEY (id_usuario) REFERENCES tb_users (id_user)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------
@@ -489,6 +587,39 @@ INSERT IGNORE INTO tb_categorias (escopo, nome, obrigatoria, ordem, ativo) VALUE
   ('MODULO', 'Anexo',                           1, 4, 1),
   ('MODULO', 'Texto Complementar',              0, 5, 1),
   ('MODULO', 'Atividade Avaliativa',            0, 6, 1);
+
+-- V11: papéis especiais das categorias e status que exigem entregas
+UPDATE tb_categorias SET tipo_especial='SLIDE' WHERE escopo='MODULO' AND nome='Slide';
+UPDATE tb_categorias SET tipo_especial='VIDEO' WHERE escopo='MODULO' AND nome='Vídeo';
+UPDATE tb_status SET exige_entregas=1 WHERE nome IN ('Pronto para Análise','Pronto para Nova Análise');
+
+-- V11: checklists por perfil
+INSERT IGNORE INTO tb_checklists (codigo, nome, perfil_destino, ativo) VALUES
+  ('PROFESSOR', 'Checklist do Professor (Planejamento, Produção e Entrega)', 'PROFESSOR', 1),
+  ('TI',        'Checklist TI/Admin (critérios internos de validação)',      'TI',        1);
+SET @ckProf := (SELECT id_checklist FROM tb_checklists WHERE codigo='PROFESSOR');
+SET @ckTI   := (SELECT id_checklist FROM tb_checklists WHERE codigo='TI');
+INSERT IGNORE INTO tb_checklist_itens (id_checklist, chave, grupo, descricao, obrigatorio, ordem, ativo) VALUES
+  (@ckProf, 'modulos_definidos',         'Planejamento',        'Definição de módulos',                                   0, 1,  1),
+  (@ckProf, 'estrutura_introducao',      'Planejamento',        'Estrutura da introdução',                                0, 2,  1),
+  (@ckProf, 'planejamento_videos',       'Planejamento',        'Planejamento dos vídeos (MB Estúdios)',                  0, 3,  1),
+  (@ckProf, 'planejamento_textos_apoio', 'Planejamento',        'Planejamento textos de apoio',                           0, 4,  1),
+  (@ckProf, 'planejamento_avaliacoes',   'Planejamento',        'Planejamento avaliações (+5 p/ randomização)',           0, 5,  1),
+  (@ckProf, 'referencias_abnt',          'Planejamento',        'Referências ABNT NBR 6023/2018',                         0, 6,  1),
+  (@ckProf, 'videos_produzidos',         'Produção',            'Vídeos produzidos',                                      0, 7,  1),
+  (@ckProf, 'textos_escritos',           'Produção',            'Textos escritos',                                        0, 8,  1),
+  (@ckProf, 'avaliacoes_criadas',        'Produção',            'Avaliações criadas',                                     0, 9,  1),
+  (@ckProf, 'revisao_interna_professor', 'Produção',            'Revisão interna (formador)',                             0, 10, 1),
+  (@ckProf, 'criterios_atendidos',       'Entrega / Validação', 'Critérios atendidos (autor)',                            0, 11, 1),
+  (@ckProf, 'material_enviado',          'Entrega / Validação', 'Material enviado oficialmente',                          0, 12, 1),
+  (@ckTI, 'ti_identificacao',   'Revisão técnica',   'Identificação oficial do curso conferida (nome - formador(es) - carga horária)', 0, 1, 1),
+  (@ckTI, 'ti_materiais',       'Revisão técnica',   'Todos os materiais obrigatórios entregues e abrindo corretamente',               0, 2, 1),
+  (@ckTI, 'ti_slides',          'Revisão técnica',   'Slides aprovados (identidade visual e legibilidade)',                            0, 3, 1),
+  (@ckTI, 'ti_videos',          'Revisão técnica',   'Vídeos analisados e aprovados pelo(a) formador(a)',                              0, 4, 1),
+  (@ckTI, 'ti_pedagogico',      'Revisão pedagógica','Objetivos, público-alvo e avaliações coerentes com a carga horária',             0, 5, 1),
+  (@ckTI, 'ti_abnt',            'Revisão pedagógica','Referências bibliográficas conforme ABNT NBR 6023/2018',                         0, 6, 1),
+  (@ckTI, 'ti_apontamentos',    'Encerramento',      'Todos os apontamentos concluídos',                                               0, 7, 1),
+  (@ckTI, 'ti_liberado_mb',     'Encerramento',      'Curso liberado para inserção pela MB Estúdios',                                  0, 8, 1);
 
 -- Usuário administrador inicial
 -- E-mail: admin@scseduca.com.br | Senha: admin123  (TROQUE NO PRIMEIRO ACESSO)

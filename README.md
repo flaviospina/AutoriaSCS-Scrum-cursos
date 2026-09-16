@@ -29,6 +29,28 @@ O fluxo do Kanban não é mais fixo no código — é configurável em `Admin`:
 - **Níveis de ensino** (`admin/niveis.php`) e **Categorias de entrega** (`admin/categorias.php`) — V10:
   cadastros administráveis (criar, renomear, reordenar, obrigatória/opcional, ativar/inativar).
   Renomear atualiza cursos/arquivos vinculados; itens em uso não podem ser excluídos, apenas inativados.
+- **Checklists** (`admin/checklists.php`) — V11: itens do Checklist do Professor e do Checklist TI/Admin.
+- **Alternar visualização** (seletor "Ver como" no cabeçalho) — V11: o ADMIN vê o sistema como outro
+  perfil; validado no backend, auditado e exclusivo do ADMIN (403 para os demais).
+- **Exclusão protegida de etapas** (status e categorias) — V11: bloqueada quando algum curso já concluiu a
+  etapa; com dados vinculados exige dupla confirmação; soft delete com opção de restaurar.
+- **Diagnóstico do sistema** (`admin/diagnostico_sistema.php`): confere arquivos, migrações e OPcache.
+
+## Ajustes V11 (PROMPT MESTRE)
+
+- **Editar Curso**: unidade escolar, prioridade, previsões e carga horária só são alteradas por TI/ADMIN
+  (o formador as vê como rótulos; o backend recusa alterações com 403 e audita antes/depois).
+- **Entrega de materiais em ordem livre**; todos os documentos **obrigatórios** precisam estar entregues
+  para o curso entrar em um status com "Exige entregas" (padrão: Pronto para Análise / Nova Análise).
+  A tentativa bloqueada mostra a lista do que falta (SweetAlert) e envia e-mail ao(s) professor(es) e à
+  TI com cooldown de 6h por curso. O **vídeo** de um módulo só é aceito após a **aprovação do slide** pela TI.
+- **Checklists por perfil**: o formador vê o Checklist do Professor; TI vê o Checklist TI/Admin; ADMIN vê ambos.
+- **Apontamentos TI/Qualidade**: arquivo relacionado, status (Pendente de análise → Correção solicitada →
+  Em correção pelo professor → Reenviado para análise → Aprovado → Concluído), histórico (linha do tempo),
+  resposta formal do professor (**Concordo** / **Não concordo — objeção com justificativa**), e-mail a cada
+  mudança para professor(es) + ti.cecape, e aviso destacado enquanto houver pendência. Nada é apagado.
+- **Mais de um professor por curso**: responsável (`tb_cursos.id_professor`) + coautores
+  (`tb_curso_professores`), que acessam o curso, recebem os e-mails e compõem a identificação oficial.
 
 ## Auditoria, E-mails e Biblioteca de Modelos (V3)
 
@@ -85,8 +107,10 @@ Ferramenta integrada de análise de vídeos (`🎬 Vídeos` na página do curso)
    `upgrade_v4.sql` (perfis dinâmicos), `upgrade_v5.sql` (etapa Pronto para Publicação),
    `upgrade_v6.sql` (cadastro de escolas), `upgrade_v7.sql` (fluxo ordenado de entrega
    de materiais), `upgrade_v8.sql` (revisão de vídeos), `upgrade_v9.sql` (aprovação do
-   projeto com carga horária + inversão do fluxo de vídeos) e `upgrade_v10.sql` (cadastros de
-   níveis de ensino e categorias de entrega) — faça backup antes.
+   projeto com carga horária + inversão do fluxo de vídeos), `upgrade_v10.sql` (cadastros de
+   níveis de ensino e categorias de entrega) e `upgrade_v11.sql` (ajustes do PROMPT MESTRE:
+   checklists por perfil, entrega livre/aprovação de slide, apontamentos com status e histórico,
+   coautores, exclusão protegida) — faça backup antes.
 2. Copie `app/config.php` para `app/config.local.php` e preencha as credenciais reais do banco,
    a seção `mail` (método `mail` do cPanel ou `smtp`) e a `cron.chave`
    (o arquivo local é ignorado pelo git).

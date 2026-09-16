@@ -21,7 +21,7 @@ $video = video_get($idVideo);
 if (!$video) { http_response_code(404); echo "Vídeo não encontrado."; exit; }
 
 $idCurso = (int)$video['id_curso'];
-$ehDono = (int)$video['id_professor'] === (int)$u['id_user'];
+$ehDono = curso_eh_professor(['id_curso' => (int)$video['id_curso'], 'id_professor' => (int)$video['id_professor']], (int)$u['id_user']);
 if (!is_staff() && !$ehDono) { http_response_code(403); echo "Acesso negado."; exit; }
 
 // A análise do vídeo é feita pelo(a) formador(a); a MB produz e reenvia as versões.

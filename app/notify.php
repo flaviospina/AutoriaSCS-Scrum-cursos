@@ -174,7 +174,7 @@ function notify_event_status(array $curso, string $from, string $to, array $byUs
   $profEmail = $curso['professor_email'];
 
   $base = "<p>Curso: <b>" . htmlspecialchars($nomeCurso) . "</b><br>"
-        . "Formador(a): " . htmlspecialchars($profNome) . "<br>"
+        . "Formador(es): " . htmlspecialchars(function_exists('curso_formadores_nomes') ? curso_formadores_nomes($curso) : $profNome) . "<br>"
         . "Status: <b>" . htmlspecialchars($from) . "</b> → <b>" . htmlspecialchars($to) . "</b><br>"
         . "Por: " . htmlspecialchars($byUser['nome'] ?? $byUser['email'] ?? '-') . "</p>";
 
@@ -240,7 +240,9 @@ function notify_event_status(array $curso, string $from, string $to, array $byUs
   }
 
   // Formador: sempre que outra pessoa mover o curso dele + mensagens específicas
-  $atorEhFormador = isset($byUser['id_user']) && (int)$byUser['id_user'] === (int)$curso['id_professor'];
+  $atorEhFormador = isset($byUser['id_user']) && function_exists('curso_eh_professor')
+    ? curso_eh_professor($curso, (int)$byUser['id_user'])
+    : (isset($byUser['id_user']) && (int)$byUser['id_user'] === (int)$curso['id_professor']);
   if (!$atorEhFormador || in_array($to, ['Inserido'], true)) {
     $extra = '';
     if ($to === 'Recusado - Ajustes Necessários') {
@@ -279,9 +281,20 @@ function notify_event_status(array $curso, string $from, string $to, array $byUs
       $titulo = "Atualização no seu curso: {$to}";
     }
 
-    notify_queue($profEmail, $profNome, "[AutoriaSCS] {$nomeCurso}: {$to}",
-      mail_template($titulo, $base . $extra, $link, 'Abrir meu curso'));
+    $html = mail_template($titulo, $base . $extra, $link, 'Abrir meu curso');
+    foreach (notify_professores_curso($curso) as $p) {
+      notify_queue($p['email'], $p['nome'], "[AutoriaSCS] {$nomeCurso}: {$to}", $html);
+    }
   }
+}
+
+/** Destinatários "professor(es) do curso": responsável + coautores (V11) ou só o responsável. */
+function notify_professores_curso(array $curso): array {
+  $profs = (function_exists('curso_professores') && !empty($curso['id_curso'])) ? curso_professores((int)$curso['id_curso']) : [];
+  if (!$profs && !empty($curso['professor_email'])) {
+    $profs = [['nome' => $curso['professor_nome'] ?? '', 'email' => $curso['professor_email']]];
+  }
+  return $profs;
 }
 
 /** Intervalo mínimo (minutos) entre e-mails de documentos pendentes do mesmo curso (item 11). */
@@ -543,7 +556,7 @@ function notify_video_disponivel(array $video, int $numero, ?string $obsVersao =
      problema, marque o ponto exato (minuto/segundo/frame) com a orientação de correção.</p>",
     $link, 'Assistir e analisar o vídeo'
   );
-  notify_queue($video['professor_email'], $video['professor_nome'], $titulo, $html);
+  foreach (notify_professores_curso($video) as $p) notify_queue($p['email'], $p['nome'], $titulo, $html);
 }
 
 /** E-mail à MB quando o formador registra apontamentos no vídeo. */
@@ -592,7 +605,7 @@ function notify_video_resposta(array $video, string $autor, bool $paraFormador):
     $link, 'Ver a conversa'
   );
   if ($paraFormador) {
-    notify_queue($video['professor_email'], $video['professor_nome'], $assunto, $html);
+    foreach (notify_professores_curso($video) as $p) notify_queue($p['email'], $p['nome'], $assunto, $html);
   } else {
     notify_flag('recebe_email_insercao', $assunto, $html);
     notify_queue(ti_email(), 'Equipe TI & AutoriaSCS', $assunto, $html);

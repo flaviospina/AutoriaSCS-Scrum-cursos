@@ -22,7 +22,7 @@ $video = video_get((int)$versao['id_video']);
 if (!$video) { http_response_code(404); exit("Vídeo não encontrado."); }
 
 // mesma regra de visualização do curso
-if (!is_staff() && (int)$video['id_professor'] !== (int)$u['id_user']) {
+if (!is_staff() && !curso_eh_professor(['id_curso' => (int)$video['id_curso'], 'id_professor' => (int)$video['id_professor']], (int)$u['id_user'])) {
   http_response_code(403); exit("Sem permissão.");
 }
 

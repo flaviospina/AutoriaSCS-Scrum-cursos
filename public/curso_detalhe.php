@@ -52,6 +52,8 @@ $erro = null; $ok = null;
 if (($_GET['ok'] ?? '') === 'edit') $ok = "Curso atualizado com sucesso.";
 if (($_GET['ok'] ?? '') === 'upload') $ok = "Arquivo enviado com sucesso.";
 if (($_GET['ok'] ?? '') === 'dispensa') $ok = "Categoria registrada como \"sem material\".";
+if (($_GET['ok'] ?? '') === 'coautor_add') $ok = "Professor(a) incluído(a) como coautor(a) do curso.";
+if (($_GET['ok'] ?? '') === 'coautor_del') $ok = "Coautor(a) removido(a) do curso.";
 if (($_GET['ok'] ?? '') === 'slide_ok') $ok = "Slide aprovado. O envio do vídeo deste módulo foi liberado.";
 if (($_GET['ok'] ?? '') === 'slide_rev') $ok = "Aprovação do slide revogada. O envio do vídeo deste módulo voltou a ficar bloqueado.";
 if (($_GET['ok'] ?? '') === 'reativa') $ok = "Registro \"sem material\" desfeito. A categoria voltou a aceitar envio.";
@@ -256,6 +258,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'del_a
   }
 }
 
+// Professores do curso: adicionar/remover coautor (responsável, TI/ADMIN) — itens 22/23
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? '', ['add_coautor', 'del_coautor'], true)) {
+  csrf_check();
+  try {
+    $idCo = (int)($_POST['id_usuario'] ?? 0);
+    if ($_POST['action'] === 'add_coautor') curso_coautor_adicionar($curso, $idCo, $u);
+    else curso_coautor_remover($curso, $idCo, $u);
+    header("Location: curso_detalhe.php?id={$id}&ok=" . ($_POST['action'] === 'add_coautor' ? 'coautor_add' : 'coautor_del'));
+    exit;
+  } catch (Throwable $e) {
+    $erro = $e->getMessage();
+  }
+}
+
 // Aprovar / revogar aprovação de slide (TI/ADMIN) — libera o vídeo do módulo (item 12)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? '', ['aprovar_slide', 'revogar_slide'], true)) {
   csrf_check();
@@ -311,7 +327,7 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
       </div>
     <?php endif; ?>
     <div class="text-muted small">
-      Formador(a): <b><?= htmlspecialchars($curso['professor_nome']) ?></b> •
+      Formador(es): <b><?= htmlspecialchars(curso_formadores_nomes($curso)) ?></b> •
       Carga horária: <b><?= htmlspecialchars($curso['carga_horaria']) ?> horas</b> •
       Status: <span class="badge rounded-pill" style="<?= status_badge_style($curso['status_atual']) ?>">
                 <?= htmlspecialchars($curso['status_atual']) ?>
@@ -950,6 +966,42 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
           </div>
         <?php endif; ?>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- Professores do curso (responsável + coautores) -->
+  <?php $profsCurso = curso_professores($id); $podeGerirProfs = curso_pode_gerir_professores($curso, $u) && curso_professores_disponivel(); ?>
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h2 class="h6 mb-2">Professores do curso</h2>
+        <div class="d-flex flex-wrap gap-2 mb-2">
+          <?php foreach ($profsCurso as $p): ?>
+            <span class="badge <?= $p['tipo'] === 'RESPONSAVEL' ? 'bg-primary' : 'bg-info text-dark' ?> d-inline-flex align-items-center gap-2" style="font-size:13px">
+              <?= htmlspecialchars($p['nome']) ?> <small>(<?= $p['tipo'] === 'RESPONSAVEL' ? 'responsável' : 'coautor' ?>)</small>
+              <?php if ($podeGerirProfs && $p['tipo'] === 'COAUTOR'): ?>
+                <form method="post" class="d-inline m-0" data-confirm="Remover <b><?= htmlspecialchars($p['nome']) ?></b> do curso?" data-confirm-title="Remover coautor" data-confirm-type="danger" data-confirm-btn="Sim, remover">
+                  <?= csrf_field() ?><input type="hidden" name="action" value="del_coautor"><input type="hidden" name="id_usuario" value="<?= (int)$p['id_user'] ?>">
+                  <button class="btn-close btn-close-white" style="font-size:9px" title="Remover"></button>
+                </form>
+              <?php endif; ?>
+            </span>
+          <?php endforeach; ?>
+        </div>
+        <?php if ($podeGerirProfs): $outros = array_filter(formadores_usuarios(), fn($f) => !in_array((int)$f['id_user'], array_map(fn($p) => (int)$p['id_user'], $profsCurso), true)); ?>
+          <?php if ($outros): ?>
+            <form method="post" class="d-flex flex-wrap gap-2 align-items-center" data-confirm="Incluir este(a) professor(a) como coautor(a)?" data-confirm-title="Adicionar professor" data-confirm-btn="Sim, incluir">
+              <?= csrf_field() ?><input type="hidden" name="action" value="add_coautor">
+              <select class="form-select form-select-sm" name="id_usuario" required style="max-width:320px">
+                <option value="">Adicionar professor(a)...</option>
+                <?php foreach ($outros as $f): ?><option value="<?= (int)$f['id_user'] ?>"><?= htmlspecialchars($f['nome']) ?></option><?php endforeach; ?>
+              </select>
+              <button class="btn btn-sm btn-outline-primary">+ Adicionar professor</button>
+            </form>
+          <?php endif; ?>
+        <?php endif; ?>
+        <div class="small text-muted mt-2">Coautores acessam o curso, recebem os e-mails e compõem a identificação oficial (<i>nome do curso - formadores - carga horária</i>).</div>
       </div>
     </div>
   </div>

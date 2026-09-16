@@ -23,7 +23,7 @@ if (!$m || empty($m['captura'])) { http_response_code(404); exit("Captura não e
 
 $video = video_get((int)$m['id_video']);
 if (!$video) { http_response_code(404); exit("Vídeo não encontrado."); }
-if (!is_staff() && (int)$video['id_professor'] !== (int)$u['id_user']) {
+if (!is_staff() && !curso_eh_professor(['id_curso' => (int)$video['id_curso'], 'id_professor' => (int)$video['id_professor']], (int)$u['id_user'])) {
   http_response_code(403); exit("Sem permissão.");
 }
 

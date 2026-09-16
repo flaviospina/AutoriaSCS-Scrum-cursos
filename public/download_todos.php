@@ -21,7 +21,7 @@ $curso = curso_get($id);
 if (!$curso) { http_response_code(404); exit("Curso não encontrado."); }
 
 // mesma regra de visualização do curso: equipe ou o(a) próprio(a) formador(a)
-if (!is_staff() && (int)$curso['id_professor'] !== (int)$u['id_user']) {
+if (!is_staff() && !curso_eh_professor($curso, (int)$u['id_user'])) {
   http_response_code(403); exit("Sem permissão.");
 }
 

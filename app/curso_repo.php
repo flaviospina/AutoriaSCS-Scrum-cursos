@@ -7,7 +7,7 @@ require_once __DIR__ . '/notify.php';
 require_once __DIR__ . '/escolas_repo.php';
 require_once __DIR__ . '/entregas_repo.php';
 
-function curso_create(int $id_prof, array $d): int {
+function curso_create(int $id_prof, array $d, array $coautores = []): int {
   $inicial = status_inicial();
 
   // valores de cadastro: nível ativo e escola ativa (ou em branco)
@@ -41,6 +41,16 @@ function curso_create(int $id_prof, array $d): int {
   $id = (int)db()->lastInsertId();
 
   db()->prepare("INSERT INTO tb_curso_checklist (id_curso) VALUES (?)")->execute([$id]);
+
+  // professores do curso (V11): responsável + coautores escolhidos na proposta
+  if (curso_professores_disponivel()) {
+    db()->prepare("INSERT IGNORE INTO tb_curso_professores (id_curso, id_usuario, tipo) VALUES (?,?,'RESPONSAVEL')")->execute([$id, $id_prof]);
+    foreach (array_unique(array_map('intval', $coautores)) as $idCo) {
+      if ($idCo === $id_prof || !formador_valido($idCo)) continue;
+      db()->prepare("INSERT IGNORE INTO tb_curso_professores (id_curso, id_usuario, tipo) VALUES (?,?,'COAUTOR')")->execute([$id, $idCo]);
+      audit_log('coautor_adicionado', 'curso', $id, null, ['id_usuario' => $idCo]);
+    }
+  }
 
   db()->prepare("
     INSERT INTO tb_curso_status_history (id_curso, status_de, status_para, id_user, observacao)
@@ -170,6 +180,56 @@ function curso_get(int $id_curso): ?array {
   $st->execute([$id_curso]);
   $c = $st->fetch();
   return $c ?: null;
+}
+
+/** Usuário ativo com perfil que propõe cursos (formador)? */
+function formador_valido(int $idUser): bool {
+  $st = db()->prepare("SELECT role FROM tb_users WHERE id_user=? AND ativo=1");
+  $st->execute([$idUser]);
+  $r = $st->fetch();
+  return $r && perfil_flag($r['role'], 'propoe_cursos') && !perfil_flag($r['role'], 'admin_total');
+}
+
+/** Formadores ativos (id + nome) para seleção de coautores. */
+function formadores_usuarios(): array {
+  try {
+    return db()->query("
+      SELECT u.id_user, u.nome, u.email FROM tb_users u
+      JOIN tb_perfis p ON p.codigo = u.role
+      WHERE u.ativo=1 AND p.propoe_cursos=1 AND p.admin_total=0
+      ORDER BY u.nome")->fetchAll();
+  } catch (Throwable $e) {
+    return db()->query("SELECT id_user, nome, email FROM tb_users WHERE ativo=1 AND role='PROFESSOR' ORDER BY nome")->fetchAll();
+  }
+}
+
+/** Pode gerenciar coautores: responsável do curso ou equipe de revisão/ADMIN. */
+function curso_pode_gerir_professores(array $curso, array $user): bool {
+  if (empty($user['id_user'])) return false;
+  if (!empty($user['role']) && perfil_flag($user['role'], 'revisa_cursos')) return true;
+  return (int)$curso['id_professor'] === (int)$user['id_user'];
+}
+
+/** Adiciona um coautor (item 22/23). Regras no backend; auditado. */
+function curso_coautor_adicionar(array $curso, int $idUser, array $user): void {
+  if (!curso_pode_gerir_professores($curso, $user)) { http_response_code(403); throw new Exception("Sem permissão para incluir professores neste curso."); }
+  if (!curso_professores_disponivel()) throw new Exception("Execute database/upgrade_v11.sql para habilitar coautores.");
+  if ($idUser === (int)$curso['id_professor']) { http_response_code(422); throw new Exception("Este usuário já é o professor responsável."); }
+  if (!formador_valido($idUser)) { http_response_code(422); throw new Exception("Selecione um(a) formador(a) ativo(a) cadastrado(a) no sistema."); }
+  $st = db()->prepare("INSERT IGNORE INTO tb_curso_professores (id_curso, id_usuario, tipo) VALUES (?,?,'COAUTOR')");
+  $st->execute([(int)$curso['id_curso'], $idUser]);
+  if ($st->rowCount() === 0) { http_response_code(422); throw new Exception("Este(a) professor(a) já participa do curso."); }
+  audit_log('coautor_adicionado', 'curso', (int)$curso['id_curso'], null, ['id_usuario' => $idUser]);
+}
+
+/** Remove um coautor (o responsável nunca é removido por aqui). */
+function curso_coautor_remover(array $curso, int $idUser, array $user): void {
+  if (!curso_pode_gerir_professores($curso, $user)) { http_response_code(403); throw new Exception("Sem permissão para remover professores deste curso."); }
+  if ($idUser === (int)$curso['id_professor']) { http_response_code(422); throw new Exception("O professor responsável não pode ser removido."); }
+  $st = db()->prepare("DELETE FROM tb_curso_professores WHERE id_curso=? AND id_usuario=? AND tipo='COAUTOR'");
+  $st->execute([(int)$curso['id_curso'], $idUser]);
+  if ($st->rowCount() === 0) { http_response_code(404); throw new Exception("Coautor não encontrado neste curso."); }
+  audit_log('coautor_removido', 'curso', (int)$curso['id_curso'], ['id_usuario' => $idUser], null);
 }
 
 /** A tabela de professores do curso (V11) já existe? (cache por requisição) */
