@@ -118,22 +118,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'delete') {
+      // Exclusão protegida de etapa do fluxo (item 6):
+      //  regra 1 — algum curso já CONCLUIU a etapa (saiu dela: histórico status_de) → bloqueia;
+      //  regra 2 — possui cursos/dados vinculados sem conclusão → só após dupla confirmação;
+      //  soft delete (ativo=0 + excluido_em), transições removidas, auditoria com IDs impactados.
       $ids = (int)($_POST['id_status'] ?? 0);
-      $uso = status_em_uso($ids);
-      if ($uso > 0) {
-        throw new Exception("Não é possível excluir: {$uso} curso(s) estão neste status. Mova os cursos ou desative o status.");
+      $st = db()->prepare("SELECT * FROM tb_status WHERE id_status=?");
+      $st->execute([$ids]);
+      $s = $st->fetch();
+      if (!$s) { http_response_code(404); throw new Exception("Status não encontrado."); }
+      if (!array_key_exists('excluido_em', $s)) throw new Exception("Execute database/upgrade_v11.sql antes de excluir etapas.");
+      if (!empty($s['is_inicial'])) { http_response_code(422); throw new Exception("O status inicial não pode ser excluído. Defina outro status inicial antes."); }
+      if (!empty($s['excluido_em'])) { http_response_code(422); throw new Exception("Este status já está excluído."); }
+
+      $h = db()->prepare("SELECT COUNT(*) n FROM tb_curso_status_history WHERE status_de=?");
+      $h->execute([$s['nome']]);
+      $concluidos = (int)$h->fetch()['n'];
+      if ($concluidos > 0) {
+        http_response_code(422);
+        audit_log('status_exclusao_bloqueada', 'status', $ids, null, ['nome' => $s['nome'], 'cursos_que_concluiram' => $concluidos]);
+        throw new Exception("Não é possível excluir esta etapa: ela já foi concluída por um ou mais cursos ({$concluidos} registro(s) no histórico) e faz parte do histórico do sistema.");
       }
+
+      $cs = db()->prepare("SELECT id_curso FROM tb_cursos WHERE status_atual=?");
+      $cs->execute([$s['nome']]);
+      $cursosNoStatus = array_map('intval', array_column($cs->fetchAll(), 'id_curso'));
+
       db()->beginTransaction();
       try {
-        db()->prepare("DELETE FROM tb_status_transicoes WHERE id_status_de=? OR id_status_para=?")->execute([$ids, $ids]);
-        db()->prepare("DELETE FROM tb_status WHERE id_status=?")->execute([$ids]);
+        $t = db()->prepare("DELETE FROM tb_status_transicoes WHERE id_status_de=? OR id_status_para=?");
+        $t->execute([$ids, $ids]);
+        $nTrans = $t->rowCount();
+        db()->prepare("UPDATE tb_status SET ativo=0, excluido_em=NOW() WHERE id_status=?")->execute([$ids]);
         db()->commit();
       } catch (Throwable $e) {
         db()->rollBack();
         throw $e;
       }
-      audit_log('status_excluido', 'status', $ids);
-      $ok = "Status excluído (transições associadas também foram removidas).";
+      audit_log('status_excluido', 'status', $ids,
+        ['nome' => $s['nome'], 'ativo' => (int)$s['ativo']],
+        ['excluido_em' => date('Y-m-d H:i:s'), 'soft_delete' => true, 'transicoes_removidas' => $nTrans, 'cursos_no_status' => $cursosNoStatus]);
+      $ok = "Status \"{$s['nome']}\" excluído (registro preservado; " . ($cursosNoStatus ? count($cursosNoStatus) . " curso(s) permanecem nele até serem movidos" : "sem cursos vinculados") . ").";
+    }
+
+    if ($action === 'restore') {
+      $ids = (int)($_POST['id_status'] ?? 0);
+      $st = db()->prepare("SELECT * FROM tb_status WHERE id_status=?");
+      $st->execute([$ids]);
+      $s = $st->fetch();
+      if (!$s) { http_response_code(404); throw new Exception("Status não encontrado."); }
+      db()->prepare("UPDATE tb_status SET ativo=1, excluido_em=NULL WHERE id_status=?")->execute([$ids]);
+      audit_log('status_restaurado', 'status', $ids, ['excluido_em' => $s['excluido_em'] ?? null], ['nome' => $s['nome']]);
+      $ok = "Status \"{$s['nome']}\" restaurado (reconfigure as transições em Transições por perfil).";
     }
   } catch (Throwable $e) {
     $erro = $e->getMessage();
@@ -143,11 +179,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $colunas = db()->query("SELECT * FROM tb_kanban_colunas ORDER BY ordem, id_coluna")->fetchAll();
 $statusList = db()->query("
   SELECT s.*, k.nome AS coluna_nome,
-         (SELECT COUNT(*) FROM tb_cursos c WHERE c.status_atual = s.nome) AS em_uso
+         (SELECT COUNT(*) FROM tb_cursos c WHERE c.status_atual = s.nome) AS em_uso,
+         (SELECT COUNT(*) FROM tb_curso_status_history h WHERE h.status_de = s.nome) AS concluidos,
+         (SELECT COUNT(*) FROM tb_curso_status_history h WHERE h.status_para = s.nome) AS entradas
   FROM tb_status s
   LEFT JOIN tb_kanban_colunas k ON k.id_coluna = s.id_coluna
   ORDER BY s.ordem, s.id_status
 ")->fetchAll();
+$statusExcluidos = array_values(array_filter($statusList, fn($s) => !empty($s['excluido_em'])));
+$statusList = array_values(array_filter($statusList, fn($s) => empty($s['excluido_em'])));
 
 include __DIR__ . '/../_layout_top.php';
 ?>
@@ -291,13 +331,14 @@ include __DIR__ . '/../_layout_top.php';
                     <button class="btn btn-sm btn-outline-success" title="Definir como status inicial dos novos cursos">Tornar inicial</button>
                   </form>
                 <?php endif; ?>
+                <?php $regra = (int)$s['concluidos'] > 0 ? '1' : (((int)$s['em_uso'] > 0 || (int)$s['entradas'] > 0) ? '2' : '0'); ?>
                 <form method="post" class="d-inline"
-                      data-confirm="Excluir o status <b><?= htmlspecialchars($s['nome']) ?></b>?<br>As transições associadas também serão removidas."
-                      data-confirm-title="Excluir status" data-confirm-type="danger" data-confirm-btn="Sim, excluir">
+                      data-etapa-regra="<?= $regra ?>" data-etapa-nome="<?= htmlspecialchars($s['nome']) ?>">
                   <?= csrf_field() ?>
                   <input type="hidden" name="action" value="delete">
                   <input type="hidden" name="id_status" value="<?= (int)$s['id_status'] ?>">
-                  <button class="btn btn-sm btn-outline-danger" <?= (int)$s['em_uso'] > 0 || $s['is_inicial'] ? 'disabled title="Em uso ou inicial"' : '' ?>>Excluir</button>
+                  <button class="btn btn-sm btn-outline-danger" <?= $s['is_inicial'] ? 'disabled title="Status inicial"' : '' ?>
+                          title="<?= $regra === '1' ? 'Etapa concluída por cursos: exclusão bloqueada' : ($regra === '2' ? 'Possui cursos/dados vinculados: dupla confirmação' : 'Excluir (soft delete)') ?>">Excluir</button>
                 </form>
               </td>
             </tr>
@@ -308,7 +349,27 @@ include __DIR__ . '/../_layout_top.php';
   </div>
 </div>
 
+<?php if (!empty($statusExcluidos)): ?>
+  <div class="card shadow-sm mt-3 opacity-75">
+    <div class="card-body">
+      <h2 class="h6 mb-2">Status excluídos (<?= count($statusExcluidos) ?>)</h2>
+      <?php foreach ($statusExcluidos as $s): ?>
+        <form method="post" class="d-flex flex-wrap align-items-center gap-2 small mb-1"
+              data-confirm="Restaurar o status <b><?= htmlspecialchars($s['nome']) ?></b>?" data-confirm-title="Restaurar status" data-confirm-btn="Sim, restaurar">
+          <?= csrf_field() ?>
+          <input type="hidden" name="action" value="restore">
+          <input type="hidden" name="id_status" value="<?= (int)$s['id_status'] ?>">
+          <span><b><?= htmlspecialchars($s['nome']) ?></b> — excluído em <?= htmlspecialchars($s['excluido_em']) ?><?= (int)$s['em_uso'] ? ' • ' . (int)$s['em_uso'] . ' curso(s) ainda neste status' : '' ?></span>
+          <button class="btn btn-sm btn-outline-success py-0">Restaurar</button>
+        </form>
+      <?php endforeach; ?>
+    </div>
+  </div>
+<?php endif; ?>
+
 <div class="small text-muted mt-2">
+  <b>Exclusão protegida</b>: bloqueada quando algum curso já concluiu a etapa; com cursos/dados vinculados exige dupla confirmação;
+  o registro é preservado (soft delete) e pode ser restaurado.
   <b>Inicial</b>: status atribuído aos cursos recém-propostos (apenas um).
   <b>Final</b>: encerra o fluxo (ex.: Publicado) e não gera alertas de prazo.
   <b>Exige entregas</b>: o curso só entra neste status com todos os documentos obrigatórios enviados (o formador vê a lista do que falta).

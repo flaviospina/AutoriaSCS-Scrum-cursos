@@ -63,10 +63,49 @@
    */
   document.querySelectorAll('form').forEach(function (form) {
     form.addEventListener('submit', function () {
-      if (form.hasAttribute('data-confirm') && form.dataset.confirmed !== '1') return; // ainda vai confirmar
+      if ((form.hasAttribute('data-confirm') || form.hasAttribute('data-etapa-regra')) && form.dataset.confirmed !== '1') return; // ainda vai confirmar
       setTimeout(function () {
         form.querySelectorAll('button[type=submit], button:not([type]), input[type=submit]').forEach(function (b) { b.disabled = true; });
       }, 0);
+    });
+  });
+
+  /**
+   * 1c) Exclusão protegida de etapas (status do fluxo / categorias de entrega — item 6).
+   *     data-etapa-regra: "1" = etapa concluída por curso (bloqueia, só OK);
+   *                       "2" = possui dados, não concluída (duas confirmações);
+   *                       "0" = sem dados (confirmação simples). O backend aplica as mesmas regras.
+   */
+  document.querySelectorAll('form[data-etapa-regra]').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      if (form.dataset.confirmed === '1') return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      var regra = form.dataset.etapaRegra, nome = form.dataset.etapaNome || 'esta etapa';
+      var go = function () { form.dataset.confirmed = '1'; form.requestSubmit ? form.requestSubmit() : form.submit(); };
+      var base = { background: SWAL_BG, color: SWAL_FG, cancelButtonColor: '#374151', reverseButtons: true };
+      if (regra === '1') {
+        Swal.fire(Object.assign({}, base, { icon: 'error', title: 'Não é possível excluir esta etapa',
+          html: 'Esta etapa já foi concluída por um ou mais cursos e faz parte do histórico do sistema.',
+          confirmButtonText: 'OK', confirmButtonColor: '#06b6d4' }));
+        return;
+      }
+      if (regra === '2') {
+        Swal.fire(Object.assign({}, base, { icon: 'warning', title: 'Atenção',
+          html: 'Esta etapa possui cursos ou informações vinculadas. A exclusão poderá remover informações relacionadas a esta etapa.<br><br><b>Deseja continuar?</b>',
+          showCancelButton: true, confirmButtonText: 'Continuar', cancelButtonText: 'Cancelar', confirmButtonColor: '#f59e0b', focusCancel: true
+        })).then(function (r) {
+          if (!r.isConfirmed) return;
+          Swal.fire(Object.assign({}, base, { icon: 'error', title: 'Confirmar exclusão',
+            html: 'Esta operação poderá excluir dados relacionados à etapa e não poderá ser desfeita.<br><br><b>Tem certeza de que deseja excluir?</b>',
+            showCancelButton: true, confirmButtonText: 'Excluir definitivamente', cancelButtonText: 'Cancelar', confirmButtonColor: '#ef4444', focusCancel: true
+          })).then(function (r2) { if (r2.isConfirmed) go(); });
+        });
+        return;
+      }
+      Swal.fire(Object.assign({}, base, { icon: 'warning', title: 'Excluir ' + nome + '?',
+        html: 'Esta etapa não possui dados vinculados.', showCancelButton: true,
+        confirmButtonText: 'Sim, excluir', cancelButtonText: 'Cancelar', confirmButtonColor: '#ef4444', focusCancel: true
+      })).then(function (r) { if (r.isConfirmed) go(); });
     });
   });
 

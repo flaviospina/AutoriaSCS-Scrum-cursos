@@ -45,6 +45,7 @@ function categorias_lista(bool $todos = false, ?string $escopo = null): array {
     }
   }
   return array_values(array_filter($cache, function ($c) use ($todos, $escopo) {
+    if (!empty($c['excluida_em'])) return false; // soft delete (Bloco G): nunca listada
     if (!$todos && !(int)$c['ativo']) return false;
     if ($escopo !== null && $c['escopo'] !== $escopo) return false;
     return true;

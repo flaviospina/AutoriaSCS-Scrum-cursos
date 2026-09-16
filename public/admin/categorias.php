@@ -147,22 +147,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'excluir') {
+      // Exclusão protegida (item 6): regra 1 = etapa concluída por algum curso → bloqueia;
+      // regra 2 = possui dados mas não concluída → só após dupla confirmação; soft delete.
       $idc = (int)($_POST['id_categoria'] ?? 0);
       $c = categoria_get($idc);
-      if (!$c) throw new Exception("Categoria não encontrada.");
+      if (!$c) { http_response_code(404); throw new Exception("Categoria não encontrada."); }
+      if (!array_key_exists('excluida_em', $c)) throw new Exception("Execute database/upgrade_v11.sql antes de excluir etapas.");
+      if (!empty($c['excluida_em'])) { http_response_code(422); throw new Exception("Esta categoria já está excluída."); }
       $uso = categoria_em_uso($c['escopo'], $c['nome']);
-      if ($uso['arquivos'] + $uso['dispensas'] > 0) {
+      if ($uso['arquivos'] > 0) {
         http_response_code(422);
-        throw new Exception("Não é possível excluir: a categoria \"{$c['nome']}\" tem {$uso['arquivos']} arquivo(s) e {$uso['dispensas']} registro(s) de \"sem material\" em {$uso['cursos']} curso(s). Inative-a em vez de excluir.");
+        audit_log('categoria_exclusao_bloqueada', 'categoria', $idc, null, ['nome' => $c['nome'], 'arquivos' => $uso['arquivos'], 'cursos' => $uso['cursos']]);
+        throw new Exception("Não é possível excluir esta etapa: ela já foi concluída por um ou mais cursos ({$uso['arquivos']} arquivo(s)) e faz parte do histórico do sistema.");
       }
+      $condMod = $c['escopo'] === 'GERAL' ? 'modulo = 0' : 'modulo > 0';
       db()->beginTransaction();
       try {
-        db()->prepare("DELETE FROM tb_categorias WHERE id_categoria=?")->execute([$idc]);
-        categorias_renumerar($c['escopo']);
+        $ids = [];
+        try {
+          $sd = db()->prepare("SELECT id_dispensa FROM tb_curso_dispensas WHERE categoria=? AND $condMod");
+          $sd->execute([$c['nome']]);
+          $ids = array_map('intval', array_column($sd->fetchAll(), 'id_dispensa'));
+        } catch (Throwable $e) {}
+        db()->prepare("UPDATE tb_categorias SET ativo=0, excluida_em=NOW() WHERE id_categoria=?")->execute([$idc]);
         db()->commit();
       } catch (Throwable $ex) { db()->rollBack(); throw $ex; }
-      audit_log('categoria_excluida', 'categoria', $idc, ['escopo' => $c['escopo'], 'nome' => $c['nome']], null);
-      $ok = "Categoria \"{$c['nome']}\" excluída.";
+      audit_log('categoria_excluida', 'categoria', $idc,
+        ['escopo' => $c['escopo'], 'nome' => $c['nome'], 'ativo' => (int)$c['ativo']],
+        ['excluida_em' => date('Y-m-d H:i:s'), 'dispensas_vinculadas' => $ids, 'soft_delete' => true]);
+      $ok = "Categoria \"{$c['nome']}\" excluída (registro preservado; pode ser restaurado abaixo).";
+    }
+
+    if ($action === 'restaurar') {
+      $idc = (int)($_POST['id_categoria'] ?? 0);
+      $c = categoria_get($idc);
+      if (!$c) { http_response_code(404); throw new Exception("Categoria não encontrada."); }
+      db()->prepare("UPDATE tb_categorias SET ativo=1, excluida_em=NULL WHERE id_categoria=?")->execute([$idc]);
+      audit_log('categoria_restaurada', 'categoria', $idc, ['excluida_em' => $c['excluida_em'] ?? null], ['nome' => $c['nome']]);
+      $ok = "Categoria \"{$c['nome']}\" restaurada.";
     }
   } catch (Throwable $e) {
     $erro = $e->getMessage();
@@ -171,7 +193,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $todas = db()->query("SELECT * FROM tb_categorias ORDER BY escopo, ordem, nome")->fetchAll();
 $porEscopo = ['GERAL' => [], 'MODULO' => []];
+$excluidas = [];
 foreach ($todas as $c) {
+  if (!empty($c['excluida_em'])) { $excluidas[] = $c; continue; }
   $c['uso'] = categoria_em_uso($c['escopo'], $c['nome']);
   $porEscopo[$c['escopo']][] = $c;
 }
@@ -308,14 +332,13 @@ include __DIR__ . '/../_layout_top.php';
                           <input type="hidden" name="id_categoria" value="<?= (int)$c['id_categoria'] ?>">
                           <button class="btn btn-sm btn-outline-warning py-0"><?= $c['ativo'] ? 'Inativar' : 'Reativar' ?></button>
                         </form>
+                        <?php $regra = $c['uso']['arquivos'] > 0 ? '1' : ($c['uso']['dispensas'] > 0 ? '2' : '0'); ?>
                         <form method="post" class="d-inline"
-                              data-confirm="Excluir a categoria <b><?= htmlspecialchars($c['nome']) ?></b>?<br>Esta ação não pode ser desfeita."
-                              data-confirm-title="Excluir categoria" data-confirm-type="danger" data-confirm-btn="Sim, excluir">
+                              data-etapa-regra="<?= $regra ?>" data-etapa-nome="<?= htmlspecialchars($c['nome']) ?>">
                           <?= csrf_field() ?>
                           <input type="hidden" name="action" value="excluir">
                           <input type="hidden" name="id_categoria" value="<?= (int)$c['id_categoria'] ?>">
-                          <button class="btn btn-sm btn-outline-danger py-0"
-                                  <?= $emUso > 0 ? 'disabled title="Em uso por cursos — inative em vez de excluir"' : '' ?>>Excluir</button>
+                          <button class="btn btn-sm btn-outline-danger py-0" title="<?= $regra === '1' ? 'Etapa concluída por cursos: exclusão bloqueada' : 'Excluir (soft delete)' ?>">Excluir</button>
                         </form>
                       </td>
                     </tr>
@@ -328,9 +351,28 @@ include __DIR__ . '/../_layout_top.php';
       </div>
     <?php endforeach; ?>
 
+    <?php if ($excluidas): ?>
+      <div class="card shadow-sm mb-3 opacity-75">
+        <div class="card-body">
+          <h2 class="h6 mb-2">Categorias excluídas (<?= count($excluidas) ?>)</h2>
+          <?php foreach ($excluidas as $c): ?>
+            <form method="post" class="d-flex flex-wrap align-items-center gap-2 small mb-1"
+                  data-confirm="Restaurar a categoria <b><?= htmlspecialchars($c['nome']) ?></b>?" data-confirm-title="Restaurar categoria" data-confirm-btn="Sim, restaurar">
+              <?= csrf_field() ?>
+              <input type="hidden" name="action" value="restaurar">
+              <input type="hidden" name="id_categoria" value="<?= (int)$c['id_categoria'] ?>">
+              <span><?= htmlspecialchars(CATEGORIA_ESCOPOS[$c['escopo']] ?? $c['escopo']) ?> • <b><?= htmlspecialchars($c['nome']) ?></b> — excluída em <?= htmlspecialchars($c['excluida_em']) ?></span>
+              <button class="btn btn-sm btn-outline-success py-0">Restaurar</button>
+            </form>
+          <?php endforeach; ?>
+        </div>
+      </div>
+    <?php endif; ?>
+
     <div class="small text-muted">
       Categorias <b>inativas</b> saem do formulário de envio, mas os arquivos já enviados continuam listados no curso.
-      A exclusão definitiva só é permitida quando nenhum curso usa a categoria.
+      <b>Exclusão</b>: bloqueada quando algum curso já concluiu a etapa (tem arquivo); com dados vinculados exige dupla confirmação;
+      o registro é preservado (soft delete) e pode ser restaurado.
     </div>
   </div>
 </div>
