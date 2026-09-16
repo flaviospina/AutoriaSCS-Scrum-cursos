@@ -72,6 +72,8 @@ $PAGINA = basename($_SERVER['PHP_SELF'] ?? '');
                 <li><a class="dropdown-item" href="<?= $LP ?>admin/categorias.php">Categorias de entrega</a></li>
                 <li><a class="dropdown-item" href="<?= $LP ?>admin/auditoria.php">Auditoria</a></li>
                 <li><a class="dropdown-item" href="<?= $LP ?>admin/notificacoes.php">Notificações</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="<?= $LP ?>admin/diagnostico_sistema.php">Diagnóstico do sistema</a></li>
               </ul>
             </li>
           <?php endif; ?>

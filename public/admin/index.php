@@ -53,6 +53,7 @@ include __DIR__ . '/../_layout_top.php';
       ['Categorias de entrega', $nCateg, 'Categorias de material (Geral e Módulos): ordem de entrega e obrigatoriedade.', 'categorias.php'],
       ['Auditoria', $nAudit, 'Registro de todas as ações do sistema: quem fez, o quê, quando e de onde. Exportável em CSV.', 'auditoria.php'],
       ['Notificações', $nNotifP, 'Fila de e-mails do sistema (pendentes, enviados, erros) e processamento manual.', 'notificacoes.php'],
+      ['Diagnóstico do sistema', '✓', 'Confere se a última atualização foi aplicada: arquivos, migrações do banco e cache do PHP.', 'diagnostico_sistema.php'],
     ];
   ?>
   <?php foreach ($cards as [$titulo, $n, $desc, $link]): ?>
