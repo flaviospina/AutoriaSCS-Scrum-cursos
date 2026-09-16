@@ -284,6 +284,48 @@ function notify_event_status(array $curso, string $from, string $to, array $byUs
   }
 }
 
+/** Intervalo mínimo (minutos) entre e-mails de documentos pendentes do mesmo curso (item 11). */
+const ENTREGAS_EMAIL_COOLDOWN_MIN = 360;
+
+/**
+ * E-mail de tentativa de avanço com documentos obrigatórios pendentes (item 11):
+ * professor(es) do curso + caixa institucional da TI, com cooldown por curso
+ * (tb_cursos.aviso_pendencias_em) para não disparar dezenas de e-mails.
+ */
+function notify_entregas_pendentes(array $curso, string $etapa, array $pendencias, array $byUser): void {
+  $idCurso = (int)$curso['id_curso'];
+  try {
+    $st = db()->prepare("SELECT aviso_pendencias_em FROM tb_cursos WHERE id_curso=?");
+    $st->execute([$idCurso]);
+    $ultimo = $st->fetch()['aviso_pendencias_em'] ?? null;
+    if ($ultimo && (time() - strtotime($ultimo)) < ENTREGAS_EMAIL_COOLDOWN_MIN * 60) return; // cooldown
+    db()->prepare("UPDATE tb_cursos SET aviso_pendencias_em=NOW() WHERE id_curso=?")->execute([$idCurso]);
+  } catch (Throwable $e) {
+    // coluna ainda não migrada: envia mesmo assim
+  }
+
+  $agora = new DateTime();
+  $link = app_base_url() . '/curso_detalhe.php?id=' . $idCurso;
+  $lista = '<ul>' . implode('', array_map(fn($p) => '<li>' . htmlspecialchars($p['rotulo']) . '</li>', $pendencias)) . '</ul>';
+  $corpo = "<p>Houve uma tentativa de avançar o curso para a etapa <b>" . htmlspecialchars($etapa) . "</b>,
+            mas ainda existem documentos <b>obrigatórios</b> não enviados.</p>
+            <table style='border-collapse:collapse;font-size:14px'>
+              <tr><td style='padding:3px 10px 3px 0;color:#667'>Curso</td><td><b>" . htmlspecialchars($curso['nome_curso']) . "</b></td></tr>
+              <tr><td style='padding:3px 10px 3px 0;color:#667'>Professor(a)</td><td>" . htmlspecialchars($curso['professor_nome']) . "</td></tr>
+              <tr><td style='padding:3px 10px 3px 0;color:#667'>Etapa pretendida</td><td>" . htmlspecialchars($etapa) . "</td></tr>
+              <tr><td style='padding:3px 10px 3px 0;color:#667'>Tentativa por</td><td>" . htmlspecialchars($byUser['nome'] ?? '-') . "</td></tr>
+              <tr><td style='padding:3px 10px 3px 0;color:#667'>Data / horário</td><td>" . $agora->format('d/m/Y') . " às " . $agora->format('H:i') . "</td></tr>
+            </table>
+            <p><b>Documentos obrigatórios pendentes:</b></p>{$lista}";
+  $assunto = "[AutoriaSCS] Documentos pendentes: {$curso['nome_curso']}";
+  $html = mail_template('Documentos obrigatórios pendentes', $corpo, $link, 'Enviar os materiais');
+
+  $profs = function_exists('curso_professores') ? curso_professores($idCurso) : [];
+  if (!$profs) $profs = [['nome' => $curso['professor_nome'], 'email' => $curso['professor_email']]];
+  foreach ($profs as $p) notify_queue($p['email'], $p['nome'], $assunto, $html);
+  notify_queue(ti_email(), 'Equipe TI & AutoriaSCS', $assunto, $html);
+}
+
 /**
  * ÚNICO ponto de envio dos e-mails de apontamento (itens 17, 21 e 26).
  * Destinatários: todos os professores do curso (responsável + coautores) e a

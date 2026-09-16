@@ -37,6 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $escopo = $_POST['escopo'] ?? '';
       $nome   = categoria_nome_limpo($_POST['nome'] ?? '');
       $obr    = !empty($_POST['obrigatoria']) ? 1 : 0;
+      $tipoEsp = in_array($_POST['tipo_especial'] ?? 'NENHUM', ['NENHUM','SLIDE','VIDEO'], true) ? $_POST['tipo_especial'] : 'NENHUM';
       if (!isset(CATEGORIA_ESCOPOS[$escopo])) throw new Exception("Escopo inválido.");
       if (mb_strlen($nome) < 3) throw new Exception("Informe o nome da categoria (mínimo 3 caracteres).");
       $dup = db()->prepare("SELECT COUNT(*) n FROM tb_categorias WHERE escopo=? AND nome=?");
@@ -46,10 +47,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $mx = db()->prepare("SELECT COALESCE(MAX(ordem),0) m FROM tb_categorias WHERE escopo=?");
       $mx->execute([$escopo]);
       $ordem = (int)$mx->fetch()['m'] + 1;
-      db()->prepare("INSERT INTO tb_categorias (escopo, nome, obrigatoria, ordem, ativo) VALUES (?,?,?,?,1)")
-        ->execute([$escopo, $nome, $obr, $ordem]);
+      try {
+        db()->prepare("INSERT INTO tb_categorias (escopo, nome, obrigatoria, tipo_especial, ordem, ativo) VALUES (?,?,?,?,?,1)")
+          ->execute([$escopo, $nome, $obr, $tipoEsp, $ordem]);
+      } catch (Throwable $e) { // upgrade_v11.sql ainda não executado (sem tipo_especial)
+        db()->prepare("INSERT INTO tb_categorias (escopo, nome, obrigatoria, ordem, ativo) VALUES (?,?,?,?,1)")
+          ->execute([$escopo, $nome, $obr, $ordem]);
+      }
       audit_log('categoria_criada', 'categoria', (int)db()->lastInsertId(), null,
-        ['escopo' => $escopo, 'nome' => $nome, 'obrigatoria' => $obr, 'ordem' => $ordem]);
+        ['escopo' => $escopo, 'nome' => $nome, 'obrigatoria' => $obr, 'tipo_especial' => $tipoEsp, 'ordem' => $ordem]);
       $ok = "Categoria \"{$nome}\" cadastrada em " . CATEGORIA_ESCOPOS[$escopo] . ".";
     }
 
@@ -98,6 +104,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       db()->prepare("UPDATE tb_categorias SET obrigatoria=? WHERE id_categoria=?")->execute([$novo, $idc]);
       audit_log('categoria_obrigatoriedade', 'categoria', $idc, ['obrigatoria' => (int)$c['obrigatoria']], ['obrigatoria' => $novo, 'nome' => $c['nome']]);
       $ok = "Categoria \"{$c['nome']}\" agora é " . ($novo ? "obrigatória." : "opcional (pode ser dispensada pelo formador).");
+    }
+
+    if ($action === 'tipo_especial') {
+      $idc = (int)($_POST['id_categoria'] ?? 0);
+      $c = categoria_get($idc);
+      if (!$c) throw new Exception("Categoria não encontrada.");
+      $novo = in_array($_POST['tipo_especial'] ?? '', ['NENHUM','SLIDE','VIDEO'], true) ? $_POST['tipo_especial'] : 'NENHUM';
+      db()->prepare("UPDATE tb_categorias SET tipo_especial=? WHERE id_categoria=?")->execute([$novo, $idc]);
+      audit_log('categoria_tipo_especial', 'categoria', $idc, ['tipo_especial' => $c['tipo_especial'] ?? 'NENHUM'], ['tipo_especial' => $novo, 'nome' => $c['nome']]);
+      $ok = "Papel da categoria \"{$c['nome']}\" atualizado.";
     }
 
     if ($action === 'toggle') {
@@ -197,6 +213,12 @@ include __DIR__ . '/../_layout_top.php';
             <input class="form-check-input" type="checkbox" name="obrigatoria" value="1" id="chkObr" checked>
             <label class="form-check-label" for="chkObr">Obrigatória (exige arquivo)</label>
           </div>
+          <label class="form-label mt-3">Papel especial</label>
+          <select class="form-select" name="tipo_especial">
+            <option value="NENHUM">Nenhum</option>
+            <option value="SLIDE">Slide (a aprovação pela TI libera o vídeo do módulo)</option>
+            <option value="VIDEO">Vídeo (só aceita envio após slide aprovado)</option>
+          </select>
           <div class="form-text">Entra ativa, no fim da sequência do escopo. Use as setas para reordenar.</div>
           <button class="btn btn-primary mt-3">Cadastrar</button>
         </form>
@@ -219,6 +241,7 @@ include __DIR__ . '/../_layout_top.php';
                     <th style="width:90px">Ordem</th>
                     <th>Categoria</th>
                     <th>Tipo</th>
+                    <th title="Slide libera o vídeo; Vídeo depende do slide aprovado">Papel</th>
                     <th title="Arquivos enviados / registros sem material">Uso</th>
                     <th>Situação</th>
                     <th class="text-end">Ações</th>
@@ -257,6 +280,17 @@ include __DIR__ . '/../_layout_top.php';
                           <button class="btn btn-sm py-0 <?= $c['obrigatoria'] ? 'btn-danger' : 'btn-outline-secondary' ?>" title="Clique para alternar">
                             <?= $c['obrigatoria'] ? 'Obrigatória' : 'Opcional' ?>
                           </button>
+                        </form>
+                      </td>
+                      <td>
+                        <form method="post" class="d-inline"><?= csrf_field() ?>
+                          <input type="hidden" name="action" value="tipo_especial">
+                          <input type="hidden" name="id_categoria" value="<?= (int)$c['id_categoria'] ?>">
+                          <select class="form-select form-select-sm" name="tipo_especial" onchange="this.form.submit()" title="Papel especial">
+                            <?php foreach (['NENHUM' => '—', 'SLIDE' => 'Slide', 'VIDEO' => 'Vídeo'] as $k => $lbl): ?>
+                              <option value="<?= $k ?>" <?= ($c['tipo_especial'] ?? 'NENHUM') === $k ? 'selected' : '' ?>><?= $lbl ?></option>
+                            <?php endforeach; ?>
+                          </select>
                         </form>
                       </td>
                       <td class="text-nowrap small">

@@ -32,7 +32,10 @@ try {
   $carga = ($_POST['carga_horaria'] ?? '') !== '' ? (int)$_POST['carga_horaria'] : null;
   curso_transition($id, $u, $to, $obs ?: 'Movimentação via Kanban', $dataPub, $carga);
   echo json_encode(['ok'=>true]);
+} catch (EntregasPendentesException $e) {
+  http_response_code(422);
+  echo json_encode(['ok'=>false,'error'=>$e->getMessage(),'pendencias'=>array_column($e->pendencias, 'rotulo')]);
 } catch (Throwable $e) {
-  http_response_code(400);
+  http_response_code(http_response_code() >= 400 ? http_response_code() : 400);
   echo json_encode(['ok'=>false,'error'=>$e->getMessage()]);
 }

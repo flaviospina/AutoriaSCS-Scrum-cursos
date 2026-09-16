@@ -43,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $cor  = $_POST['cor'] ?? '#6c757d';
       $ativo = isset($_POST['ativo']) ? 1 : 0;
       $isFinal = isset($_POST['is_final']) ? 1 : 0;
+      $exige = isset($_POST['exige_entregas']) ? 1 : 0;
       if ($nome === '') throw new Exception("Informe o nome do status.");
       if (!preg_match('/^#[0-9a-fA-F]{6}$/', $cor)) $cor = '#6c757d';
 
@@ -57,8 +58,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       db()->beginTransaction();
       try {
-        db()->prepare("UPDATE tb_status SET nome=?, id_coluna=?, cor=?, ativo=?, is_final=? WHERE id_status=?")
-          ->execute([$nome, $idc, $cor, $ativo, $isFinal, $ids]);
+        try {
+          db()->prepare("UPDATE tb_status SET nome=?, id_coluna=?, cor=?, ativo=?, is_final=?, exige_entregas=? WHERE id_status=?")
+            ->execute([$nome, $idc, $cor, $ativo, $isFinal, $exige, $ids]);
+        } catch (Throwable $e) { // upgrade_v11.sql ainda não executado (sem exige_entregas)
+          db()->prepare("UPDATE tb_status SET nome=?, id_coluna=?, cor=?, ativo=?, is_final=? WHERE id_status=?")
+            ->execute([$nome, $idc, $cor, $ativo, $isFinal, $ids]);
+        }
 
         // renomear propaga para cursos e histórico (integridade dos dados)
         if ($nome !== $nomeAntigo) {
@@ -73,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
       audit_log('status_editado', 'status', $ids,
         ['nome' => $nomeAntigo],
-        ['nome' => $nome, 'id_coluna' => $idc, 'cor' => $cor, 'ativo' => $ativo, 'is_final' => $isFinal]);
+        ['nome' => $nome, 'id_coluna' => $idc, 'cor' => $cor, 'ativo' => $ativo, 'is_final' => $isFinal, 'exige_entregas' => $exige]);
       $ok = "Status atualizado." . ($nome !== $nomeAntigo ? " Cursos e histórico foram renomeados automaticamente." : "");
     }
 
@@ -199,6 +205,7 @@ include __DIR__ . '/../_layout_top.php';
             <th title="Cursos atualmente neste status">Em uso</th>
             <th>Inicial</th>
             <th>Final</th>
+            <th title="Só recebe o curso com todos os documentos obrigatórios entregues">Exige entregas</th>
             <th>Ativo</th>
             <th class="text-end">Ações</th>
           </tr>
@@ -223,7 +230,7 @@ include __DIR__ . '/../_layout_top.php';
                 </div>
               </td>
 
-              <td colspan="7">
+              <td colspan="8">
                 <form method="post" class="row g-2 align-items-center">
                   <?= csrf_field() ?>
                   <input type="hidden" name="action" value="update">
@@ -258,6 +265,11 @@ include __DIR__ . '/../_layout_top.php';
                   <div class="col-3 col-md-1">
                     <div class="form-check">
                       <input class="form-check-input" type="checkbox" name="is_final" <?= $s['is_final'] ? 'checked' : '' ?> title="Status final (não gera alerta de prazo)">
+                    </div>
+                  </div>
+                  <div class="col-3 col-md-1">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" name="exige_entregas" <?= !empty($s['exige_entregas']) ? 'checked' : '' ?> title="Exige todos os documentos obrigatórios entregues">
                     </div>
                   </div>
                   <div class="col-3 col-md-1">
@@ -299,6 +311,7 @@ include __DIR__ . '/../_layout_top.php';
 <div class="small text-muted mt-2">
   <b>Inicial</b>: status atribuído aos cursos recém-propostos (apenas um).
   <b>Final</b>: encerra o fluxo (ex.: Publicado) e não gera alertas de prazo.
+  <b>Exige entregas</b>: o curso só entra neste status com todos os documentos obrigatórios enviados (o formador vê a lista do que falta).
   Renomear um status atualiza automaticamente os cursos e o histórico.
 </div>
 

@@ -16,8 +16,8 @@ $id_curso = (int)($_POST['id_curso'] ?? 0);
 $curso = curso_get($id_curso);
 if (!$curso) { http_response_code(404); exit("Curso não encontrado."); }
 
-// permissão
-if (!is_staff() && (int)$curso['id_professor'] !== (int)$u['id_user']) {
+// permissão (professor responsável/coautor ou equipe)
+if (!is_staff() && !curso_eh_professor($curso, (int)$u['id_user'])) {
   http_response_code(403); exit("Sem permissão.");
 }
 
@@ -33,11 +33,12 @@ if ($modulo < 0 || $modulo > 8) {
   exit;
 }
 
-// fluxo ordenado: a categoria precisa existir no módulo e estar liberada
-// (a anterior concluída) — mesma regra aplicada na interface
+// ordem livre (V11), mas: a categoria precisa existir/estar ativa no módulo e o
+// VÍDEO só é aceito após a aprovação do slide do módulo — regra também no backend
 $categoria = trim($_POST['categoria'] ?? '');
 $chkFluxo = entrega_pode_receber($id_curso, $modulo, $categoria);
 if ($chkFluxo !== 'ok') {
+  http_response_code(422);
   header("Location: curso_detalhe.php?id={$id_curso}&err={$chkFluxo}");
   exit;
 }

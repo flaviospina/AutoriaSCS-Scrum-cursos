@@ -491,7 +491,14 @@ include __DIR__ . '/_layout_top.php';
       try { data = await res.json(); } catch(err) {}
 
       if (!res.ok || !data.ok) {
-        if (typeof Swal !== 'undefined') {
+        if (typeof Swal !== 'undefined' && Array.isArray(data.pendencias) && data.pendencias.length) {
+          // documentos obrigatórios pendentes (lista dinâmica)
+          const esc = s => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+          Swal.fire({ icon: 'error', title: 'Não é possível avançar para a próxima etapa.',
+            html: '<p>Os seguintes documentos obrigatórios ainda não foram enviados:</p><ul style="text-align:left">' +
+                  data.pendencias.map(p => '<li>' + esc(p) + '</li>').join('') + '</ul>',
+            confirmButtonText: 'OK', confirmButtonColor: '#058285', background: '#0f2044', color: '#e8edf5' });
+        } else if (typeof Swal !== 'undefined') {
           Swal.fire({ icon: 'error', title: 'Não foi possível mover', text: data.error || 'Falha ao mover status.', confirmButtonColor: '#058285' });
         } else {
           alert(data.error || 'Falha ao mover status.');

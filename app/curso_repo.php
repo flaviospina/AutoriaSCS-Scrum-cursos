@@ -5,6 +5,7 @@ require_once __DIR__ . '/n8n_client.php';
 require_once __DIR__ . '/audit.php';
 require_once __DIR__ . '/notify.php';
 require_once __DIR__ . '/escolas_repo.php';
+require_once __DIR__ . '/entregas_repo.php';
 
 function curso_create(int $id_prof, array $d): int {
   $inicial = status_inicial();
@@ -267,10 +268,27 @@ function curso_transition(int $id_curso, array $user, string $to, ?string $obs =
     }
   }
 
-  // quem não enxerga todos os cursos (formador) só mexe no próprio
+  // quem não enxerga todos os cursos (formador/coautor) só mexe no próprio
   if (!perfil_flag($user['role'], 've_todos_cursos') &&
-      (int)$c['id_professor'] !== (int)$user['id_user']) {
+      !curso_eh_professor($c, (int)$user['id_user'])) {
+    http_response_code(403);
     throw new Exception("Sem permissão.");
+  }
+
+  // documentos obrigatórios (itens 9-11): status que "exige entregas" só recebe
+  // o curso com todas as categorias obrigatórias entregues
+  $sTo = status_by_name($to);
+  if ($sTo && !empty($sTo['exige_entregas'])) {
+    $pend = entregas_pendentes($id_curso, (int)$c['carga_horaria']);
+    if ($pend) {
+      audit_log('transicao_bloqueada_entregas', 'curso', $id_curso, ['status' => $from],
+        ['tentativa' => $to, 'pendencias' => array_column($pend, 'rotulo')]);
+      notify_entregas_pendentes($c, $to, $pend, $user);
+      http_response_code(422);
+      throw new EntregasPendentesException(
+        "Não é possível avançar para a próxima etapa. Os seguintes documentos obrigatórios ainda não foram enviados: "
+        . implode('; ', array_column($pend, 'rotulo')) . '.', $pend);
+    }
   }
 
   db()->beginTransaction();

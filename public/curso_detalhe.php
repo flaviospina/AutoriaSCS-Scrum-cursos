@@ -49,13 +49,15 @@ $apontPendentes = apont_pendentes_curso($id);
 
 $erro = null; $ok = null;
 if (($_GET['ok'] ?? '') === 'edit') $ok = "Curso atualizado com sucesso.";
-if (($_GET['ok'] ?? '') === 'upload') $ok = "Arquivo enviado com sucesso. A próxima categoria foi liberada.";
-if (($_GET['ok'] ?? '') === 'dispensa') $ok = "Categoria registrada como \"sem material\". A próxima foi liberada.";
+if (($_GET['ok'] ?? '') === 'upload') $ok = "Arquivo enviado com sucesso.";
+if (($_GET['ok'] ?? '') === 'dispensa') $ok = "Categoria registrada como \"sem material\".";
+if (($_GET['ok'] ?? '') === 'slide_ok') $ok = "Slide aprovado. O envio do vídeo deste módulo foi liberado.";
+if (($_GET['ok'] ?? '') === 'slide_rev') $ok = "Aprovação do slide revogada. O envio do vídeo deste módulo voltou a ficar bloqueado.";
 if (($_GET['ok'] ?? '') === 'reativa') $ok = "Registro \"sem material\" desfeito. A categoria voltou a aceitar envio.";
-if (($_GET['ok'] ?? '') === 'delarq') $ok = "Arquivo excluído. A sequência de entregas foi recalculada.";
+if (($_GET['ok'] ?? '') === 'delarq') $ok = "Arquivo excluído.";
 if (($_GET['err'] ?? '') !== '') {
   $mapErr = [
-    'ordem'     => "Envie os materiais na ordem indicada: conclua a categoria anterior antes desta.",
+    'slide'     => "O envio deste vídeo ficará disponível após a aprovação dos slides correspondentes.",
     'categoria' => "Categoria inválida para o módulo selecionado.",
     'size'      => "Arquivo acima do limite de 25MB.",
     'mime'      => "Tipo de arquivo não permitido.",
@@ -199,7 +201,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'dispe
     if ($alvo['obrigatoria']) throw new Exception("Esta categoria é obrigatória — o envio do arquivo não pode ser dispensado.");
     if ($alvo['feita']) throw new Exception("Esta categoria já possui arquivo enviado.");
     if ($alvo['dispensada']) throw new Exception("Esta categoria já está registrada como sem material.");
-    if (!$alvo['atual']) throw new Exception("Conclua as categorias anteriores antes de registrar esta.");
 
     db()->prepare("INSERT INTO tb_curso_dispensas (id_curso, modulo, categoria, id_user) VALUES (?,?,?,?)")
       ->execute([$id, $mod, $cat, $u['id_user']]);
@@ -258,7 +259,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'del_a
   }
 }
 
+// Aprovar / revogar aprovação de slide (TI/ADMIN) — libera o vídeo do módulo (item 12)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? '', ['aprovar_slide', 'revogar_slide'], true)) {
+  csrf_check();
+  try {
+    $aprovar = ($_POST['action'] === 'aprovar_slide');
+    $f = arquivo_aprovar((int)($_POST['id_file'] ?? 0), $u, $aprovar);
+    if ((int)$f['id_curso'] !== $id) throw new Exception("Arquivo não pertence a este curso.");
+    header("Location: curso_detalhe.php?id={$id}&ok=" . ($aprovar ? 'slide_ok' : 'slide_rev'));
+    exit;
+  } catch (Throwable $e) {
+    $erro = $e->getMessage();
+  }
+}
+
 // Transição de status
+$pendenciasBloqueio = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'transition') {
   csrf_check();
   try {
@@ -269,10 +285,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'trans
     curso_transition($id, $u, $to, $obs ?: null, $dataPub, $carga);
     header("Location: curso_detalhe.php?id={$id}");
     exit;
+  } catch (EntregasPendentesException $e) {
+    $pendenciasBloqueio = array_column($e->pendencias, 'rotulo'); // SweetAlert com a lista
+    $erro = $e->getMessage();
   } catch (Throwable $e) {
     $erro = $e->getMessage();
   }
 }
+$curso = curso_get($id) ?: $curso;
 
 include __DIR__ . '/_layout_top.php';
 
@@ -319,7 +339,13 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
   </div>
 </div>
 
-<?php if ($erro): ?><div class="alert alert-danger"><?= htmlspecialchars($erro) ?></div><?php endif; ?>
+<?php if ($pendenciasBloqueio): ?>
+  <div class="alert alert-danger">
+    <b>Não é possível avançar para a próxima etapa.</b> Documentos obrigatórios pendentes:
+    <ul class="mb-0"><?php foreach ($pendenciasBloqueio as $pr): ?><li><?= htmlspecialchars($pr) ?></li><?php endforeach; ?></ul>
+  </div>
+  <script>document.addEventListener('DOMContentLoaded', function () { if (window.avisaPendencias) window.avisaPendencias(<?= json_encode($pendenciasBloqueio, JSON_UNESCAPED_UNICODE) ?>); });</script>
+<?php elseif ($erro): ?><div class="alert alert-danger"><?= htmlspecialchars($erro) ?></div><?php endif; ?>
 <?php if ($ok): ?><div class="alert alert-success"><?= htmlspecialchars($ok) ?></div><?php endif; ?>
 
 <?php if ($apontPendentes > 0 && $ehProfessor && !apont_pode_gerir($u)): ?>
@@ -400,6 +426,29 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
           </form>
           <script>
             (function () {
+              // Bloqueio de avanço com documentos obrigatórios pendentes (itens 9/10):
+              // a mesma regra existe no backend (curso_transition); aqui só antecipamos o aviso.
+              var PENDENCIAS = <?= json_encode(array_column(entregas_pendentes($id, (int)$curso['carga_horaria']), 'rotulo'), JSON_UNESCAPED_UNICODE) ?>;
+              var EXIGE = <?= json_encode(array_values(array_map(fn($s) => $s['nome'], array_filter(statuses_list(), fn($s) => !empty($s['exige_entregas'])))), JSON_UNESCAPED_UNICODE) ?>;
+              var formT = document.getElementById('transTo') ? document.getElementById('transTo').form : null;
+              function esc(s) { return String(s).replace(/[&<>"']/g, function (m) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
+              window.avisaPendencias = function (lista) {
+                var html = '<p>Os seguintes documentos obrigatórios ainda não foram enviados:</p><ul style="text-align:left">' +
+                           lista.map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') + '</ul>';
+                if (typeof Swal !== 'undefined') {
+                  Swal.fire({ icon: 'error', title: 'Não é possível avançar para a próxima etapa.', html: html,
+                              confirmButtonText: 'OK', confirmButtonColor: '#058285', background: '#0f2044', color: '#e8edf5' });
+                } else { alert('Não é possível avançar. Pendências: ' + lista.join('; ')); }
+              };
+              if (formT) {
+                formT.addEventListener('submit', function (e) {
+                  var alvo = document.getElementById('transTo').value;
+                  if (EXIGE.indexOf(alvo) !== -1 && PENDENCIAS.length) {
+                    e.preventDefault(); e.stopImmediatePropagation();
+                    window.avisaPendencias(PENDENCIAS);
+                  }
+                });
+              }
               var sel = document.getElementById('transTo');
               var wrap = document.getElementById('transDataPubWrap');
               var inp = document.getElementById('transDataPub');
@@ -591,9 +640,10 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
 
         <?php if (!$ehMB): // perfil MB apenas baixa os materiais — não envia ?>
         <div class="alert alert-info small">
-          Os materiais devem ser enviados <b>na ordem indicada</b> — é a sequência em que a
-          MB Estúdios baixa o conteúdo para subir na plataforma. Cada categoria é liberada
-          quando a anterior for concluída.
+          Envie os materiais <b>na ordem que preferir</b>. Todas as categorias <b>obrigatórias</b>
+          precisam estar entregues antes de o curso avançar para análise da TI; as opcionais
+          podem ser registradas como <b>sem material</b>. O <b>vídeo</b> de cada módulo só é liberado
+          após a <b>aprovação do slide</b> do módulo pela TI.
         </div>
 
         <form class="row g-2" method="post" action="upload.php" enctype="multipart/form-data" id="formUpload">
@@ -623,6 +673,7 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
           <div class="col-12 col-md-2 d-flex align-items-end">
             <button class="btn btn-primary w-100" id="upBtn">Enviar</button>
           </div>
+          <div class="col-12 d-none small text-warning" id="upAvisoVideo"></div>
           <div class="col-12 d-none" id="upSemMaterialWrap">
             <div class="form-check">
               <input class="form-check-input" type="checkbox" id="upSemMaterial">
@@ -680,6 +731,8 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
               if (c.feita) rotulo += ' — ✓ enviado';
               else if (c.dispensada) rotulo += ' — sem material';
               else if (!c.obrigatoria) rotulo += ' (opcional)';
+              else rotulo += ' (obrigatória)';
+              if (!c.habilitada) rotulo += ' — aguardando aprovação do slide';
               var o = new Option(rotulo, c.nome);
               o.disabled = !c.habilitada;
               selCat.add(o);
@@ -692,6 +745,14 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
             atualizaSemMaterial();
           }
 
+          var avisoVideo = document.getElementById('upAvisoVideo');
+          function avisaBloqueio() {
+            var c = catInfo(selMod.value, selCat.value);
+            var msg = c && c.bloqueio ? c.bloqueio : '';
+            if (avisoVideo) { avisoVideo.textContent = msg; avisoVideo.classList.toggle('d-none', !msg); }
+            btn.disabled = !!msg;
+          }
+
           function renderFluxo(mod) {
             var cats = ENTREGAS[mod] || [];
             fluxoTitulo.textContent = 'Ordem de entrega — ' + (mod === '0' ? 'Geral' : 'Módulo ' + mod);
@@ -701,8 +762,9 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
               var badge;
               if (c.feita)            badge = '<span class="badge bg-success">Enviado</span>';
               else if (c.dispensada)  badge = '<span class="badge bg-secondary">Sem material</span>';
-              else if (c.atual)       badge = '<span class="badge bg-info text-dark">' + (idx === 0 ? 'Primeira entrega' : 'Próxima entrega') + '</span>';
-              else                    badge = '<span class="badge bg-dark border">Aguardando anteriores</span>';
+              else if (!c.habilitada) badge = '<span class="badge bg-dark border" title="' + escapeHtml(c.bloqueio || '') + '">Aguardando aprovação do slide</span>';
+              else if (c.obrigatoria) badge = '<span class="badge bg-danger">Pendente (obrigatória)</span>';
+              else                    badge = '<span class="badge bg-info text-dark">Opcional</span>';
               li.innerHTML = escapeHtml(c.nome) +
                 (c.obrigatoria ? '' : ' <span class="text-muted">(opcional)</span>') + ' ' + badge;
               if (c.dispensada) {
@@ -720,19 +782,21 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
 
           function atualizaSemMaterial() {
             var c = catInfo(selMod.value, selCat.value);
-            var mostra = !!(c && !c.obrigatoria && c.atual && !c.feita && !c.dispensada);
+            var mostra = !!(c && !c.obrigatoria && !c.feita && !c.dispensada);
             chkWrap.classList.toggle('d-none', !mostra);
             if (!mostra) chk.checked = false;
             aplicaModo();
           }
 
           function aplicaModo() {
+            avisaBloqueio();
             var sem = chk.checked;
             inpArq.disabled = sem;
             inpArq.required = !sem;
             btn.textContent = sem ? 'Registrar sem material' : 'Enviar';
             btn.classList.toggle('btn-primary', !sem);
             btn.classList.toggle('btn-outline-info', sem);
+            if (!sem) avisaBloqueio();
           }
 
           function postAcao(acao, mod, cat) {
@@ -760,7 +824,7 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
             if (typeof Swal !== 'undefined') {
               Swal.fire({
                 title: 'Registrar sem material',
-                html: 'Confirmar que <b>' + escapeHtml(cat) + '</b> não possui material?<br>A próxima categoria da sequência será liberada.',
+                html: 'Confirmar que <b>' + escapeHtml(cat) + '</b> não possui material?',
                 icon: 'question', showCancelButton: true,
                 confirmButtonText: 'Sim, registrar', cancelButtonText: 'Cancelar',
                 confirmButtonColor: '#06b6d4', cancelButtonColor: '#374151',
@@ -804,12 +868,29 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
                         <?= ((int)($f['modulo'] ?? 0)) ? 'Módulo ' . (int)$f['modulo'] : 'Geral' ?>
                       </span>
                     </td>
-                    <td><span class="badge bg-info text-dark"><?= htmlspecialchars($f['categoria']) ?></span></td>
+                    <td>
+                      <span class="badge bg-info text-dark"><?= htmlspecialchars($f['categoria']) ?></span>
+                      <?php if (!empty($f['aprovado'])): ?>
+                        <span class="badge bg-success" title="Aprovado por <?= htmlspecialchars($f['aprovado_por_nome'] ?? 'TI') ?> em <?= htmlspecialchars($f['aprovado_em'] ?? '') ?>">✔ Slide aprovado</span>
+                      <?php elseif (arquivo_eh_slide($f)): ?>
+                        <span class="badge bg-warning text-dark">Aguardando aprovação</span>
+                      <?php endif; ?>
+                    </td>
                     <td><?= htmlspecialchars($f['original_name']) ?></td>
                     <td class="text-nowrap"><?= number_format($f['file_size']/1024/1024, 2, ',', '.') ?> MB</td>
                     <td class="text-end text-nowrap">
                       <?php if (!$ehMB): ?>
                         <a class="btn btn-sm btn-outline-primary" href="download.php?id=<?= (int)$f['id_file'] ?>">Download</a>
+                      <?php endif; ?>
+                      <?php if (perm('revisa_cursos') && arquivo_eh_slide($f)): ?>
+                        <form method="post" class="d-inline"
+                              data-confirm="<?= !empty($f['aprovado']) ? 'Revogar a aprovação deste slide?<br>O envio do vídeo do módulo voltará a ficar bloqueado.' : 'Aprovar este slide?<br>O envio do <b>vídeo</b> deste módulo será liberado para o formador.' ?>"
+                              data-confirm-title="<?= !empty($f['aprovado']) ? 'Revogar aprovação' : 'Aprovar slide' ?>" data-confirm-btn="<?= !empty($f['aprovado']) ? 'Sim, revogar' : 'Sim, aprovar' ?>">
+                          <?= csrf_field() ?>
+                          <input type="hidden" name="action" value="<?= !empty($f['aprovado']) ? 'revogar_slide' : 'aprovar_slide' ?>">
+                          <input type="hidden" name="id_file" value="<?= (int)$f['id_file'] ?>">
+                          <button class="btn btn-sm <?= !empty($f['aprovado']) ? 'btn-outline-warning' : 'btn-success' ?>"><?= !empty($f['aprovado']) ? 'Revogar' : '✔ Aprovar slide' ?></button>
+                        </form>
                       <?php endif; ?>
                       <?php if (is_admin()): ?>
                         <form method="post" class="d-inline"
