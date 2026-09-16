@@ -13,29 +13,41 @@ $id = (int)($_GET['id'] ?? 0);
 $curso = curso_get($id);
 if (!$curso) { http_response_code(404); echo "Curso não encontrado."; exit; }
 
-// professor só edita o próprio curso; TI/ADMIN editam qualquer um; MB não edita
+// professor (responsável ou coautor) só edita o próprio curso; TI/ADMIN editam qualquer um; MB não edita
 $podeEditar =
-  ((int)$curso['id_professor'] === (int)$u['id_user'] && perm('propoe_cursos')) ||
+  (curso_eh_professor($curso, (int)$u['id_user']) && perm('propoe_cursos')) ||
   perm('revisa_cursos');
 
 if (!$podeEditar) { http_response_code(403); echo "Acesso negado."; exit; }
+
+// campos de gestão (unidade, prioridade, previsões e carga horária) só para TI/ADMIN
+$ehGestao = perm('revisa_cursos');
+$escolas = escolas_ativas();
+if (!empty($curso['unidade_escolar']) && !in_array($curso['unidade_escolar'], $escolas, true)) {
+  $escolas[] = $curso['unidade_escolar']; // valor atual (legado/inativa) continua selecionável
+}
 
 $erro = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   csrf_check();
   try {
-    curso_update($id, [
+    $dados = [
       'nome_curso' => trim($_POST['nome_curso'] ?? ''),
-      'carga_horaria' => $_POST['carga_horaria'] ?? $curso['carga_horaria'],
       'publico_alvo' => trim($_POST['publico_alvo'] ?? ''),
       'nivel_ensino' => trim($_POST['nivel_ensino'] ?? ''),
-      'unidade_escolar' => trim($_POST['unidade_escolar'] ?? ''),
-      'prioridade' => $_POST['prioridade'] ?? 'MEDIA',
-      'data_prevista_inicio' => $_POST['data_prevista_inicio'] ?? null,
-      'data_prevista_entrega_final' => $_POST['data_prevista_entrega_final'] ?? null,
       'descricao_breve' => trim($_POST['descricao_breve'] ?? ''),
-    ]);
+      // campos de gestão: o backend ignora/recusa para quem não é TI/ADMIN
+      'carga_horaria' => $_POST['carga_horaria'] ?? $curso['carga_horaria'],
+      'unidade_escolar' => trim($_POST['unidade_escolar'] ?? ($curso['unidade_escolar'] ?? '')),
+      'prioridade' => $_POST['prioridade'] ?? $curso['prioridade'],
+      'data_prevista_inicio' => $_POST['data_prevista_inicio'] ?? $curso['data_prevista_inicio'],
+      'data_prevista_entrega_final' => $_POST['data_prevista_entrega_final'] ?? $curso['data_prevista_entrega_final'],
+    ];
+    if ($dados['nome_curso'] === '' || $dados['publico_alvo'] === '') {
+      throw new Exception("Nome do curso e público-alvo são obrigatórios.");
+    }
+    curso_update($id, $dados, $u);
     header("Location: curso_detalhe.php?id={$id}&ok=edit");
     exit;
   } catch (Throwable $e) {
@@ -45,6 +57,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 include __DIR__ . '/_layout_top.php';
+$pb = prioridade_badge($curso['prioridade'] ?? 'MEDIA');
+function data_br(?string $d): string { return $d ? date('d/m/Y', strtotime($d)) : '—'; }
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -72,11 +86,19 @@ include __DIR__ . '/_layout_top.php';
 
       <div class="col-12 col-md-3">
         <label class="form-label">Carga horária</label>
-        <select class="form-select" name="carga_horaria" required>
-          <?php foreach ([10,20,30,40] as $ch): ?>
-            <option value="<?= $ch ?>" <?= (int)$curso['carga_horaria']===$ch?'selected':'' ?>><?= $ch ?> horas</option>
-          <?php endforeach; ?>
-        </select>
+        <?php if ($ehGestao): ?>
+          <select class="form-select" name="carga_horaria" required>
+            <?php foreach (carga_horaria_opcoes() as $ch): ?>
+              <option value="<?= $ch ?>" <?= (int)$curso['carga_horaria']===$ch?'selected':'' ?>><?= htmlspecialchars(carga_horaria_label($ch)) ?></option>
+            <?php endforeach; ?>
+          </select>
+          <?php if (!empty($curso['projeto_aprovado_em'])): ?>
+            <div class="form-text">Projeto aprovado — a alteração da carga horária oficial é registrada na auditoria.</div>
+          <?php endif; ?>
+        <?php else: ?>
+          <div class="campo-ro"><?= (int)$curso['carga_horaria'] ?> horas</div>
+          <div class="form-text">Definida pela equipe de TI<?= !empty($curso['projeto_aprovado_em']) ? ' na aprovação do projeto' : '' ?>.</div>
+        <?php endif; ?>
       </div>
 
       <div class="col-12 col-md-5">
@@ -96,30 +118,57 @@ include __DIR__ . '/_layout_top.php';
 
       <div class="col-12 col-md-5">
         <label class="form-label">Unidade escolar</label>
-        <input class="form-control" name="unidade_escolar" maxlength="120" list="dlEscolas"
-               value="<?= htmlspecialchars($curso['unidade_escolar'] ?? '') ?>"
-               placeholder="Digite ou escolha na lista" autocomplete="off">
-        <?= datalist_html('dlEscolas', escolas_ativas()) ?>
+        <?php if ($ehGestao): ?>
+          <select class="form-select" name="unidade_escolar">
+            <option value="">Selecione...</option>
+            <?php foreach ($escolas as $e): ?>
+              <option value="<?= htmlspecialchars($e) ?>" <?= ($curso['unidade_escolar'] ?? '')===$e?'selected':'' ?>><?= htmlspecialchars($e) ?></option>
+            <?php endforeach; ?>
+          </select>
+        <?php else: ?>
+          <div class="campo-ro"><?= htmlspecialchars($curso['unidade_escolar'] ?: '—') ?></div>
+        <?php endif; ?>
       </div>
 
       <div class="col-6 col-md-3">
         <label class="form-label">Prioridade</label>
-        <select class="form-select" name="prioridade">
-          <?php foreach (prioridades() as $p): ?>
-            <option value="<?= $p ?>" <?= ($curso['prioridade'] ?? 'MEDIA')===$p?'selected':'' ?>><?= prioridade_badge($p)['label'] ?></option>
-          <?php endforeach; ?>
-        </select>
+        <?php if ($ehGestao): ?>
+          <select class="form-select" name="prioridade">
+            <?php foreach (prioridades() as $p): ?>
+              <option value="<?= $p ?>" <?= ($curso['prioridade'] ?? 'MEDIA')===$p?'selected':'' ?>><?= prioridade_badge($p)['label'] ?></option>
+            <?php endforeach; ?>
+          </select>
+        <?php else: ?>
+          <div class="campo-ro"><span class="badge rounded-pill" style="<?= $pb['style'] ?>"><?= $pb['label'] ?></span></div>
+        <?php endif; ?>
       </div>
 
       <div class="col-6 col-md-2">
         <label class="form-label">Prev. início</label>
-        <input class="form-control" type="date" name="data_prevista_inicio" value="<?= htmlspecialchars($curso['data_prevista_inicio'] ?? '') ?>">
+        <?php if ($ehGestao): ?>
+          <input class="form-control" type="date" name="data_prevista_inicio" value="<?= htmlspecialchars($curso['data_prevista_inicio'] ?? '') ?>">
+        <?php else: ?>
+          <div class="campo-ro"><?= data_br($curso['data_prevista_inicio'] ?? null) ?></div>
+        <?php endif; ?>
       </div>
 
       <div class="col-6 col-md-2">
         <label class="form-label">Prev. entrega</label>
-        <input class="form-control" type="date" name="data_prevista_entrega_final" value="<?= htmlspecialchars($curso['data_prevista_entrega_final'] ?? '') ?>">
+        <?php if ($ehGestao): ?>
+          <input class="form-control" type="date" name="data_prevista_entrega_final" value="<?= htmlspecialchars($curso['data_prevista_entrega_final'] ?? '') ?>">
+        <?php else: ?>
+          <div class="campo-ro"><?= data_br($curso['data_prevista_entrega_final'] ?? null) ?></div>
+        <?php endif; ?>
       </div>
+
+      <?php if (!$ehGestao): ?>
+        <div class="col-12">
+          <div class="form-text">
+            Unidade escolar, prioridade, previsões e carga horária são definidas pela equipe de TI/ADMIN.
+            Se precisar de ajuste, solicite pelo e-mail ti.cecape@scseduca.com.br.
+          </div>
+        </div>
+      <?php endif; ?>
 
       <div class="col-12">
         <label class="form-label">Breve descrição</label>

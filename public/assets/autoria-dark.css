@@ -645,6 +645,55 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.72); cur
 .marc-acoes .form-select { font-size: 12.5px; padding: 5px 10px; }
 .marc-acoes .form-select { padding-right: 30px; background-position: right 9px center; }
 
+/* ── ALTERNAR VISUALIZAÇÃO (ADMIN vê o sistema como outro perfil) ── */
+.visao-select { width: auto; max-width: 220px; font-size: 12px; padding: 4px 28px 4px 10px; }
+.visao-banner {
+  background: rgba(234,179,8,.14);
+  border-bottom: 2px solid rgba(234,179,8,.55);
+  color: #fde047;
+  font-size: 13px;
+  padding: 8px 0;
+}
+
+/* ── AVISO DE APONTAMENTOS PENDENTES (destaque para o formador) ── */
+.aviso-apontamentos {
+  border: 2px solid rgba(239,68,68,.65);
+  background: linear-gradient(90deg, rgba(239,68,68,.16), rgba(239,68,68,.06));
+  color: #fecaca;
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
+  box-shadow: 0 0 0 4px rgba(239,68,68,.10);
+  animation: avisoPulse 2.2s ease-in-out infinite;
+}
+.aviso-apontamentos .btn { font-weight: 700; }
+@keyframes avisoPulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(239,68,68,.10); }
+  50%      { box-shadow: 0 0 0 8px rgba(239,68,68,.22); }
+}
+.card-apontamentos-pendentes { border: 1px solid rgba(239,68,68,.55) !important; }
+.card-apontamentos-pendentes .card-body > .d-flex h2 { color: #fca5a5; }
+
+/* Status do apontamento (badges maiores, legíveis) */
+.badge-apont { font-size: 12px; padding: 6px 10px; font-weight: 700; letter-spacing: .2px; }
+
+/* Linha do tempo do apontamento */
+.timeline { list-style: none; padding-left: 0; margin: 0; border-left: 2px solid var(--border); }
+.timeline li { position: relative; padding: 4px 0 12px 18px; }
+.timeline li::before {
+  content: ''; position: absolute; left: -7px; top: 9px; width: 12px; height: 12px;
+  border-radius: 50%; background: var(--cyan); border: 2px solid var(--bg-card);
+}
+.timeline .tl-data { font-size: 12px; color: var(--text-muted); }
+
+/* Campos somente-leitura (Editar Curso para o formador) */
+.campo-ro {
+  padding: 8px 12px; border: 1px dashed var(--border); border-radius: var(--radius-sm);
+  background-color: rgba(255,255,255,.03); color: var(--text); min-height: 40px;
+}
+
 /* ── RESPONSIVO ────────────────────────────────────────────── */
 @media (max-width: 700px) {
   .brand-title { display: none; }

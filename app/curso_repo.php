@@ -70,8 +70,55 @@ function curso_create(int $id_prof, array $d): int {
   return $id;
 }
 
-function curso_update(int $id_curso, array $d): void {
+/**
+ * Campos do curso que só a equipe de revisão (TI) / ADMIN alteram (item 5).
+ * Para o formador eles são somente-leitura — e o backend ignora/recusa o envio.
+ */
+const CURSO_CAMPOS_GESTAO = ['unidade_escolar', 'prioridade', 'data_prevista_inicio',
+                             'data_prevista_entrega_final', 'carga_horaria'];
+
+/**
+ * Atualiza os dados do curso. $user é quem está editando: as regras de
+ * permissão são aplicadas aqui (backend), não apenas na tela:
+ *  - formador (sem revisa_cursos): não altera os campos de gestão; tentativa de
+ *    alterar carga horária/prioridade → 403;
+ *  - carga horária após "Projeto Aprovado": somente TI/ADMIN (auditado antes/depois).
+ */
+function curso_update(int $id_curso, array $d, ?array $user = null): void {
   $antes = curso_get($id_curso) ?: [];
+  if (!$antes) throw new Exception("Curso não encontrado.");
+  $user = $user ?? (function_exists('auth_user') ? auth_user() : null) ?? [];
+  $ehGestao = !empty($user['role']) && perfil_flag($user['role'], 'revisa_cursos');
+
+  if (!nivel_valido_para_curso($d['nivel_ensino'] ?? '', $antes['nivel_ensino'] ?? null)) {
+    throw new Exception("Nível de ensino inválido. Escolha um nível da lista.");
+  }
+
+  if (!$ehGestao) {
+    // tentativa explícita de mudar campos protegidos → bloqueio (não apenas ignorar)
+    $tentouCarga = isset($d['carga_horaria']) && (int)$d['carga_horaria'] !== (int)$antes['carga_horaria'];
+    $tentouPrio  = isset($d['prioridade']) && $d['prioridade'] !== '' && $d['prioridade'] !== $antes['prioridade'];
+    if ($tentouCarga || $tentouPrio) {
+      http_response_code(403);
+      audit_log('curso_edicao_negada', 'curso', $id_curso,
+        ['carga_horaria' => $antes['carga_horaria'], 'prioridade' => $antes['prioridade']],
+        ['carga_horaria' => $d['carga_horaria'] ?? null, 'prioridade' => $d['prioridade'] ?? null]);
+      throw new Exception("Sem permissão: carga horária e prioridade são definidas pela equipe de TI/ADMIN.");
+    }
+    // demais campos de gestão: mantém os valores atuais
+    foreach (CURSO_CAMPOS_GESTAO as $k) $d[$k] = $antes[$k];
+  } else {
+    // TI/ADMIN: escola precisa existir no cadastro (ou manter a atual)
+    $escolas = escolas_ativas();
+    $unid = $d['unidade_escolar'] ?? '';
+    if ($unid !== '' && $unid !== ($antes['unidade_escolar'] ?? '') && $escolas && !in_array($unid, $escolas, true)) {
+      throw new Exception("Unidade escolar inválida. Escolha uma escola da lista.");
+    }
+    if (!in_array((int)$d['carga_horaria'], carga_horaria_opcoes(), true)) {
+      throw new Exception("Carga horária inválida (10, 20, 30 ou 40 horas).");
+    }
+  }
+
   $st = db()->prepare("
     UPDATE tb_cursos SET
       nome_curso=?, carga_horaria=?, publico_alvo=?, nivel_ensino=?, unidade_escolar=?,
@@ -80,7 +127,7 @@ function curso_update(int $id_curso, array $d): void {
   ");
   $st->execute([
     $d['nome_curso'],
-    $d['carga_horaria'],
+    (int)$d['carga_horaria'],
     $d['publico_alvo'],
     $d['nivel_ensino'] ?: null,
     $d['unidade_escolar'] ?: null,
@@ -99,6 +146,17 @@ function curso_update(int $id_curso, array $d): void {
     array_intersect_key($depois, array_flip($campos))
   );
   if ($dd) audit_log('curso_editado', 'curso', $id_curso, $da, $dd);
+
+  // auditorias específicas (item 27): carga horária e prioridade, com antes/depois
+  if (isset($dd['carga_horaria'])) {
+    audit_log('carga_horaria_alterada', 'curso', $id_curso,
+      ['carga_horaria' => $da['carga_horaria'], 'projeto_aprovado' => !empty($antes['projeto_aprovado_em'])],
+      ['carga_horaria' => $dd['carga_horaria']]);
+  }
+  if (isset($dd['prioridade'])) {
+    audit_log('prioridade_alterada', 'curso', $id_curso,
+      ['prioridade' => $da['prioridade']], ['prioridade' => $dd['prioridade']]);
+  }
 }
 
 function curso_get(int $id_curso): ?array {
@@ -114,6 +172,47 @@ function curso_get(int $id_curso): ?array {
 }
 
 /**
+ * Professores do curso (V11): responsável (tb_cursos.id_professor) + coautores
+ * (tb_curso_professores). Antes da migração V11 devolve só o responsável.
+ */
+function curso_professores(int $idCurso): array {
+  try {
+    $st = db()->prepare("
+      SELECT cp.id_usuario AS id_user, cp.tipo, u.nome, u.email
+      FROM tb_curso_professores cp
+      JOIN tb_users u ON u.id_user = cp.id_usuario
+      WHERE cp.id_curso = ?
+      ORDER BY FIELD(cp.tipo,'RESPONSAVEL','COAUTOR'), u.nome
+    ");
+    $st->execute([$idCurso]);
+    $rows = $st->fetchAll();
+    if ($rows) return $rows;
+  } catch (Throwable $e) { /* upgrade_v11.sql ainda não executado */ }
+  $c = curso_get($idCurso);
+  return $c ? [['id_user' => (int)$c['id_professor'], 'tipo' => 'RESPONSAVEL',
+                'nome' => $c['professor_nome'], 'email' => $c['professor_email']]] : [];
+}
+
+/** O usuário é professor (responsável ou coautor) do curso? */
+function curso_eh_professor(array $curso, int $idUser): bool {
+  if ((int)$curso['id_professor'] === $idUser) return true;
+  foreach (curso_professores((int)$curso['id_curso']) as $p) {
+    if ((int)$p['id_user'] === $idUser) return true;
+  }
+  return false;
+}
+
+/** "Nome A", "Nome A e Nome B" ou "Nome A, Nome B e Nome C". */
+function curso_formadores_nomes(array $curso): string {
+  $nomes = array_map(fn($p) => trim($p['nome']), curso_professores((int)$curso['id_curso']));
+  $nomes = array_values(array_filter($nomes));
+  if (!$nomes) return trim($curso['professor_nome'] ?? '');
+  if (count($nomes) === 1) return $nomes[0];
+  $ultimo = array_pop($nomes);
+  return implode(', ', $nomes) . ' e ' . $ultimo;
+}
+
+/**
  * Identificação oficial do curso, usada em e-mails, no cabeçalho da página e
  * no nome da pasta/pacote entregue à MB:
  *   "Nome do curso - Nome dos formadores - Carga Horária do curso"
@@ -121,7 +220,7 @@ function curso_get(int $id_curso): ?array {
 function curso_identificacao(array $curso): string {
   $partes = [
     trim($curso['nome_curso'] ?? ''),
-    trim($curso['professor_nome'] ?? ''),
+    isset($curso['id_curso']) ? curso_formadores_nomes($curso) : trim($curso['professor_nome'] ?? ''),
     ((int)($curso['carga_horaria'] ?? 0)) . ' horas',
   ];
   return implode(' - ', array_filter($partes, fn($p) => $p !== '' && $p !== ' horas'));

@@ -2,8 +2,65 @@
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/perfis_repo.php';
 
-function auth_user() {
+/**
+ * Usuário REAL da sessão (quem fez login), sem a alternância de visualização.
+ * Use para decisões de segurança que não podem depender do perfil "visto".
+ */
+function auth_user_real() {
   return $_SESSION['user'] ?? null;
+}
+
+/**
+ * Usuário EFETIVO: o real, exceto quando um ADMIN ativou "Alternar visualização"
+ * (V11, item 3) — nesse caso o perfil (role) passa a ser o escolhido, e todas as
+ * permissões (perm/is_admin/is_staff) passam a refletir esse perfil. A troca só é
+ * honrada se o usuário real tiver admin_total: outro perfil jamais se eleva.
+ */
+function auth_user() {
+  $u = $_SESSION['user'] ?? null;
+  if (!$u) return null;
+  $como = visao_alternada();
+  if ($como !== null) {
+    $u['role_real'] = $u['role'];
+    $u['role'] = $como;
+  }
+  return $u;
+}
+
+/** Perfil "visto" pelo Admin, ou null quando não há alternância ativa/válida. */
+function visao_alternada(): ?string {
+  $u = $_SESSION['user'] ?? null;
+  $como = $_SESSION['visao_como'] ?? null;
+  if (!$u || !$como || $como === $u['role']) return null;
+  if (!perfil_flag($u['role'], 'admin_total')) return null; // só ADMIN real
+  if (!perfil_get($como)) return null;
+  return $como;
+}
+
+/**
+ * Ativa/desfaz a alternância de visualização. Somente ADMIN real; validado no
+ * backend e registrado na auditoria. $codigo vazio/null = voltar ao perfil real.
+ */
+function visao_alternar(?string $codigo): void {
+  require_once __DIR__ . '/audit.php';
+  $u = auth_user_real();
+  if (!$u || !perfil_flag($u['role'], 'admin_total')) {
+    http_response_code(403);
+    throw new Exception("Somente administradores podem alternar a visualização.");
+  }
+  $antes = $_SESSION['visao_como'] ?? null;
+  if ($codigo === null || $codigo === '' || $codigo === $u['role']) {
+    unset($_SESSION['visao_como']);
+    audit_log('visao_alternada', 'user', (int)$u['id_user'], ['visao' => $antes], ['visao' => null]);
+    return;
+  }
+  $p = perfil_get($codigo);
+  if (!$p || empty($p['ativo'])) {
+    http_response_code(422);
+    throw new Exception("Perfil inválido para visualização.");
+  }
+  $_SESSION['visao_como'] = $codigo;
+  audit_log('visao_alternada', 'user', (int)$u['id_user'], ['visao' => $antes], ['visao' => $codigo]);
 }
 
 function require_login() {
@@ -13,7 +70,7 @@ function require_login() {
   }
 }
 
-/** O usuário logado possui a permissão do seu perfil? (admin_total concede todas) */
+/** O usuário logado possui a permissão do seu perfil (efetivo)? (admin_total concede todas) */
 function perm(string $flag): bool {
   $u = auth_user();
   if (!$u) return false;
@@ -48,6 +105,12 @@ function is_staff(): bool {
   return perm('ve_todos_cursos');
 }
 
+/** Verdadeiro quando quem fez login é ADMIN, mesmo vendo o sistema como outro perfil. */
+function is_admin_real(): bool {
+  $u = auth_user_real();
+  return $u ? perfil_flag($u['role'], 'admin_total') : false;
+}
+
 function login_attempt(string $email, string $senha): bool {
   require_once __DIR__ . '/audit.php';
 
@@ -63,6 +126,7 @@ function login_attempt(string $email, string $senha): bool {
   unset($u['senha_hash']);
   session_regenerate_id(true);
   $_SESSION['user'] = $u;
+  unset($_SESSION['visao_como']);
   audit_log('login_ok', 'user', (int)$u['id_user']);
   return true;
 }

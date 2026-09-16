@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../app/session.php';
 session_boot();
 require_once __DIR__ . '/../app/auth.php';
+require_once __DIR__ . '/../app/csrf.php';
 $u = auth_user();
 
 // prefixo relativo para páginas dentro de /admin
@@ -80,6 +81,20 @@ $PAGINA = basename($_SERVER['PHP_SELF'] ?? '');
         </ul>
 
         <div class="d-flex gap-2 align-items-center">
+          <?php if (is_admin_real()): $visaoAtual = visao_alternada(); ?>
+            <form method="post" action="<?= $LP ?>trocar_visao.php" class="d-flex align-items-center gap-1" title="Alternar visualização (somente ADMIN)">
+              <?= csrf_field() ?>
+              <input type="hidden" name="voltar" value="dashboard.php">
+              <select class="form-select form-select-sm visao-select" name="como" onchange="this.form.submit()">
+                <option value="" <?= $visaoAtual === null ? 'selected' : '' ?>>Ver como: ADMIN (meu perfil)</option>
+                <?php foreach (perfis_all() as $cod => $p): if (!empty($p['admin_total'])) continue; ?>
+                  <option value="<?= htmlspecialchars($cod) ?>" <?= $visaoAtual === $cod ? 'selected' : '' ?>>
+                    Ver como: <?= htmlspecialchars($cod) ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            </form>
+          <?php endif; ?>
           <span class="badge bg-warning"><?= htmlspecialchars($u['role']) ?></span>
           <a class="user-badge d-none d-md-inline-flex text-decoration-none" href="<?= $LP ?>perfil.php"
              title="Meu Perfil">👤 <?= htmlspecialchars($u['nome']) ?></a>
@@ -89,5 +104,20 @@ $PAGINA = basename($_SERVER['PHP_SELF'] ?? '');
     <?php endif; ?>
   </div>
 </nav>
+
+<?php if ($u && is_admin_real() && visao_alternada() !== null): ?>
+  <div class="visao-banner">
+    <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <span>👁 <b>Modo de visualização:</b> você está vendo o sistema como
+        <b><?= htmlspecialchars(visao_alternada()) ?></b>. As permissões exibidas são as desse perfil.</span>
+      <form method="post" action="<?= $LP ?>trocar_visao.php" class="m-0">
+        <?= csrf_field() ?>
+        <input type="hidden" name="como" value="">
+        <input type="hidden" name="voltar" value="dashboard.php">
+        <button class="btn btn-sm btn-warning">Voltar ao meu perfil (ADMIN)</button>
+      </form>
+    </div>
+  </div>
+<?php endif; ?>
 
 <main class="container my-4">
