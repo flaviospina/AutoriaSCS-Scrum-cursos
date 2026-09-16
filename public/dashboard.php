@@ -5,6 +5,8 @@ require_once __DIR__ . '/../app/auth.php';
 require_once __DIR__ . '/../app/db.php';
 require_once __DIR__ . '/../app/status_repo.php';
 require_once __DIR__ . '/../app/escolas_repo.php';
+require_once __DIR__ . '/../app/curso_repo.php';
+require_once __DIR__ . '/../app/apontamento_repo.php';
 
 require_login();
 $u = auth_user();
@@ -42,8 +44,15 @@ $params = [];
 $where  = [];
 
 if (!is_staff()) {
-  $where[]  = "c.id_professor = ?";
-  $params[] = $u['id_user'];
+  // cursos em que o usuário é responsável ou coautor (V11)
+  if (curso_professores_disponivel()) {
+    $where[]  = "(c.id_professor = ? OR EXISTS (SELECT 1 FROM tb_curso_professores cp WHERE cp.id_curso = c.id_curso AND cp.id_usuario = ?))";
+    $params[] = $u['id_user'];
+    $params[] = $u['id_user'];
+  } else {
+    $where[]  = "c.id_professor = ?";
+    $params[] = $u['id_user'];
+  }
 } else {
   if ($status !== '') { $where[] = "c.status_atual = ?"; $params[] = $status; }
   if ($prof !== '')   { $where[] = "u.nome LIKE ?";      $params[] = "%{$prof}%"; }
@@ -97,6 +106,8 @@ $st = db()->prepare("
 ");
 $st->execute($params);
 $cursos = $st->fetchAll();
+$pendTabela = apont_pendentes_por_curso(array_map(fn($r) => (int)$r['id_curso'], $cursos));
+$totalPendentesMeus = array_sum($pendTabela);
 
 // ------------------------------------------------------------------
 // KANBAN (TI/MB/ADMIN): cards por status + pendências
@@ -121,21 +132,8 @@ if ($view === 'kanban' && is_staff()) {
 
   $ids = array_map(fn($r) => (int)$r['id_curso'], $rows);
 
-  // pendências (apontamentos não resolvidos) por curso
-  $pendByCurso = [];
-  if (!empty($ids)) {
-    $in = implode(',', array_fill(0, count($ids), '?'));
-    $stp = db()->prepare("
-      SELECT id_curso, COUNT(*) AS pend
-      FROM tb_curso_apontamentos
-      WHERE resolvido=0 AND id_curso IN ($in)
-      GROUP BY id_curso
-    ");
-    $stp->execute($ids);
-    foreach ($stp->fetchAll() as $p) {
-      $pendByCurso[(int)$p['id_curso']] = (int)$p['pend'];
-    }
-  }
+  // pendências (apontamentos em status ativo) por curso
+  $pendByCurso = apont_pendentes_por_curso($ids);
 
   foreach ($rows as &$r) {
     $r['pend'] = $pendByCurso[(int)$r['id_curso']] ?? 0;
@@ -182,6 +180,13 @@ include __DIR__ . '/_layout_top.php';
     <?php endif; ?>
   </div>
 </div>
+
+<?php if (!is_staff() && !empty($totalPendentesMeus)): ?>
+  <div class="aviso-apontamentos mb-3" role="alert">
+    <span>⚠️ ATENÇÃO: existem <b><?= (int)$totalPendentesMeus ?></b> apontamento(s) de TI/Qualidade aguardando sua análise nos seus cursos.</span>
+    <span class="small">Abra o curso marcado em vermelho e clique em <b>Apontamentos</b>.</span>
+  </div>
+<?php endif; ?>
 
 <?php if (is_staff()): ?>
   <div class="card shadow-sm mb-3">
@@ -552,6 +557,9 @@ include __DIR__ . '/_layout_top.php';
                       <span class="badge bg-danger ms-1">Atrasado</span>
                     <?php elseif ($pf === 'proximo'): ?>
                       <span class="badge bg-warning text-dark ms-1">Prazo próximo</span>
+                    <?php endif; ?>
+                    <?php if (!empty($pendTabela[(int)$c['id_curso']])): ?>
+                      <span class="badge bg-danger ms-1" title="Apontamentos de TI/Qualidade pendentes">⚠ <?= (int)$pendTabela[(int)$c['id_curso']] ?> apontamento(s)</span>
                     <?php endif; ?>
                     <br>
                     <small class="text-muted">

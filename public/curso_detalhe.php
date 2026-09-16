@@ -8,6 +8,7 @@ require_once __DIR__ . '/../app/entregas_repo.php';
 require_once __DIR__ . '/../app/status_repo.php';
 require_once __DIR__ . '/../app/csrf.php';
 require_once __DIR__ . '/../app/audit.php';
+require_once __DIR__ . '/../app/apontamento_repo.php';
 
 require_login();
 $u = auth_user();
@@ -16,8 +17,9 @@ $id = (int)($_GET['id'] ?? 0);
 $curso = curso_get($id);
 if (!$curso) { http_response_code(404); echo "Curso não encontrado."; exit; }
 
-// Permissão: professor só vê o próprio
-if (!is_staff() && (int)$curso['id_professor'] !== (int)$u['id_user']) {
+// Permissão: professor (responsável ou coautor) só vê o próprio
+$ehProfessor = curso_eh_professor($curso, (int)$u['id_user']);
+if (!is_staff() && !$ehProfessor) {
   http_response_code(403); echo "Acesso negado."; exit;
 }
 
@@ -39,13 +41,11 @@ $lk = db()->prepare("SELECT l.*, u.nome AS user_nome FROM tb_curso_links l JOIN 
 $lk->execute([$id]);
 $links = $lk->fetchAll();
 
-$podeGerirLinks = perm('revisa_cursos') ||
-  ((int)$curso['id_professor'] === (int)$u['id_user']);
+$podeGerirLinks = perm('revisa_cursos') || $ehProfessor;
 
-// apontamentos
-$ap = db()->prepare("SELECT a.*, u.nome AS user_nome FROM tb_curso_apontamentos a JOIN tb_users u ON u.id_user=a.id_user WHERE a.id_curso=? ORDER BY a.created_at DESC");
-$ap->execute([$id]);
-$apont = $ap->fetchAll();
+// apontamentos (V11: arquivo relacionado, status e pendências)
+$apont = apont_lista($id);
+$apontPendentes = apont_pendentes_curso($id);
 
 $erro = null; $ok = null;
 if (($_GET['ok'] ?? '') === 'edit') $ok = "Curso atualizado com sucesso.";
@@ -68,7 +68,7 @@ if (($_GET['err'] ?? '') !== '') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_checklist') {
   csrf_check();
   try {
-    if (!perm('revisa_cursos') && (int)$curso['id_professor'] !== (int)$u['id_user']) {
+    if (!perm('revisa_cursos') && !$ehProfessor) {
       throw new Exception("Sem permissão.");
     }
 
@@ -112,25 +112,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'recus
       throw new Exception("Informe ao menos 1 apontamento.");
     }
 
-    db()->beginTransaction();
-    try {
-      foreach ($itens as $i) {
-        $tipo = $i['tipo'] ?? 'OUTRO';
-        $conteudo = trim($i['conteudo'] ?? '');
-        if ($conteudo === '') continue;
-
-        if (!in_array($tipo, ['TECNICO','PEDAGOGICO','ABNT','OUTRO'], true)) $tipo = 'OUTRO';
-
-        db()->prepare("INSERT INTO tb_curso_apontamentos (id_curso, id_user, tipo, conteudo) VALUES (?,?,?,?)")
-          ->execute([$id, $u['id_user'], $tipo, $conteudo]);
-        audit_log('apontamento_criado', 'curso', $id, null, ['tipo' => $tipo, 'conteudo' => $conteudo]);
-      }
-
-      db()->commit();
-    } catch (Throwable $e) {
-      db()->rollBack();
-      throw $e;
+    $criados = 0;
+    foreach ($itens as $i) {
+      $conteudo = trim($i['conteudo'] ?? '');
+      if ($conteudo === '') continue;
+      $idFile = ($i['id_file'] ?? '') !== '' ? (int)$i['id_file'] : null;
+      // e-mail individual desativado: o e-mail da recusa já lista todos os apontamentos
+      apont_criar($curso, $u, $i['tipo'] ?? 'OUTRO', $conteudo, $idFile, false);
+      $criados++;
     }
+    if ($criados === 0) throw new Exception("Informe ao menos 1 apontamento.");
 
     curso_transition($id, $u, 'Recusado - Ajustes Necessários', 'Recusa com relatório (TI)');
 
@@ -193,7 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'del_l
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'dispensar') {
   csrf_check();
   try {
-    if (!perm('revisa_cursos') && (int)$curso['id_professor'] !== (int)$u['id_user']) {
+    if (!perm('revisa_cursos') && !$ehProfessor) {
       throw new Exception("Sem permissão.");
     }
     $mod = (int)($_POST['modulo'] ?? -1);
@@ -225,7 +216,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'dispe
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'reativar') {
   csrf_check();
   try {
-    if (!perm('revisa_cursos') && (int)$curso['id_professor'] !== (int)$u['id_user']) {
+    if (!perm('revisa_cursos') && !$ehProfessor) {
       throw new Exception("Sem permissão.");
     }
     $mod = (int)($_POST['modulo'] ?? -1);
@@ -318,16 +309,30 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
   </div>
   <div class="d-flex gap-2">
     <a class="btn btn-outline-secondary" href="dashboard.php">Voltar</a>
-    <?php if (perm('revisa_cursos') || (int)$curso['id_professor'] === (int)$u['id_user']): ?>
+    <?php if (perm('revisa_cursos') || $ehProfessor): ?>
       <a class="btn btn-outline-primary" href="curso_editar.php?id=<?= (int)$id ?>">Editar</a>
     <?php endif; ?>
-    <a class="btn btn-outline-primary" href="apontamentos.php?id=<?= (int)$id ?>">Apontamentos</a>
+    <a class="btn <?= $apontPendentes ? 'btn-danger' : 'btn-outline-primary' ?>" href="apontamentos.php?id=<?= (int)$id ?>">
+      Apontamentos<?= $apontPendentes ? ' <span class="badge bg-light text-dark">' . $apontPendentes . '</span>' : '' ?>
+    </a>
     <a class="btn btn-outline-info" href="curso_videos.php?id=<?= (int)$id ?>">🎬 Vídeos</a>
   </div>
 </div>
 
 <?php if ($erro): ?><div class="alert alert-danger"><?= htmlspecialchars($erro) ?></div><?php endif; ?>
 <?php if ($ok): ?><div class="alert alert-success"><?= htmlspecialchars($ok) ?></div><?php endif; ?>
+
+<?php if ($apontPendentes > 0 && $ehProfessor && !apont_pode_gerir($u)): ?>
+  <div class="aviso-apontamentos mb-3" role="alert">
+    <span>⚠️ ATENÇÃO: existem <b><?= $apontPendentes ?></b> apontamento(s) de TI/Qualidade aguardando sua análise.</span>
+    <a class="btn btn-warning btn-sm" href="apontamentos.php?id=<?= (int)$id ?>">Ver apontamentos e responder</a>
+  </div>
+<?php elseif ($apontPendentes > 0): ?>
+  <div class="alert alert-warning mb-3">
+    Este curso possui <b><?= $apontPendentes ?></b> apontamento(s) pendente(s) de TI/Qualidade.
+    <a href="apontamentos.php?id=<?= (int)$id ?>">Ver apontamentos</a>
+  </div>
+<?php endif; ?>
 
 <div class="row g-3">
   <!-- Dados do Backlog -->
@@ -517,10 +522,12 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
 
   <!-- Apontamentos (resumo) -->
   <div class="col-12">
-    <div class="card shadow-sm">
+    <div class="card shadow-sm <?= $apontPendentes ? 'card-apontamentos-pendentes' : '' ?>">
       <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center">
-          <h2 class="h6 mb-0">Apontamentos (TI/Qualidade)</h2>
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+          <h2 class="h6 mb-0">Apontamentos (TI/Qualidade)
+            <?php if ($apontPendentes): ?><span class="badge bg-danger rounded-pill ms-1"><?= $apontPendentes ?> pendente(s)</span><?php endif; ?>
+          </h2>
           <a class="btn btn-sm btn-outline-primary" href="apontamentos.php?id=<?= (int)$id ?>">Gerenciar</a>
         </div>
 
@@ -535,19 +542,26 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
                 <tr>
                   <th>Data</th>
                   <th>Tipo</th>
+                  <th>Arquivo</th>
                   <th>Apontamento</th>
                   <th>Por</th>
                   <th>Status</th>
+                  <th class="text-end">Ação</th>
                 </tr>
               </thead>
               <tbody>
-                <?php foreach (array_slice($apont, 0, 5) as $a): ?>
+                <?php foreach (array_slice($apont, 0, 5) as $a): $aPend = APONT_STATUS[$a['status']]['pendente'] ?? false; ?>
                   <tr>
-                    <td class="text-nowrap"><?= htmlspecialchars($a['created_at']) ?></td>
-                    <td><span class="badge bg-info text-dark"><?= htmlspecialchars($a['tipo']) ?></span></td>
+                    <td class="text-nowrap"><?= date('d/m/Y H:i', strtotime($a['created_at'])) ?></td>
+                    <td><span class="badge bg-info text-dark"><?= htmlspecialchars(apont_tipo_label($a['tipo'])) ?></span></td>
+                    <td class="small"><?= $a['arquivo_nome'] ? htmlspecialchars($a['arquivo_nome']) : '<span class="text-muted">—</span>' ?></td>
                     <td><?= htmlspecialchars(mb_strimwidth($a['conteudo'], 0, 120, '...')) ?></td>
                     <td><?= htmlspecialchars($a['user_nome']) ?></td>
-                    <td><?= $a['resolvido'] ? '<span class="badge bg-success">Resolvido</span>' : '<span class="badge bg-warning text-dark">Pendente</span>' ?></td>
+                    <td><?= apont_status_badge($a['status']) ?></td>
+                    <td class="text-end">
+                      <a class="btn btn-sm <?= $aPend && $ehProfessor && !apont_pode_gerir($u) ? 'btn-warning' : 'btn-outline-primary' ?>"
+                         href="apontamento_detalhe.php?id=<?= (int)$a['id_apontamento'] ?>">Visualizar</a>
+                    </td>
                   </tr>
                 <?php endforeach; ?>
               </tbody>
@@ -961,6 +975,15 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
                         </select>
                       </div>
                       <div class="col-12 col-md-9">
+                        <label class="form-label small">Arquivo/Material relacionado (opcional)</label>
+                        <select class="form-select form-select-sm" name="itens[<?= $k ?>][id_file]">
+                          <option value="">Nenhum — geral</option>
+                          <?php foreach ($files as $fo): ?>
+                            <option value="<?= (int)$fo['id_file'] ?>"><?= ((int)$fo['modulo']) ? 'Módulo ' . (int)$fo['modulo'] : 'Geral' ?> • <?= htmlspecialchars($fo['categoria']) ?> — <?= htmlspecialchars($fo['original_name']) ?></option>
+                          <?php endforeach; ?>
+                        </select>
+                      </div>
+                      <div class="col-12">
                         <label class="form-label small">Apontamento</label>
                         <textarea class="form-control form-control-sm" name="itens[<?= $k ?>][conteudo]" rows="2" placeholder="Descreva o ajuste necessário..."></textarea>
                       </div>

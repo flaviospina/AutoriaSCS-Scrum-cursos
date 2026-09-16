@@ -171,6 +171,16 @@ function curso_get(int $id_curso): ?array {
   return $c ?: null;
 }
 
+/** A tabela de professores do curso (V11) já existe? (cache por requisição) */
+function curso_professores_disponivel(): bool {
+  static $ok = null;
+  if ($ok === null) {
+    try { db()->query("SELECT 1 FROM tb_curso_professores LIMIT 1"); $ok = true; }
+    catch (Throwable $e) { $ok = false; }
+  }
+  return $ok;
+}
+
 /**
  * Professores do curso (V11): responsável (tb_cursos.id_professor) + coautores
  * (tb_curso_professores). Antes da migração V11 devolve só o responsável.

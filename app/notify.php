@@ -247,7 +247,7 @@ function notify_event_status(array $curso, string $from, string $to, array $byUs
       // inclui apontamentos pendentes no e-mail
       try {
         $ap = db()->prepare("SELECT tipo, conteudo FROM tb_curso_apontamentos WHERE id_curso=? AND resolvido=0 ORDER BY created_at DESC LIMIT 15");
-        $ap->execute([(int)$curso['id_curso']]);
+        $ap->execute([(int)$curso['id_curso']]); // resolvido=0 equivale aos status pendentes (sincronizado)
         $itens = $ap->fetchAll();
         if ($itens) {
           $extra .= "<p><b>Apontamentos a corrigir:</b></p><ul>";
@@ -284,17 +284,66 @@ function notify_event_status(array $curso, string $from, string $to, array $byUs
   }
 }
 
-/** Notifica o formador sobre novo apontamento avulso. */
+/**
+ * ÚNICO ponto de envio dos e-mails de apontamento (itens 17, 21 e 26).
+ * Destinatários: todos os professores do curso (responsável + coautores) e a
+ * caixa institucional da TI. $evento: criado | status | concordo | objecao | reenvio.
+ * $ap deve vir de apont_get() (traz curso, arquivo e autor).
+ */
+function notify_apontamento_evento(array $ap, string $evento, array $byUser,
+                                   ?string $statusDe, ?string $statusPara, ?string $obs): void {
+  $idCurso = (int)$ap['id_curso'];
+  $link = app_base_url() . '/apontamento_detalhe.php?id=' . (int)$ap['id_apontamento'];
+  $arquivo = function_exists('apont_arquivo_rotulo') ? apont_arquivo_rotulo($ap) : ($ap['arquivo_nome'] ?? '');
+  $lbl = fn($s) => $s ? (function_exists('apont_status_label') ? apont_status_label($s) : $s) : '—';
+  $agora = new DateTime();
+
+  $titulos = [
+    'criado'   => 'Novo apontamento TI/Qualidade no seu curso',
+    'status'   => 'Apontamento atualizado: ' . $lbl($statusPara),
+    'concordo' => 'Professor(a) concordou com o apontamento',
+    'objecao'  => 'Professor(a) registrou objeção ao apontamento',
+    'reenvio'  => 'Apontamento reenviado para análise',
+  ];
+  $titulo = $titulos[$evento] ?? 'Atualização em apontamento';
+
+  $detalhes = "<table style='border-collapse:collapse;font-size:14px'>"
+    . "<tr><td style='padding:3px 10px 3px 0;color:#667'>Curso</td><td><b>" . htmlspecialchars($ap['nome_curso']) . "</b></td></tr>"
+    . "<tr><td style='padding:3px 10px 3px 0;color:#667'>Professor(a)</td><td>" . htmlspecialchars($ap['professor_nome']) . "</td></tr>"
+    . "<tr><td style='padding:3px 10px 3px 0;color:#667'>Arquivo relacionado</td><td>" . ($arquivo !== '' ? htmlspecialchars($arquivo) : '<i>nenhum (apontamento geral)</i>') . "</td></tr>"
+    . "<tr><td style='padding:3px 10px 3px 0;color:#667'>Tipo</td><td>" . htmlspecialchars(function_exists('apont_tipo_label') ? apont_tipo_label($ap['tipo']) : $ap['tipo']) . "</td></tr>"
+    . "<tr><td style='padding:3px 10px 3px 0;color:#667'>Status anterior</td><td>" . htmlspecialchars($lbl($statusDe)) . "</td></tr>"
+    . "<tr><td style='padding:3px 10px 3px 0;color:#667'>Novo status</td><td><b>" . htmlspecialchars($lbl($statusPara)) . "</b></td></tr>"
+    . "<tr><td style='padding:3px 10px 3px 0;color:#667'>Data / horário</td><td>" . $agora->format('d/m/Y') . " às " . $agora->format('H:i') . "</td></tr>"
+    . "<tr><td style='padding:3px 10px 3px 0;color:#667'>Responsável pela alteração</td><td>" . htmlspecialchars($byUser['nome'] ?? $byUser['email'] ?? '-') . "</td></tr>"
+    . "</table>"
+    . "<p style='margin-top:12px'><b>Descrição do apontamento:</b><br>" . nl2br(htmlspecialchars($ap['conteudo'])) . "</p>"
+    . ($obs !== null && trim($obs) !== '' ? "<p><b>Observação:</b><br>" . nl2br(htmlspecialchars($obs)) . "</p>" : '');
+
+  $saudacaoTpl = defined('APONT_EMAIL_SAUDACAO') ? APONT_EMAIL_SAUDACAO : 'Olá, {NOME}, você indicou um apontamento';
+  $assunto = "[AutoriaSCS] Apontamento — {$ap['nome_curso']}: " . $lbl($statusPara);
+
+  // professores do curso
+  $profs = function_exists('curso_professores') ? curso_professores($idCurso) : [];
+  if (!$profs) $profs = [['nome' => $ap['professor_nome'], 'email' => $ap['professor_email']]];
+  foreach ($profs as $p) {
+    $saud = str_replace('{NOME}', htmlspecialchars($p['nome']), htmlspecialchars($saudacaoTpl));
+    $corpo = "<p>{$saud} no curso <b>" . htmlspecialchars($ap['nome_curso']) . "</b>. Situação atual: <b>" . htmlspecialchars($lbl($statusPara)) . "</b>.</p>" . $detalhes;
+    notify_queue($p['email'], $p['nome'], $assunto, mail_template($titulo, $corpo, $link, 'Abrir o apontamento'));
+  }
+  // caixa institucional da TI
+  $corpoTI = "<p>Olá, Equipe TI &amp; AutoriaSCS. Registro de apontamento do curso <b>" . htmlspecialchars($ap['nome_curso']) . "</b>.</p>" . $detalhes;
+  notify_queue(ti_email(), 'Equipe TI & AutoriaSCS', $assunto, mail_template($titulo, $corpoTI, $link, 'Abrir o apontamento'));
+}
+
+/** Compatibilidade (chamadas antigas): registra pelo fluxo novo. */
 function notify_apontamento(array $curso, string $tipo, string $conteudo): void {
-  $link = app_base_url() . '/apontamentos.php?id=' . (int)$curso['id_curso'];
-  $html = mail_template(
-    'Novo apontamento no seu curso',
-    "<p>Curso: <b>" . htmlspecialchars($curso['nome_curso']) . "</b></p>
-     <p><b>" . htmlspecialchars($tipo) . ":</b> " . htmlspecialchars($conteudo) . "</p>",
-    $link, 'Ver apontamentos'
-  );
-  notify_queue($curso['professor_email'], $curso['professor_nome'],
-    "[AutoriaSCS] Novo apontamento: {$curso['nome_curso']}", $html);
+  $ap = [
+    'id_apontamento' => 0, 'id_curso' => (int)$curso['id_curso'], 'nome_curso' => $curso['nome_curso'],
+    'professor_nome' => $curso['professor_nome'], 'professor_email' => $curso['professor_email'],
+    'tipo' => $tipo, 'conteudo' => $conteudo, 'arquivo_nome' => '',
+  ];
+  notify_apontamento_evento($ap, 'criado', auth_user() ?? [], null, 'PENDENTE_ANALISE', null);
 }
 
 // ---------------------------------------------------------------------------

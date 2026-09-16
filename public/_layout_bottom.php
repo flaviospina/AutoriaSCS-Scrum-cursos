@@ -58,6 +58,19 @@
   });
 
   /**
+   * 1b) Anti duplo clique: ao enviar de verdade, os botões do formulário são
+   *     desabilitados (evita operações duplicadas por cliques repetidos).
+   */
+  document.querySelectorAll('form').forEach(function (form) {
+    form.addEventListener('submit', function () {
+      if (form.hasAttribute('data-confirm') && form.dataset.confirmed !== '1') return; // ainda vai confirmar
+      setTimeout(function () {
+        form.querySelectorAll('button[type=submit], button:not([type]), input[type=submit]').forEach(function (b) { b.disabled = true; });
+      }, 0);
+    });
+  });
+
+  /**
    * 2) Mensagens de resultado do servidor viram toasts SweetAlert.
    *    (alerts .alert-success/.alert-danger do conteúdo principal;
    *     avisos informativos .alert-info/.alert-warning permanecem na página)
