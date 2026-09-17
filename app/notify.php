@@ -142,9 +142,21 @@ function mail_template(string $titulo, string $corpoHtml, ?string $linkUrl = nul
             padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:bold'>{$label}</a></p>";
   }
   $t = htmlspecialchars($titulo);
+  // logos institucionais (config app.logos) — faixa branca acima do cabeçalho
+  $logos = notify_config()['app']['logos'] ?? [];
+  $faixaLogos = '';
+  if ($logos) {
+    $imgs = '';
+    foreach ($logos as $lg) {
+      $imgs .= "<img src='" . htmlspecialchars($lg) . "' alt='' height='44' style='height:44px;max-width:150px;margin:0 12px;vertical-align:middle;border:0'>";
+    }
+    $faixaLogos = "<div style='background:#ffffff;border:1px solid #e2e6e6;border-bottom:0;border-radius:12px 12px 0 0;padding:14px 12px;text-align:center'>{$imgs}</div>";
+  }
+  $raioTopo = $logos ? '0' : '12px 12px 0 0';
   return "<!doctype html><html><body style='margin:0;background:#f4f6f6;font-family:Comfortaa,Verdana,Arial,sans-serif'>
     <div style='max-width:620px;margin:0 auto;padding:24px 12px'>
-      <div style='background:#058285;color:#fff;border-radius:12px 12px 0 0;padding:18px 24px'>
+      {$faixaLogos}
+      <div style='background:#058285;color:#fff;border-radius:{$raioTopo};padding:18px 24px'>
         <div style='font-size:18px;font-weight:bold'>AutoriaSCS • Gestão de Cursos</div>
         <div style='font-size:12px;opacity:.85'>CECAPE — São Caetano do Sul</div>
       </div>

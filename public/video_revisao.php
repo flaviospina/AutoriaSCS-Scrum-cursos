@@ -24,9 +24,11 @@ $idCurso = (int)$video['id_curso'];
 $ehDono = curso_eh_professor(['id_curso' => (int)$video['id_curso'], 'id_professor' => (int)$video['id_professor']], (int)$u['id_user']);
 if (!is_staff() && !$ehDono) { http_response_code(403); echo "Acesso negado."; exit; }
 
-// A análise do vídeo é feita pelo(a) formador(a); a MB produz e reenvia as versões.
-$ehAnalista   = $ehDono || is_admin();
+// A análise do vídeo (marcações por minuto/segundo/frame) é feita pelo(a)
+// formador(a) do curso e pela equipe de TI/ADMIN; a MB Estúdios apenas produz,
+// responde e reenvia as versões — nunca vê a ferramenta de marcação.
 $ehProdutor   = perm('recebe_email_insercao') || is_admin();
+$ehAnalista   = ($ehDono || perm('revisa_cursos')) && !(perm('recebe_email_insercao') && !is_admin());
 
 $erro = null; $ok = null;
 $okMap = [
