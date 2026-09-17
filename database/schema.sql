@@ -214,8 +214,11 @@ CREATE TABLE IF NOT EXISTS tb_video_versoes (
   id_video      INT UNSIGNED NOT NULL,
   numero        SMALLINT UNSIGNED NOT NULL DEFAULT 1,
   id_user       INT UNSIGNED NOT NULL,
+  origem        ENUM('UPLOAD','DRIVE') NOT NULL DEFAULT 'UPLOAD', -- V12: arquivo no servidor ou link do Google Drive
   original_name VARCHAR(255) NOT NULL,
-  stored_name   VARCHAR(100) NOT NULL,
+  stored_name   VARCHAR(100) NOT NULL,                             -- vazio quando origem = DRIVE
+  drive_file_id VARCHAR(120) NULL,
+  drive_url     VARCHAR(500) NULL,
   mime_type     VARCHAR(120) NOT NULL,
   file_size     BIGINT UNSIGNED NOT NULL DEFAULT 0,
   observacao    VARCHAR(500) NULL,

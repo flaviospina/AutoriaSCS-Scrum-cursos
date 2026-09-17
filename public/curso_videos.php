@@ -44,17 +44,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'criar
     if ($descricao === '') throw new Exception("Descreva o vídeo — a descrição vai no e-mail enviado ao(à) formador(a).");
     if ($modulo < 0 || $modulo > 8) throw new Exception("Módulo inválido.");
 
-    $arq = video_receber_upload($id, $_FILES['arquivo'] ?? null);
+    $arq = video_receber_versao_form($id, $_POST, $_FILES['arquivo'] ?? null);
 
     db()->beginTransaction();
     try {
       db()->prepare("INSERT INTO tb_videos (id_curso, modulo, titulo, descricao) VALUES (?,?,?,?)")
         ->execute([$id, $modulo, $titulo, $descricao]);
       $idVideo = (int)db()->lastInsertId();
-      db()->prepare("
-        INSERT INTO tb_video_versoes (id_video, numero, id_user, original_name, stored_name, mime_type, file_size, observacao)
-        VALUES (?,?,?,?,?,?,?,?)
-      ")->execute([$idVideo, 1, $u['id_user'], $arq['original'], $arq['stored'], $arq['mime'], $arq['size'], $obs]);
+      video_inserir_versao($idVideo, 1, (int)$u['id_user'], $arq, $obs);
       db()->commit();
     } catch (Throwable $e) {
       db()->rollBack();
@@ -62,7 +59,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'criar
     }
 
     audit_log('video_disponibilizado', 'curso', $id, null,
-      ['video' => $titulo, 'modulo' => $modulo, 'arquivo' => $arq['original'], 'descricao' => $descricao]);
+      ['video' => $titulo, 'modulo' => $modulo, 'arquivo' => $arq['original'], 'origem' => $arq['origem'] ?? 'UPLOAD',
+       'drive_file_id' => $arq['drive_file_id'] ?? null, 'descricao' => $descricao]);
     $video = video_get($idVideo);
     notify_video_disponivel($video, 1, $obs);
 
@@ -123,11 +121,7 @@ include __DIR__ . '/_layout_top.php';
                         placeholder="Descreva exatamente o conteúdo do vídeo — este texto vai no e-mail do(a) formador(a)."></textarea>
               <div class="form-text">Ex.: "Videoaula 1 do Módulo 2 — gravação em estúdio, com vinheta e legendas."</div>
             </div>
-            <div class="mb-2">
-              <label class="form-label small">Arquivo de vídeo</label>
-              <input class="form-control form-control-sm" type="file" name="arquivo" accept="video/mp4,video/webm,video/quicktime" required>
-              <div class="form-text">Formato recomendado: MP4 (H.264). Limite: 512MB.</div>
-            </div>
+            <?php include __DIR__ . '/_video_fonte.php'; ?>
             <div class="mb-3">
               <label class="form-label small">Observação (opcional)</label>
               <input class="form-control form-control-sm" name="observacao" maxlength="500"

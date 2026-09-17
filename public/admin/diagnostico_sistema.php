@@ -53,7 +53,7 @@ $arquivos = [
   ['public/curso_detalhe.php', 'c9742f2d55be336746cf8b76a044939c', 'avisaPendencias'],
   ['public/curso_editar.php', '48f0e68583051e05fc920090dad53282', 'campo-ro'],
   ['public/curso_novo.php', '6f76063474dcb6b0279fdb1dcf9b632e', 'coautores'],
-  ['public/curso_videos.php', '5ee073b9c810c138d61fbd52cb1a1f77', 'curso_eh_professor('],
+  ['public/curso_videos.php', 'a843b233c19bbbd193b09a3c4250d2d4', 'video_receber_versao_form('],
   ['public/dashboard.php', 'be88da4a8dc845c41a359957043e7488', 'apont_pendentes_por_curso('],
   ['public/download.php', '28b48691153a77cb34b65b4b1e163806', 'curso_eh_professor('],
   ['public/download_todos.php', '223f918db4a6c3472740defbce48719b', 'curso_eh_professor('],
@@ -61,10 +61,15 @@ $arquivos = [
   ['public/trocar_visao.php', 'edfe1f047eb980e24117950c6c267536', 'visao_alternar('],
   ['public/upload.php', '09a46da585ddf03174d97ffd0692af47', 'curso_eh_professor('],
   ['public/video_captura.php', 'e70e1c568e0e5ac9b14d886bc78be4c5', 'curso_eh_professor('],
-  ['public/video_revisao.php', '2f22ee7f664c6c45712c4235a50628e1', 'curso_eh_professor('],
-  ['public/video_stream.php', 'b56e520623777a290de8c8f5b0312f38', 'curso_eh_professor('],
+  ['public/video_revisao.php', 'e9ee4581a0d688b4df77df8acac98158', 'playerPreview'],
+  ['public/video_stream.php', '29169e537e92f129b226ca691f089ed8', 'drive_stream_range('],
   ['database/upgrade_v10.sql', '47519a5fcc046333f168f8904fe4c30d', 'tb_niveis_ensino'],
   ['database/upgrade_v11.sql', '323e6271d2ee3d01e7b775da0584dc96', 'tb_apontamento_historico'],
+  ['app/drive_client.php', 'de5e11ab3acd385045b876d0fa4971fd', 'function drive_stream_range('],
+  ['app/video_repo.php', 'b7248248d3d941d1d24d4fda6c07acd0', 'function video_versao_de_link('],
+  ['app/config.php', '571c5f48c5262a8f70ab039e5d4df221', 'key_file'],
+  ['public/_video_fonte.php', '04ae234b07180fcfca17519e65022ec4', 'fonteDrive'],
+  ['database/upgrade_v12.sql', 'a437828caf6c94dd88bd6165f5890878', 'drive_file_id'],
 ];
 
 $resArq = []; $arqOk = 0;
@@ -111,6 +116,7 @@ $migracoes = [
   ['V11', 'Checklists, apontamentos (status/histórico), coautores, slide/vídeo, soft delete',
           diag_tabela('tb_checklist_itens') && diag_tabela('tb_apontamento_historico') && diag_tabela('tb_curso_professores')
           && diag_coluna('tb_curso_apontamentos', 'status') && diag_coluna('tb_curso_files', 'aprovado') && diag_coluna('tb_status', 'exige_entregas')],
+  ['V12', 'Vídeos por link do Google Drive (origem da versão)', diag_coluna('tb_video_versoes', 'origem')],
 ];
 $dbInfo = db()->query("SELECT DATABASE() db, VERSION() v, @@character_set_database cs, USER() u")->fetch();
 $nNiveis = diag_count("SELECT COUNT(*) n FROM tb_niveis_ensino");
@@ -140,6 +146,12 @@ $funcNovas = [
 ];
 require_once __DIR__ . '/../../app/apontamento_repo.php';
 require_once __DIR__ . '/../../app/checklist_repo.php';
+require_once __DIR__ . '/../../app/drive_client.php';
+// Google Drive (V12): chave da conta de serviço e teste de acesso
+$driveInfo = ['configurado' => drive_configurado(), 'email' => drive_service_email(), 'key_file' => drive_config()['key_file'] ?? '', 'teste' => null, 'erro' => null];
+if ($driveInfo['configurado']) {
+  try { $driveInfo['teste'] = drive_testar(); } catch (Throwable $e) { $driveInfo['erro'] = $e->getMessage(); }
+}
 $funcNovas['apont_criar'] = function_exists('apont_criar');
 $funcNovas['checklist_salvar'] = function_exists('checklist_salvar');
 $funcNovas['entregas_pendentes'] = function_exists('entregas_pendentes');
@@ -267,6 +279,26 @@ include __DIR__ . '/../_layout_top.php';
   </div>
   <div class="small text-muted mt-2">
     Se "Ensino Fundamental - Médio" não aparecer na lista mesmo com a V10 aplicada, o PHP está executando arquivos antigos (cache ou pasta errada).
+  </div>
+</div></div>
+
+<!-- Google Drive -->
+<div class="card shadow-sm mb-3"><div class="card-body">
+  <h2 class="h6 mb-2">Google Drive (vídeos por link — V12)</h2>
+  <?php if (!$driveInfo['configurado']): ?>
+    <div class="alert alert-warning small mb-2">
+      <b>Conta de serviço não configurada</b> — os links do Drive funcionam em <b>modo de contingência</b> (player do Google em iframe,
+      sem "agora" e sem captura de frame). Para o player completo: salve a chave JSON em
+      <code><?= htmlspecialchars($driveInfo['key_file']) ?></code> (fora de <code>public/</code>) e ative a Drive API no projeto Google Cloud.
+    </div>
+  <?php elseif ($driveInfo['erro']): ?>
+    <div class="alert alert-danger small mb-2"><b>Chave presente, mas o Google recusou:</b> <?= htmlspecialchars($driveInfo['erro']) ?></div>
+  <?php else: ?>
+    <div class="alert alert-success small mb-2">✅ Integração ativa. Conta de serviço: <code><?= htmlspecialchars($driveInfo['teste']['email'] ?? $driveInfo['email']) ?></code></div>
+  <?php endif; ?>
+  <div class="small text-muted">
+    E-mail para a MB compartilhar a pasta dos vídeos (como Leitor):
+    <code><?= htmlspecialchars($driveInfo['email'] ?? '(será exibido após configurar a chave)') ?></code>
   </div>
 </div></div>
 

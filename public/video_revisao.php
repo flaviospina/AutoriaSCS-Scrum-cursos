@@ -154,18 +154,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'nova_
   try {
     if (!$ehProdutor) throw new Exception("Somente a MB Estúdios disponibiliza novas versões do vídeo.");
     $obs = trim($_POST['observacao'] ?? '') ?: null;
-    $arq = video_receber_upload($idCurso, $_FILES['arquivo'] ?? null);
+    $arq = video_receber_versao_form($idCurso, $_POST, $_FILES['arquivo'] ?? null);
 
     $numero = $versoes ? ((int)$versoes[0]['numero'] + 1) : 1;
-    db()->prepare("
-      INSERT INTO tb_video_versoes (id_video, numero, id_user, original_name, stored_name, mime_type, file_size, observacao)
-      VALUES (?,?,?,?,?,?,?,?)
-    ")->execute([$idVideo, $numero, $u['id_user'], $arq['original'], $arq['stored'], $arq['mime'], $arq['size'], $obs]);
+    video_inserir_versao($idVideo, $numero, (int)$u['id_user'], $arq, $obs);
 
     // nova versão reabre a análise
     db()->prepare("UPDATE tb_videos SET status='EM_ANALISE' WHERE id_video=?")->execute([$idVideo]);
     audit_log('video_nova_versao', 'curso', $idCurso, null,
-      ['video' => $video['titulo'], 'versao' => $numero, 'arquivo' => $arq['original'], 'observacao' => $obs]);
+      ['video' => $video['titulo'], 'versao' => $numero, 'arquivo' => $arq['original'], 'origem' => $arq['origem'] ?? 'UPLOAD',
+       'drive_file_id' => $arq['drive_file_id'] ?? null, 'observacao' => $obs]);
     notify_video_disponivel($video, $numero, $obs);
 
     header("Location: video_revisao.php?id={$idVideo}&ok=versao");
@@ -308,13 +306,34 @@ include __DIR__ . '/_layout_top.php';
           <?php endif; ?>
         </div>
 
-        <video id="player" controls preload="metadata" crossorigin="use-credentials"
-               style="width:100%;max-height:56vh;background:#000;border-radius:10px"
-               src="video_stream.php?id=<?= (int)$idVersaoVer ?>"></video>
+        <?php $modoPlayer = video_versao_modo($versaoVer); ?>
+        <?php if ($modoPlayer === 'PREVIEW'): ?>
+          <div class="ratio ratio-16x9" style="background:#000;border-radius:10px;overflow:hidden">
+            <iframe id="playerPreview" src="<?= htmlspecialchars(drive_link_preview($versaoVer['drive_file_id'])) ?>"
+                    allow="autoplay; fullscreen" allowfullscreen style="border:0"></iframe>
+          </div>
+          <div class="alert alert-warning small mt-2 mb-0">
+            Vídeo reproduzido pelo player do Google Drive (modo de contingência — a conta de serviço do Drive ainda não está
+            configurada no sistema). Para registrar um apontamento, <b>anote o minuto e o segundo no player</b> e informe no campo
+            "Tempo"; a captura automática do frame não está disponível neste modo.
+            <a href="<?= htmlspecialchars(drive_link_visualizar($versaoVer['drive_file_id'])) ?>" target="_blank" rel="noopener">Abrir no Drive ↗</a>
+          </div>
+        <?php else: ?>
+          <video id="player" controls preload="metadata" crossorigin="use-credentials"
+                 style="width:100%;max-height:56vh;background:#000;border-radius:10px"
+                 src="video_stream.php?id=<?= (int)$idVersaoVer ?>"></video>
+        <?php endif; ?>
 
         <div class="small text-muted mt-1 d-flex flex-wrap gap-3">
-          <span>Arquivo: <?= htmlspecialchars($versaoVer['original_name']) ?>
-            (<?= number_format($versaoVer['file_size']/1024/1024, 1, ',', '.') ?> MB)</span>
+          <span>
+            <?php if (video_versao_eh_drive($versaoVer)): ?>
+              <span class="badge bg-info text-dark">Google Drive</span>
+              <a href="<?= htmlspecialchars(drive_link_visualizar($versaoVer['drive_file_id'])) ?>" target="_blank" rel="noopener"><?= htmlspecialchars($versaoVer['original_name']) ?> ↗</a>
+            <?php else: ?>
+              Arquivo: <?= htmlspecialchars($versaoVer['original_name']) ?>
+            <?php endif; ?>
+            <?php if ((int)$versaoVer['file_size'] > 0): ?>(<?= number_format($versaoVer['file_size']/1024/1024, 1, ',', '.') ?> MB)<?php endif; ?>
+          </span>
           <span>Enviado por <?= htmlspecialchars($versaoVer['user_nome']) ?> em <?= htmlspecialchars($versaoVer['created_at']) ?></span>
           <?php if ($versaoVer['observacao']): ?><span>Obs.: <?= htmlspecialchars($versaoVer['observacao']) ?></span><?php endif; ?>
         </div>
@@ -331,8 +350,10 @@ include __DIR__ . '/_layout_top.php';
                 <label class="form-label small">Tempo (mm:ss.mmm)</label>
                 <div class="input-group input-group-sm">
                   <input class="form-control" name="tempo_txt" id="tempoTxt" placeholder="0:00.000" required>
+                  <?php if ($modoPlayer !== 'PREVIEW'): ?>
                   <button class="btn btn-outline-primary" type="button" id="btnTempoAtual"
                           title="Usar o ponto atual do player">◉ agora</button>
+                  <?php endif; ?>
                 </div>
                 <input type="hidden" name="tempo_seg" id="tempoSeg">
               </div>
@@ -359,8 +380,8 @@ include __DIR__ . '/_layout_top.php';
               </div>
               <div class="col-12 d-flex flex-wrap gap-3 align-items-center">
                 <div class="form-check">
-                  <input class="form-check-input" type="checkbox" id="chkCaptura" checked>
-                  <label class="form-check-label small" for="chkCaptura">Anexar captura do frame atual</label>
+                  <input class="form-check-input" type="checkbox" id="chkCaptura" <?= $modoPlayer === 'PREVIEW' ? 'disabled' : 'checked' ?>>
+                  <label class="form-check-label small" for="chkCaptura">Anexar captura do frame atual<?= $modoPlayer === 'PREVIEW' ? ' (indisponível no player do Drive)' : '' ?></label>
                 </div>
                 <button class="btn btn-primary btn-sm">Registrar apontamento</button>
               </div>
@@ -383,16 +404,13 @@ include __DIR__ . '/_layout_top.php';
                 data-confirm-title="Nova versão" data-confirm-btn="Sim, disponibilizar">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="nova_versao">
-            <div class="col-12 col-md-5">
-              <input class="form-control form-control-sm" type="file" name="arquivo"
-                     accept="video/mp4,video/webm,video/quicktime" required>
-            </div>
-            <div class="col-12 col-md-5">
+            <div class="col-12"><?php $fonteSufixo = 'Nv'; include __DIR__ . '/_video_fonte.php'; ?></div>
+            <div class="col-12 col-md-9">
               <input class="form-control form-control-sm" name="observacao" maxlength="500"
                      placeholder="O que foi corrigido nesta versão? (opcional)">
             </div>
-            <div class="col-12 col-md-2">
-              <button class="btn btn-outline-primary btn-sm w-100">Enviar v<?= (int)$versoes[0]['numero'] + 1 ?></button>
+            <div class="col-12 col-md-3">
+              <button class="btn btn-outline-primary btn-sm w-100">Disponibilizar v<?= (int)$versoes[0]['numero'] + 1 ?></button>
             </div>
           </form>
         </div>
@@ -415,7 +433,7 @@ include __DIR__ . '/_layout_top.php';
                   <td class="text-nowrap small"><?= htmlspecialchars($vv['created_at']) ?></td>
                   <td class="small"><?= htmlspecialchars($vv['user_nome']) ?></td>
                   <td class="small"><?= (int)$vv['n_marcacoes'] ?> (<?= (int)$vv['n_abertas'] ?> em aberto)</td>
-                  <td class="small"><?= htmlspecialchars($vv['observacao'] ?? '-') ?></td>
+                  <td class="small"><?= video_versao_eh_drive($vv) ? '<span class="badge bg-info text-dark me-1">Drive</span>' : '' ?><?= htmlspecialchars($vv['observacao'] ?? '-') ?></td>
                   <td class="text-end">
                     <?php if ((int)$vv['id_versao'] !== $idVersaoVer): ?>
                       <a class="btn btn-sm btn-outline-secondary py-0"
@@ -527,12 +545,12 @@ include __DIR__ . '/_layout_top.php';
 
 <script>
 (function () {
-  var player = document.getElementById('player');
-  if (!player) return;
+  var player = document.getElementById('player'); // null no modo iframe do Drive (contingência)
 
   // clicar no tempo de um apontamento leva o player ao ponto exato
   document.querySelectorAll('.marc-seek').forEach(function (b) {
     b.addEventListener('click', function () {
+      if (!player) { alert('Neste modo (player do Google Drive) posicione o vídeo manualmente em ' + b.textContent.trim() + '.'); return; }
       player.currentTime = parseFloat(b.dataset.t) || 0;
       player.play();
       player.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -566,7 +584,8 @@ include __DIR__ . '/_layout_top.php';
     if (!isNaN(t)) frame.value = Math.round(t * (parseFloat(fps.value) || 30));
   }
 
-  document.getElementById('btnTempoAtual').addEventListener('click', function () {
+  var btnAgora = document.getElementById('btnTempoAtual');
+  if (btnAgora && player) btnAgora.addEventListener('click', function () {
     player.pause();
     tempoTxt.value = fmt(player.currentTime);
     syncFrame();
@@ -582,7 +601,7 @@ include __DIR__ . '/_layout_top.php';
       return;
     }
     tempoSeg.value = t.toFixed(3);
-    if (chkCap.checked) {
+    if (chkCap.checked && player) {
       try {
         // captura o frame exibido no player (mesma origem — permitido)
         if (Math.abs(player.currentTime - t) > 0.5) player.currentTime = t;

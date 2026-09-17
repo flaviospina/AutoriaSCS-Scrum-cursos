@@ -1,5 +1,11 @@
 # credenciais locais
 app/config.local.php
+app/keys/*
+!app/keys/.gitkeep
+
+# cache (token do Drive)
+storage/cache/*
+!storage/cache/.gitkeep
 
 # uploads dos cursos e biblioteca de modelos
 storage/cursos/*

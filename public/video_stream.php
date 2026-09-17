@@ -1,8 +1,12 @@
 <?php
 /**
- * Entrega o arquivo de vídeo de uma versão com suporte a HTTP Range —
- * necessário para o player permitir avançar/retroceder (seek) e para a
- * marcação de pontos exatos na revisão.
+ * Entrega o vídeo de uma versão com suporte a HTTP Range — necessário para o
+ * player permitir avançar/retroceder (seek) e para a marcação de pontos exatos.
+ *
+ * Origem UPLOAD: arquivo em storage/videos (como sempre).
+ * Origem DRIVE (V12): o trecho pedido é buscado na Google Drive API e
+ * repassado ao navegador em pedaços limitados (chunk_mb), sem gravar em disco —
+ * cada requisição PHP dura poucos segundos, compatível com hospedagem compartilhada.
  */
 require_once __DIR__ . '/../app/session.php';
 session_boot();
@@ -26,14 +30,38 @@ if (!is_staff() && !curso_eh_professor(['id_curso' => (int)$video['id_curso'], '
   http_response_code(403); exit("Sem permissão.");
 }
 
-$path = video_storage_dir((int)$video['id_curso']) . '/' . $versao['stored_name'];
-if (!is_file($path)) { http_response_code(404); exit("Arquivo ausente no storage."); }
+session_write_close(); // libera a sessão durante a transmissão
+@set_time_limit(0);
+while (ob_get_level() > 0) ob_end_clean();
 
-$size = filesize($path);
+$ehDrive = video_versao_eh_drive($versao);
+
+if ($ehDrive) {
+  if (!drive_configurado()) { http_response_code(503); exit("Integração com o Google Drive não configurada."); }
+  $size = (int)$versao['file_size'];
+  if ($size <= 0) { // tamanho desconhecido (cadastro feito sem a API): consulta e grava
+    try {
+      $meta = drive_file_meta($versao['drive_file_id']);
+      $size = (int)$meta['size'];
+      db()->prepare("UPDATE tb_video_versoes SET file_size=?, mime_type=?, original_name=? WHERE id_versao=?")
+        ->execute([$size, $meta['mime'], $meta['name'], $idVersao]);
+      $versao['mime_type'] = $meta['mime'];
+    } catch (Throwable $e) {
+      http_response_code(502); exit("Google Drive: " . $e->getMessage());
+    }
+  }
+  $chunk = max(1, (int)(drive_config()['chunk_mb'] ?? 8)) * 1024 * 1024;
+} else {
+  $path = video_storage_dir((int)$video['id_curso']) . '/' . $versao['stored_name'];
+  if (!is_file($path)) { http_response_code(404); exit("Arquivo ausente no storage."); }
+  $size = filesize($path);
+  $chunk = 0; // local: entrega o intervalo pedido inteiro
+}
+
 $mime = $versao['mime_type'] ?: 'video/mp4';
-
 $start = 0;
 $end = $size - 1;
+$parcial = false;
 
 if (isset($_SERVER['HTTP_RANGE']) && preg_match('/bytes=(\d*)-(\d*)/', $_SERVER['HTTP_RANGE'], $m)) {
   if ($m[1] !== '') $start = (int)$m[1];
@@ -48,19 +76,33 @@ if (isset($_SERVER['HTTP_RANGE']) && preg_match('/bytes=(\d*)-(\d*)/', $_SERVER[
     exit;
   }
   $end = min($end, $size - 1);
+  $parcial = true;
+}
+// Drive: limita o trecho por requisição (o navegador pede o restante em seguida)
+if ($chunk > 0 && ($end - $start + 1) > $chunk) {
+  $end = $start + $chunk - 1;
+  $parcial = true;
+}
+
+if ($parcial) {
   header('HTTP/1.1 206 Partial Content');
   header("Content-Range: bytes {$start}-{$end}/{$size}");
 } else {
   header('HTTP/1.1 200 OK');
 }
-
 header("Content-Type: {$mime}");
 header('Accept-Ranges: bytes');
 header('Content-Length: ' . ($end - $start + 1));
 header('Cache-Control: private, max-age=3600');
-header('Content-Disposition: inline; filename="' . basename($versao['original_name']) . '"');
+header('Content-Disposition: inline; filename="' . basename($versao['original_name'] ?: 'video.mp4') . '"');
 
-// envia em blocos para não estourar memória
+if ($ehDrive) {
+  $status = drive_stream_range($versao['drive_file_id'], $start, $end);
+  if ($status >= 400) error_log("video_stream: Google Drive HTTP {$status} (versão {$idVersao})");
+  exit;
+}
+
+// local: envia em blocos para não estourar memória
 $fp = fopen($path, 'rb');
 fseek($fp, $start);
 $restante = $end - $start + 1;

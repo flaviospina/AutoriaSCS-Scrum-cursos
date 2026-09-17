@@ -8,6 +8,7 @@
  * → formador responde/corrige e reenvia nova versão → TI aprova.
  */
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/drive_client.php';
 
 const VIDEO_CATEGORIAS = [
   'AUDIO'             => 'Áudio',
@@ -193,4 +194,88 @@ function video_storage_dir(int $idCurso): string {
   $dir = $base . "/videos/{$idCurso}";
   if (!is_dir($dir)) mkdir($dir, 0755, true);
   return $dir;
+}
+
+/* ============================================================
+ * V12 — Vídeo por link do Google Drive
+ * ============================================================ */
+
+/**
+ * Valida um link do Google Drive e devolve os dados da versão no mesmo
+ * formato de video_receber_upload() (+ origem/drive_file_id/drive_url).
+ * Com a conta de serviço configurada, consulta a API (nome, tamanho, tipo);
+ * sem ela, aceita o link em modo de contingência (player em iframe).
+ */
+function video_versao_de_link(string $url): array {
+  $url = trim($url);
+  $id = drive_extrair_id($url);
+  if (!$id) throw new Exception("Link do Google Drive inválido. Cole o link do arquivo (Compartilhar → Copiar link), ex.: https://drive.google.com/file/d/ID/view");
+
+  $dados = [
+    'original' => "Google Drive ({$id})", 'stored' => '', 'mime' => 'video/mp4', 'size' => 0,
+    'origem' => 'DRIVE', 'drive_file_id' => $id, 'drive_url' => mb_substr($url, 0, 500), 'modo' => 'PREVIEW',
+  ];
+  if (!drive_configurado()) return $dados;
+
+  $meta = drive_file_meta($id); // lança DriveException com orientação de compartilhamento
+  if (strpos($meta['mime'], 'video/') !== 0) {
+    throw new Exception("O arquivo do Drive não é um vídeo ({$meta['mime']}). Compartilhe um MP4 (H.264).");
+  }
+  if (!in_array($meta['mime'], ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v'], true)) {
+    throw new Exception("Formato {$meta['mime']} não reproduz no navegador. Converta para MP4 (H.264) antes de compartilhar.");
+  }
+  $dados['original'] = $meta['name'];
+  $dados['mime'] = $meta['mime'];
+  $dados['size'] = $meta['size'];
+  $dados['modo'] = 'API';
+  return $dados;
+}
+
+/** Insere uma versão (upload ou Drive). Compatível com banco anterior à V12. */
+function video_inserir_versao(int $idVideo, int $numero, int $idUser, array $arq, ?string $obs): int {
+  $origem = $arq['origem'] ?? 'UPLOAD';
+  try {
+    db()->prepare("
+      INSERT INTO tb_video_versoes (id_video, numero, id_user, origem, original_name, stored_name, drive_file_id, drive_url, mime_type, file_size, observacao)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?)
+    ")->execute([$idVideo, $numero, $idUser, $origem, $arq['original'], $arq['stored'] ?? '',
+                 $arq['drive_file_id'] ?? null, $arq['drive_url'] ?? null, $arq['mime'], (int)$arq['size'], $obs]);
+  } catch (Throwable $e) {
+    if ($origem === 'DRIVE') throw new Exception("Execute database/upgrade_v12.sql para habilitar vídeos por link do Google Drive.");
+    db()->prepare("
+      INSERT INTO tb_video_versoes (id_video, numero, id_user, original_name, stored_name, mime_type, file_size, observacao)
+      VALUES (?,?,?,?,?,?,?,?)
+    ")->execute([$idVideo, $numero, $idUser, $arq['original'], $arq['stored'], $arq['mime'], (int)$arq['size'], $obs]);
+  }
+  return (int)db()->lastInsertId();
+}
+
+/** A versão é um link do Drive? */
+function video_versao_eh_drive(array $versao): bool {
+  return ($versao['origem'] ?? 'UPLOAD') === 'DRIVE' && !empty($versao['drive_file_id']);
+}
+
+/**
+ * Modo de reprodução da versão:
+ *   'LOCAL'   — arquivo no servidor (video_stream.php);
+ *   'API'     — Drive via proxy do sistema (video_stream.php, player completo);
+ *   'PREVIEW' — Drive em iframe (contingência: sem chave da conta de serviço).
+ */
+function video_versao_modo(array $versao): string {
+  if (!video_versao_eh_drive($versao)) return 'LOCAL';
+  return drive_configurado() ? 'API' : 'PREVIEW';
+}
+
+/**
+ * Recebe a versão a partir do formulário: link do Drive (campo drive_url) tem
+ * prioridade; senão, arquivo enviado. Mensagem clara quando nenhum dos dois.
+ */
+function video_receber_versao_form(int $idCurso, array $post, ?array $file): array {
+  $url = trim($post['drive_url'] ?? '');
+  $fonte = $post['fonte'] ?? ($url !== '' ? 'drive' : 'arquivo');
+  if ($fonte === 'drive') {
+    if ($url === '') throw new Exception("Cole o link do vídeo no Google Drive.");
+    return video_versao_de_link($url);
+  }
+  return video_receber_upload($idCurso, $file);
 }

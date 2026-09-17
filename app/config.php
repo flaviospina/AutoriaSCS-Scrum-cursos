@@ -29,6 +29,15 @@ $config = [
       'https://cecapescs.com.br/logos/logo-seeduc.png',
     ],
   ],
+  // Vídeos por link do Google Drive (V12): conta de serviço do Google Cloud.
+  // Crie a chave JSON em console.cloud.google.com (Drive API ativada) e salve
+  // FORA de public/ (ex.: app/keys/drive.json). A MB compartilha a pasta dos
+  // vídeos com o e-mail da conta de serviço (client_email), como Leitor.
+  // Sem a chave, os links do Drive funcionam em modo de contingência (iframe).
+  'drive' => [
+    'key_file' => __DIR__ . '/keys/drive.json',
+    'chunk_mb' => 8, // tamanho máximo de cada trecho transmitido ao navegador
+  ],
   'n8n' => [
     'webhook_url' => '', // ex.: https://SEU_N8N/webhook/curso-event (vazio = desativado)
     'token'       => '',

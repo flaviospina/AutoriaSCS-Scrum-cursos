@@ -100,6 +100,26 @@ Ferramenta integrada de análise de vídeos (`🎬 Vídeos` na página do curso)
 > Vídeos grandes: ajuste no servidor `upload_max_filesize` e `post_max_size`
 > (ex.: `512M`) no cPanel → *MultiPHP INI Editor*.
 
+### Vídeos por link do Google Drive (V12)
+
+Para vídeos acima de 512MB (a maioria passa de 1GB), a MB Estúdios informa o **link do
+arquivo no Google Drive** em vez de enviá-lo. O sistema não copia o vídeo para o servidor:
+
+- **Com a conta de serviço configurada** (recomendado): o link é validado na hora (nome,
+  tamanho, tipo) e o vídeo é transmitido ao navegador pela Drive API em trechos (`video_stream.php`),
+  com o **mesmo player** — seek, "◉ agora", frame e captura funcionam normalmente.
+- **Sem a conta de serviço** (contingência): o vídeo abre no player do Google (iframe) e o
+  formador informa o minuto/segundo manualmente (sem captura de frame).
+
+Configuração (uma vez, ~15 min):
+1. `console.cloud.google.com` → criar projeto → **Ativar a Google Drive API**;
+2. **IAM → Contas de serviço → Criar** (ex.: `autoriascs-videos`) → **Chaves → Adicionar chave JSON**;
+3. salvar o JSON em `app/keys/drive.json` (fora de `public/`; a pasta é ignorada pelo git);
+4. a MB compartilha a pasta dos vídeos, como **Leitor**, com o e-mail da conta de serviço
+   (`client_email` do JSON — também exibido em *Admin → Diagnóstico do sistema*).
+   Compartilhar "com o domínio" não funciona: o servidor precisa de uma identidade própria.
+5. Executar `database/upgrade_v12.sql`.
+
 ## Instalação
 
 1. Crie o banco e execute `database/schema.sql` (instalação nova). Migrações a partir de banco
@@ -110,7 +130,7 @@ Ferramenta integrada de análise de vídeos (`🎬 Vídeos` na página do curso)
    projeto com carga horária + inversão do fluxo de vídeos), `upgrade_v10.sql` (cadastros de
    níveis de ensino e categorias de entrega) e `upgrade_v11.sql` (ajustes do PROMPT MESTRE:
    checklists por perfil, entrega livre/aprovação de slide, apontamentos com status e histórico,
-   coautores, exclusão protegida) — faça backup antes.
+   coautores, exclusão protegida) e `upgrade_v12.sql` (vídeos por link do Google Drive) — faça backup antes.
 2. Copie `app/config.php` para `app/config.local.php` e preencha as credenciais reais do banco,
    a seção `mail` (método `mail` do cPanel ou `smtp`) e a `cron.chave`
    (o arquivo local é ignorado pelo git).
