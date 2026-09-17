@@ -165,8 +165,11 @@ docs/       análise completa, proposta de auditoria/e-mails/repositório e road
 - **Vídeo tutorial do formador** (2 min, Full HD): [`docs/tutoriais/video/`](docs/tutoriais/video/) —
   com [roteiro de narração](docs/tutoriais/video/ROTEIRO_NARRACAO.md) para gravar a locução.
 - **Apresentações em slides** (PPTX) para treinamento, uma por perfil, em `docs/tutoriais/`.
-- **Tutoriais HTML responsivos (V12, atuais)** — em `public/tutoriais/` (link **Ajuda** no menu do sistema,
-  aberto direto no perfil do usuário): `index.html`, `professor.html`, `ti.html`, `mb.html`, `admin.html`.
+- **Tutoriais HTML responsivos (V12, atuais)** — link **Ajuda** no menu do sistema (`public/tutorial.php`).
+  Somente o ADMIN vê o índice e os quatro tutoriais; os demais perfis veem apenas o do seu nível de acesso
+  (professor/formador, TI, MB). Conteúdo em `app/tutoriais/*.html`, imagens em `storage/tutoriais/img`
+  (servidas com login por `tutorial_img.php`) e PDFs pré-gerados em `storage/tutoriais/pdf` (botão
+  **Exportar PDF** → `tutorial_pdf.php`); o botão **Imprimir** usa o CSS de impressão de `public/tutoriais/tutorial.css`.
 - Tutoriais antigos em Markdown (fluxo V9, mantidos para referência): [`docs/tutoriais/TUTORIAL_PROFESSOR.md`](docs/tutoriais/TUTORIAL_PROFESSOR.md),
   [`docs/tutoriais/TUTORIAL_TI.md`](docs/tutoriais/TUTORIAL_TI.md),
   [`docs/tutoriais/TUTORIAL_MB.md`](docs/tutoriais/TUTORIAL_MB.md) e

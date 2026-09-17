@@ -88,3 +88,39 @@ th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spa
 main, aside.toc { min-width: 0; overflow-wrap: anywhere; }
 section { overflow-x: auto; }
 .wrap, .topo .in { max-width: 100%; }
+
+/* ── Barra de ações (Imprimir / Exportar PDF) ── */
+.acoes-tut { display: flex; flex-wrap: wrap; gap: 10px; margin: -8px 0 18px; }
+.btn-tut { display: inline-flex; align-items: center; gap: 6px; background: rgba(34,211,238,.14); border: 1px solid rgba(34,211,238,.5); color: var(--cyan); font: inherit; font-size: 14px; font-weight: 700; padding: 8px 14px; border-radius: 10px; text-decoration: none; cursor: pointer; }
+.btn-tut:hover { background: rgba(34,211,238,.26); }
+.so-print { display: none; }
+
+/* ── Impressão / PDF: fundo branco, sem menus, uma coluna, imagens inteiras ── */
+@media print {
+  :root { --bg: #fff; --bg2: #f5f7fb; --card: #fff; --line: #cfd8e3; --text: #111; --muted: #555; --cyan: #05708a; }
+  html { scroll-padding-top: 0; }
+  body { background: #fff !important; color: #111; font-size: 11.5pt; }
+  .topo { position: static; background: #fff; border-bottom: 2px solid #05708a; }
+  .topo nav, .btn-menu, .no-print, .acoes-tut, .topo-link, aside.toc, .lb { display: none !important; }
+  .topo .perfil { color: #05708a; border-color: #05708a; background: #fff; }
+  .logos img { background: #fff; }
+  .wrap { display: block; padding: 0; max-width: none; }
+  main h1 { font-size: 22pt; color: #05708a; }
+  section { background: #fff; border: 1px solid #cfd8e3; box-shadow: none; page-break-inside: auto; break-inside: auto; padding: 14px 16px; overflow: visible; }
+  section h2 { color: #05708a; page-break-after: avoid; break-after: avoid; }
+  section h2 .n { background: #05708a; color: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  section h3 { color: #222; page-break-after: avoid; }
+  figure { page-break-inside: avoid; break-inside: avoid; margin: 10px 0 14px; }
+  figure img { box-shadow: none; border: 1px solid #cfd8e3; max-width: 100% !important; max-height: 190mm; width: auto; cursor: default; background: #fff; }
+  figure img.p { max-width: 90mm !important; }
+  figure img.m { max-width: 140mm !important; }
+  table { page-break-inside: avoid; font-size: 10.5pt; }
+  th, td { border-bottom: 1px solid #cfd8e3; }
+  b, strong { color: #000; }
+  .btn-ex, .status, .dica, .atencao, .info, .passos li::before { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .dica { background: #e9f8f1; } .atencao { background: #fdecec; } .info { background: #fff7df; }
+  .so-print { display: inline; }
+  .rodape { border-top: 1px solid #cfd8e3; color: #555; }
+  a { color: #05708a; text-decoration: none; }
+  @page { size: A4; margin: 14mm 12mm; }
+}

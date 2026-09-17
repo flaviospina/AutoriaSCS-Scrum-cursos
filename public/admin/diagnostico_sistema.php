@@ -41,7 +41,7 @@ $arquivos = [
   ['app/notify.php', '67d77e4b528b1bff5c2051467f40b91b', 'faixaLogos'],
   ['app/status_repo.php', '2ca8a21929b36614d5a0642bedade037', 'return niveis_nomes('],
   ['public/_layout_bottom.php', 'e94ab6de52815f317b9fff6d944666db', 'data-etapa-regra'],
-  ['public/_layout_top.php', '5a8279e6601905b9be38ce3d185a5636', 'tutoriais/'],
+  ['public/_layout_top.php', '73bc669f9f9ce918489f98ef42141bed', 'tutorial.php'],
   ['public/admin/categorias.php', '1eb567da87c6f042cabccaa0a91e8bee', 'tipo_especial'],
   ['public/admin/checklists.php', '6d7b0418eec23acdfcd19507b5b91d5f', 'Checklists'],
   ['public/admin/index.php', 'b9f524c69fb7918fb20bb98880eaa128', 'checklists.php'],
@@ -70,7 +70,12 @@ $arquivos = [
   ['app/config.php', '571c5f48c5262a8f70ab039e5d4df221', 'key_file'],
   ['public/_video_fonte.php', '04ae234b07180fcfca17519e65022ec4', 'fonteDrive'],
   ['database/upgrade_v12.sql', 'a437828caf6c94dd88bd6165f5890878', 'drive_file_id'],
-  ['public/tutoriais/index.html', 'b6f5562a41840a722bc3e6f36869bb2a', 'Escolha o seu perfil'],
+  ['app/tutorial_repo.php', '6063456c67594d46ec007a60c1129a2f', 'function tutorial_pode_ver('],
+  ['app/tutoriais/index.html', 'b6f5562a41840a722bc3e6f36869bb2a', 'Escolha o seu perfil'],
+  ['public/tutorial.php', 'e3387a6bda5a83cb81ca5f01c0602db0', 'tutorial_html('],
+  ['public/tutorial_img.php', 'b097172b2237fe9f939eaed670ae15ca', 'tutorial_imagem_permitida('],
+  ['public/tutorial_pdf.php', 'a9c0df566fbca522dbeaa2c5588a82e2', 'tutorial_pdf_baixado'],
+  ['public/tutoriais/tutorial.css', '0905b41082d1d64c338d268ad5a6affa', '@media print'],
 ];
 
 $resArq = []; $arqOk = 0;
