@@ -56,6 +56,10 @@ $PAGINA = basename($_SERVER['PHP_SELF'] ?? '');
           <?php if (is_staff()): ?>
             <li class="nav-item"><a class="nav-link <?= $PAGINA==='relatorios.php'?'active':'' ?>" href="<?= $LP ?>relatorios.php">Relatórios</a></li>
           <?php endif; ?>
+          <?php
+            $tutorial = is_admin() ? 'admin' : (perm('revisa_cursos') ? 'ti' : (perm('recebe_email_insercao') ? 'mb' : 'professor'));
+          ?>
+          <li class="nav-item"><a class="nav-link" href="<?= $LP ?>tutoriais/<?= $tutorial ?>.html" target="_blank" rel="noopener" title="Tutorial do seu perfil (abre em nova aba)">Ajuda</a></li>
           <?php if (is_admin()): ?>
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle <?= $LP !== '' ? 'active' : '' ?>" href="#" data-bs-toggle="dropdown">Admin</a>

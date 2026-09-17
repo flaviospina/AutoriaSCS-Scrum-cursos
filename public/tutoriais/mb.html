@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tutorial da MB Estúdios — AutoriaSCS</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tutorial.css">
+</head>
+<body>
+<header class="topo">
+  <div class="in">
+    <div class="logos">
+      <img src="https://cecapescs.com.br/logos/logo-cecape-new.png" alt="CECAPE" onerror="this.style.display='none'">
+      <img src="https://cecapescs.com.br/logos/logo-autoriascs.png" alt="AutoriaSCS" onerror="this.style.display='none'">
+      <img src="https://cecapescs.com.br/logos/logo-seeduc.png" alt="SEEDUC" onerror="this.style.display='none'">
+    </div>
+    <span class="titulo">Tutorial — MB Estúdios</span>
+    <span class="perfil">MB</span>
+    <nav><a href="index.html">Todos os tutoriais</a><a href="../dashboard.php">← Voltar ao sistema</a></nav>
+    <button class="btn-menu" type="button">☰ Índice</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <aside class="toc">
+    <h3>Índice</h3>
+    <a href="#s1">1. O papel da MB</a>
+    <a href="#s2">2. Encontrar os cursos e mover o status</a>
+    <a href="#s3">3. Baixar os materiais (ZIP na ordem)</a>
+    <a href="#s4">4. Disponibilizar vídeos</a>
+    <a href="#s4a" class="sub">4.1 Por link do Google Drive</a>
+    <a href="#s4b" class="sub">4.2 Por arquivo (até 512 MB)</a>
+    <a href="#s5">5. Tratar os apontamentos do vídeo</a>
+    <a href="#s6">6. Nova versão corrigida</a>
+    <a href="#s7">7. O que a conta MB não faz</a>
+    <a href="#s8">8. Problemas comuns</a>
+  </aside>
+
+  <main>
+    <h1>Tutorial da MB Estúdios</h1>
+    <p class="lead">Baixar os materiais, produzir e disponibilizar os vídeos, tratar as correções e publicar. Endereço: <b>cecapescs.com.br/autoriascs/scrum</b></p>
+
+    <section id="s1">
+      <h2><span class="n">1</span>O papel da MB no fluxo</h2>
+      <table>
+        <tr><th>Status</th><th>O que a MB faz</th></tr>
+        <tr><td><span class="status" style="background:#212529;color:#fff">Enviado para Inserção</span></td><td>Chegou um curso aprovado: baixe o pacote e mova para <b>Em Inserção</b>.</td></tr>
+        <tr><td><span class="status" style="background:#343a40;color:#fff">Em Inserção</span></td><td>Produza os vídeos, disponibilize-os para análise do formador e insira o curso na plataforma. Ao terminar, mova para <b>Inserido</b>.</td></tr>
+        <tr><td><span class="status" style="background:#fd7e14">Pronto para Publicação</span></td><td>A TI informou a data de entrada. Publique e mova para <b>Publicado</b>.</td></tr>
+      </table>
+    </section>
+
+    <section id="s2">
+      <h2><span class="n">2</span>Encontrar os cursos e mover o status</h2>
+      <p>No Kanban, os cursos da MB estão nas colunas <b>MB Estúdio</b> e <b>Publicado</b>. Abra o curso e, em <b>Ações de Status</b>, escolha o próximo status e clique em <span class="btn-ex">Atualizar Status</span> (só aparecem as transições da MB).</p>
+      <figure><img class="m" src="img/mb-acoes.png" alt="Ações de status da MB"></figure>
+    </section>
+
+    <section id="s3">
+      <h2><span class="n">3</span>Baixar os materiais — um pacote, já na ordem certa</h2>
+      <p>Na página do curso, o quadro <b>Arquivos do Curso</b> mostra a lista na ordem oficial de entrega. A MB não baixa arquivo por arquivo: clique em <span class="btn-ex verde">⬇ Baixar todos (ZIP, na ordem de entrega)</span>. O ZIP vem nomeado com a identificação oficial (<i>Nome do curso - Formadores - Carga horária</i>) e as pastas/arquivos numerados (00 - Geral, 01 - Módulo 1…).</p>
+      <figure><img src="img/mb-arquivos.png" alt="Arquivos do curso para a MB"></figure>
+    </section>
+
+    <section id="s4">
+      <h2><span class="n">4</span>Disponibilizar vídeos para a análise do formador</h2>
+      <p>Clique em <span class="btn-ex">🎬 Vídeos</span> no cabeçalho do curso. No formulário <b>Disponibilizar vídeo para análise</b> preencha o <b>Título</b>, o <b>Módulo</b> e a <b>Descrição do vídeo</b> (obrigatória — ela vai no e-mail do formador). Depois escolha como disponibilizar:</p>
+
+      <h3 id="s4a">4.1 Por link do Google Drive (recomendado para vídeos grandes)</h3>
+      <ol class="passos">
+        <li>No Google Drive, abra o arquivo do vídeo (MP4 H.264) → <b>Compartilhar</b> → <b>Copiar link</b>.</li>
+        <li>A pasta (ou o arquivo) precisa estar compartilhada, como <b>Leitor</b>, com o e-mail da conta de serviço do sistema (a TI informa; é algo como <i>autoriascs-videos@…iam.gserviceaccount.com</i>).</li>
+        <li>No sistema, deixe marcado <b>🔗 Link do Google Drive</b>, cole o link e clique em <span class="btn-ex">Disponibilizar para análise</span>.</li>
+      </ol>
+      <figure><img class="p" src="img/mb-publica-drive.png" alt="Disponibilizar vídeo por link do Google Drive"></figure>
+      <p class="dica">O sistema confere o acesso na hora: se a pasta não estiver compartilhada, aparece a mensagem <i>"Compartilhe a pasta/arquivo (como Leitor) com: …"</i>. Nada é copiado para o servidor — o vídeo é transmitido do Drive para o navegador do formador.</p>
+
+      <h3 id="s4b">4.2 Por arquivo (até 512 MB)</h3>
+      <p>Marque <b>⬆ Enviar arquivo (até 512MB)</b>, escolha o MP4 e clique em <span class="btn-ex">Disponibilizar para análise</span>.</p>
+      <figure><img class="p" src="img/mb-publica-arquivo.png" alt="Disponibilizar vídeo por arquivo"></figure>
+      <p>Os vídeos ficam listados por módulo, com a situação (Em análise, Em correção, Aprovado), o número de versões e quantos apontamentos estão em aberto:</p>
+      <figure><img src="img/mb-videos-lista.png" alt="Lista de vídeos"></figure>
+    </section>
+
+    <section id="s5">
+      <h2><span class="n">5</span>Tratar os apontamentos do vídeo</h2>
+      <p>O formador (ou a TI) assiste ao vídeo no sistema e registra apontamentos no ponto exato (minuto/segundo/frame), com classificação, orientação de correção e a captura do frame. A MB recebe e-mail. Em <span class="btn-ex cinza">Abrir revisão</span> você vê cada apontamento:</p>
+      <figure><img class="p" src="img/mb-marc-card.png" alt="Card de apontamento do vídeo"></figure>
+      <ul>
+        <li><b>Responder</b>: escreva a resposta e clique em <span class="btn-ex cinza">Enviar</span>;</li>
+        <li><b>Andamento</b>: marque <span class="btn-ex amarelo">Em correção</span> quando começar e <span class="btn-ex verde">OK</span> (Corrigido) quando terminar.</li>
+      </ul>
+      <figure><img class="m" src="img/mb-video-apontamentos.png" alt="Apontamentos do vídeo — visão da MB"></figure>
+      <p class="info">A MB <b>não</b> vê nem usa a ferramenta de marcação de frames — ela é exclusiva do formador e da TI.</p>
+    </section>
+
+    <section id="s6">
+      <h2><span class="n">6</span>Disponibilizar a nova versão corrigida</h2>
+      <p>Depois de corrigir, use <b>Disponibilizar nova versão corrigida</b> (link do Drive ou arquivo), descreva o que mudou e clique em <span class="btn-ex cinza">Disponibilizar v2</span>. O formador recebe o e-mail; a análise recomeça na nova versão e o histórico de versões fica guardado. Quando tudo estiver resolvido, o formador clica em <b>Aprovar vídeo</b> e a MB é avisada.</p>
+      <figure><img class="m" src="img/mb-nova-versao.png" alt="Nova versão do vídeo"></figure>
+    </section>
+
+    <section id="s7">
+      <h2><span class="n">7</span>O que a conta MB não faz</h2>
+      <ul>
+        <li>Não propõe nem edita cursos, não envia arquivos de material nem preenche checklists;</li>
+        <li>não baixa arquivos avulsos (só o ZIP completo);</li>
+        <li>não registra apontamentos em vídeos (só responde e marca o andamento);</li>
+        <li>não move status fora das transições da MB.</li>
+      </ul>
+    </section>
+
+    <section id="s8">
+      <h2><span class="n">8</span>Problemas comuns</h2>
+      <table>
+        <tr><th>Situação</th><th>O que fazer</th></tr>
+        <tr><td>"Arquivo não encontrado no Google Drive ou sem acesso"</td><td>Compartilhe a pasta/arquivo, como Leitor, com o e-mail da conta de serviço informado na mensagem e tente de novo.</td></tr>
+        <tr><td>"Link do Google Drive inválido"</td><td>Use o link do arquivo (Compartilhar → Copiar link), no formato <i>drive.google.com/file/d/…/view</i>.</td></tr>
+        <tr><td>"Formato … não reproduz no navegador"</td><td>Converta para MP4 (H.264 + AAC) antes de compartilhar.</td></tr>
+        <tr><td>"O vídeo excede o limite de 512MB"</td><td>Use a opção Link do Google Drive.</td></tr>
+        <tr><td>Não encontro o botão ZIP</td><td>Ele só aparece quando o curso tem arquivos enviados.</td></tr>
+      </table>
+    </section>
+  </main>
+</div>
+<a class="topo-link" href="#" title="Voltar ao topo">↑</a>
+<footer class="rodape">AutoriaSCS / CECAPE • Suporte: ti.cecape@scseduca.com.br • Tutorial atualizado para a versão V12</footer>
+<script src="_base.js"></script>
+</body>
+</html>

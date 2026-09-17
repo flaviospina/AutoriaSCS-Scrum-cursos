@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tutoriais — AutoriaSCS • Gestão de Cursos</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tutorial.css">
+</head>
+<body>
+<header class="topo">
+  <div class="in">
+    <div class="logos">
+      <img src="https://cecapescs.com.br/logos/logo-cecape-new.png" alt="CECAPE" onerror="this.style.display='none'">
+      <img src="https://cecapescs.com.br/logos/logo-autoriascs.png" alt="AutoriaSCS" onerror="this.style.display='none'">
+      <img src="https://cecapescs.com.br/logos/logo-seeduc.png" alt="SEEDUC São Caetano do Sul" onerror="this.style.display='none'">
+    </div>
+    <span class="titulo">Tutoriais do sistema AutoriaSCS • Gestão de Cursos</span>
+    <nav><a href="../dashboard.php">← Voltar ao sistema</a></nav>
+  </div>
+</header>
+
+<div class="wrap" style="grid-template-columns:1fr">
+  <main>
+    <h1>Escolha o seu perfil</h1>
+    <p class="lead">Cada tutorial explica, passo a passo e com imagens reais das telas, tudo o que o seu perfil faz no sistema.
+      Os tutoriais funcionam no computador, no tablet e no celular. Clique em qualquer imagem para ampliá-la.</p>
+
+    <div class="cards">
+      <a class="card-p" href="professor.html"><div class="ic">👩‍🏫</div><h3>Professor(a) / Formador(a)</h3><p>Propor o curso, enviar os materiais, responder aos apontamentos da TI e analisar os vídeos da MB Estúdios.</p></a>
+      <a class="card-p" href="ti.html"><div class="ic">🛠️</div><h3>Equipe TI &amp; AutoriaSCS</h3><p>Aprovar o projeto, definir a carga horária, revisar, registrar apontamentos, aprovar slides e liberar a publicação.</p></a>
+      <a class="card-p" href="mb.html"><div class="ic">🎬</div><h3>MB Estúdios</h3><p>Baixar os materiais em ordem, disponibilizar os vídeos (arquivo ou link do Google Drive) e tratar as correções.</p></a>
+      <a class="card-p" href="admin.html"><div class="ic">⚙️</div><h3>Administrador</h3><p>Fluxo do Kanban, usuários, perfis, cadastros (escolas, níveis, categorias, checklists), auditoria e diagnóstico.</p></a>
+    </div>
+
+    <section style="margin-top:22px">
+      <h2>Como o curso caminha no sistema</h2>
+      <table>
+        <tr><th>Etapa</th><th>Quem age</th><th>O que acontece</th></tr>
+        <tr><td><span class="status" style="background:#adb5bd">Curso Proposto</span></td><td>Formador(a)</td><td>Propõe o curso (nome, público, nível, escola, coautores).</td></tr>
+        <tr><td><span class="status" style="background:#0d9488;color:#fff">Projeto Aprovado</span></td><td>TI</td><td>Aprova o projeto e define a <b>carga horária oficial</b>. A MB e a TI recebem a identificação do curso.</td></tr>
+        <tr><td><span class="status" style="background:#ffc107">Em Planejamento</span> → <span class="status" style="background:#0dcaf0">Em Desenvolvimento</span></td><td>Formador(a)</td><td>Preenche o checklist e envia os materiais (ordem livre; a TI aprova os slides para liberar os vídeos).</td></tr>
+        <tr><td><span class="status" style="background:#058285;color:#fff">Pronto para Análise</span></td><td>Formador(a)</td><td>Só é possível quando <b>todos os documentos obrigatórios</b> foram enviados.</td></tr>
+        <tr><td><span class="status" style="background:#6c757d;color:#fff">Em Revisão</span></td><td>TI</td><td>Revisa, registra apontamentos (com arquivo relacionado) e aprova ou recusa com relatório.</td></tr>
+        <tr><td><span class="status" style="background:#dc3545;color:#fff">Recusado / Em Ajuste</span></td><td>Formador(a)</td><td>Responde a cada apontamento (<b>Concordo</b> ou <b>Objeção</b>), corrige e reenvia para análise.</td></tr>
+        <tr><td><span class="status" style="background:#198754;color:#fff">Aprovado</span> → <span class="status" style="background:#212529;color:#fff">MB Estúdios</span></td><td>TI → MB</td><td>A MB baixa o pacote ZIP na ordem de entrega, produz e disponibiliza os vídeos; o(a) formador(a) analisa e aprova.</td></tr>
+        <tr><td><span class="status" style="background:#fd7e14">Pronto para Publicação</span> → <span class="status" style="background:#198754;color:#fff">Publicado</span></td><td>TI → MB</td><td>A TI informa a data de entrada na plataforma; a MB publica.</td></tr>
+      </table>
+      <p class="dica">Em cada etapa o sistema envia e-mails automáticos para quem precisa agir. Dúvidas: <b>ti.cecape@scseduca.com.br</b>.</p>
+    </section>
+  </main>
+</div>
+<footer class="rodape">AutoriaSCS / CECAPE • Secretaria de Educação de São Caetano do Sul • Tutoriais atualizados para a versão V12</footer>
+</body>
+</html>

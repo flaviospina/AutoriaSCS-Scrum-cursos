@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tutorial do Professor(a) / Formador(a) — AutoriaSCS</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tutorial.css">
+</head>
+<body>
+<header class="topo">
+  <div class="in">
+    <div class="logos">
+      <img src="https://cecapescs.com.br/logos/logo-cecape-new.png" alt="CECAPE" onerror="this.style.display='none'">
+      <img src="https://cecapescs.com.br/logos/logo-autoriascs.png" alt="AutoriaSCS" onerror="this.style.display='none'">
+      <img src="https://cecapescs.com.br/logos/logo-seeduc.png" alt="SEEDUC" onerror="this.style.display='none'">
+    </div>
+    <span class="titulo">Tutorial — Professor(a) / Formador(a)</span>
+    <span class="perfil">PROFESSOR</span>
+    <nav><a href="index.html">Todos os tutoriais</a><a href="../dashboard.php">← Voltar ao sistema</a></nav>
+    <button class="btn-menu" type="button">☰ Índice</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <aside class="toc">
+    <h3>Índice</h3>
+    <a href="#s0">Antes de começar</a>
+    <a href="#s1">1. Entrar no sistema</a>
+    <a href="#s2">2. A tela inicial (Dashboard)</a>
+    <a href="#s3">3. Propor um curso novo</a>
+    <a href="#s3b" class="sub">3.1 Outros professores (coautores)</a>
+    <a href="#s4">4. Aprovação do projeto pela TI</a>
+    <a href="#s5">5. A página do curso</a>
+    <a href="#s5b" class="sub">5.1 Editar o curso</a>
+    <a href="#s5c" class="sub">5.2 Mudar o status</a>
+    <a href="#s6">6. Checklist do Professor</a>
+    <a href="#s7">7. Enviar os materiais</a>
+    <a href="#s7b" class="sub">7.1 "Não possuo este material"</a>
+    <a href="#s7c" class="sub">7.2 Vídeo só depois do slide aprovado</a>
+    <a href="#s7d" class="sub">7.3 Documentos obrigatórios e o avanço de etapa</a>
+    <a href="#s8">8. Apontamentos da TI/Qualidade</a>
+    <a href="#s8b" class="sub">8.1 Concordo / Não concordo</a>
+    <a href="#s8c" class="sub">8.2 Reenviar para análise</a>
+    <a href="#s9">9. Analisar os vídeos da MB</a>
+    <a href="#s9b" class="sub">9.1 Vídeos pelo Google Drive</a>
+    <a href="#s10">10. Meu Perfil</a>
+    <a href="#s11">11. E-mails que você recebe</a>
+    <a href="#s12">12. Problemas comuns</a>
+  </aside>
+
+  <main>
+    <h1>Tutorial do(a) Professor(a) / Formador(a)</h1>
+    <p class="lead">Guia passo a passo, escrito para quem nunca usou o sistema. Endereço: <b>cecapescs.com.br/autoriascs/scrum</b> • Dúvidas: <b>ti.cecape@scseduca.com.br</b></p>
+
+    <section id="s0">
+      <h2>Antes de começar — palavras que usamos neste guia</h2>
+      <table>
+        <tr><th>Palavra</th><th>O que significa</th></tr>
+        <tr><td><b>Clicar</b></td><td>Apertar o botão esquerdo do mouse (ou tocar, no celular) uma vez sobre o item.</td></tr>
+        <tr><td><b>Campo</b></td><td>A caixinha onde você digita uma informação.</td></tr>
+        <tr><td><b>Lista suspensa</b></td><td>Campo com uma setinha (▾) à direita: ao clicar, abre opções para escolher.</td></tr>
+        <tr><td><b>Botão</b></td><td>Retângulo colorido com texto (ex.: <span class="btn-ex verde">Salvar</span>). Clicar executa a ação escrita.</td></tr>
+        <tr><td><b>Status</b></td><td>A "fase" em que o curso está (ex.: Em Planejamento, Em Revisão, Publicado).</td></tr>
+        <tr><td><b>Apontamento</b></td><td>Uma observação da equipe TI/Qualidade pedindo um ajuste no seu curso.</td></tr>
+      </table>
+    </section>
+
+    <section id="s1">
+      <h2><span class="n">1</span>Entrar no sistema (login)</h2>
+      <ol class="passos">
+        <li>Abra o navegador (Chrome, Edge ou Firefox) e digite <b>cecapescs.com.br/autoriascs/scrum</b>.</li>
+        <li>No campo <b>E-mail</b>, digite o seu e-mail institucional completo.</li>
+        <li>No campo <b>Senha</b>, digite a senha entregue pela equipe de TI (o sistema diferencia maiúsculas de minúsculas).</li>
+        <li>Clique em <span class="btn-ex">Entrar</span>.</li>
+      </ol>
+      <figure><img class="p" src="img/login.png" alt="Tela de login"><figcaption>Tela de login.</figcaption></figure>
+      <p class="info"><b>Esqueceu a senha?</b> Escreva para ti.cecape@scseduca.com.br pedindo a redefinição. Você fica conectado por 8 horas; cada clique renova o prazo.</p>
+    </section>
+
+    <section id="s2">
+      <h2><span class="n">2</span>A tela inicial (Dashboard)</h2>
+      <p>No topo fica a barra de menus: <b>Dashboard</b> (página inicial), <b>Modelos</b> (templates oficiais para baixar), a etiqueta do seu perfil, o seu nome (abre <b>Meu Perfil</b>) e <b>Sair</b>.</p>
+      <figure><img src="img/prof-navbar.png" alt="Barra de menus"></figure>
+      <p>Se a TI registrou algum apontamento que espera a sua resposta, um <b>aviso vermelho</b> aparece no alto da página. Ele só some quando você responder e a TI concluir o apontamento.</p>
+      <figure><img src="img/prof-aviso-dashboard.png" alt="Aviso de apontamentos pendentes no dashboard"></figure>
+      <p>Abaixo está a lista dos <b>seus cursos</b> (você só vê os cursos em que é responsável ou coautor). Cursos com apontamentos pendentes mostram uma etiqueta vermelha. Clique em <span class="btn-ex">Abrir</span> para entrar no curso.</p>
+      <figure><img src="img/prof-lista-cursos.png" alt="Lista de cursos"></figure>
+    </section>
+
+    <section id="s3">
+      <h2><span class="n">3</span>Propor um curso novo</h2>
+      <ol class="passos">
+        <li>No Dashboard, clique no botão verde:
+          <figure><img class="p" src="img/prof-botao-propor.png" alt="Botão Propor Novo Curso"></figure></li>
+        <li>Preencha o formulário:
+          <figure><img src="img/prof-form-proposta.png" alt="Formulário de proposta de curso"></figure>
+          <table>
+            <tr><th>Campo</th><th>O que preencher</th></tr>
+            <tr><td><b>Nome do curso</b> *</td><td>Objetivo e claro sobre o conteúdo.</td></tr>
+            <tr><td><b>Carga horária sugerida</b></td><td>Sua sugestão (10, 20, 30 ou 40 h). A carga oficial é definida pela TI ao aprovar o projeto.</td></tr>
+            <tr><td><b>Público-alvo</b> *</td><td>Para quem é o curso (ex.: professores dos anos iniciais).</td></tr>
+            <tr><td><b>Nível de ensino</b></td><td>Escolha na lista (Educação Infantil, Fundamental – Anos Iniciais/Finais, Fundamental – Médio, Médio, Formação Transversal).</td></tr>
+            <tr><td><b>Unidade escolar</b></td><td>Escolha a sua escola na lista (cadastrada pela TI).</td></tr>
+            <tr><td><b>Prev. início / entrega</b></td><td>Datas previstas (opcional).</td></tr>
+            <tr><td><b>Breve descrição</b></td><td>Objetivo geral, começando com verbo no infinitivo (Capacitar, Desenvolver…).</td></tr>
+          </table>
+          <p class="info">A <b>prioridade</b> do curso não aparece para o formador: ela é definida pela equipe de TI.</p></li>
+        <li>Clique em <span class="btn-ex verde">Salvar (Curso Proposto)</span> e confirme. O curso entra no Backlog e a TI é avisada por e-mail.</li>
+      </ol>
+
+      <h3 id="s3b">3.1 Outros professores (coautores)</h3>
+      <p>Se o curso tem mais de um autor, escolha o(a) colega na lista <b>Adicionar professor(a)…</b> e clique em <span class="btn-ex cinza">+ Adicionar professor</span>. Pode adicionar quantos quiser e remover pelo "×" antes de salvar.</p>
+      <figure><img src="img/prof-coautores.png" alt="Adicionar coautores"></figure>
+      <p>Os coautores acessam o curso, recebem os mesmos e-mails e aparecem na identificação oficial (<i>Nome do curso - Nomes dos formadores - Carga horária</i>). Depois de criado o curso, o responsável (ou a TI) pode incluir/remover coautores no quadro <b>Professores do curso</b>:</p>
+      <figure><img src="img/prof-professores-card.png" alt="Quadro Professores do curso"></figure>
+    </section>
+
+    <section id="s4">
+      <h2><span class="n">4</span>Aprovação do projeto pela TI</h2>
+      <p>Depois de proposto, o curso fica em <b>Curso Proposto</b> até a equipe de TI aprovar o projeto e definir a <b>carga horária oficial</b>. Você recebe um e-mail e o curso passa a mostrar a identificação oficial, que é o nome da pasta usada pela MB Estúdios:</p>
+      <figure><img src="img/prof-cabecalho-curso.png" alt="Cabeçalho do curso com identificação oficial"></figure>
+      <p>Só depois da aprovação você consegue mover o curso para <b>Em Planejamento</b>.</p>
+    </section>
+
+    <section id="s5">
+      <h2><span class="n">5</span>A página do curso</h2>
+      <p>Ao abrir um curso você vê, de cima para baixo: cabeçalho (identificação, status, prioridade, botões <span class="btn-ex cinza">Editar</span>, <span class="btn-ex">Apontamentos</span> e <span class="btn-ex">🎬 Vídeos</span>), o aviso de apontamentos pendentes (quando houver), o <b>Backlog do Curso</b> com as <b>Ações de Status</b>, o <b>Checklist</b>, os <b>Apontamentos</b>, os <b>Professores do curso</b>, os <b>Arquivos</b>, os <b>Links externos</b> e o <b>Histórico</b>.</p>
+      <figure><img src="img/prof-aviso-curso.png" alt="Aviso de apontamentos pendentes dentro do curso"><figcaption>Enquanto houver apontamento aguardando você, este aviso fica visível.</figcaption></figure>
+
+      <h3 id="s5b">5.1 Editar o curso</h3>
+      <p>Clique em <span class="btn-ex cinza">Editar</span>. Você altera nome, público-alvo, nível de ensino e descrição. Os campos <b>Carga horária, Unidade escolar, Prioridade, Prev. início e Prev. entrega</b> aparecem apenas como informação (tracejados): eles são definidos pela TI. Se precisar de ajuste, peça pelo e-mail ti.cecape@scseduca.com.br.</p>
+      <figure><img src="img/prof-editar.png" alt="Editar curso com campos somente leitura"></figure>
+
+      <h3 id="s5c">5.2 Mudar o status (Ações de Status)</h3>
+      <p>No quadro <b>Backlog do Curso</b>, escolha o próximo status na lista suspensa, escreva uma observação (opcional) e clique em <span class="btn-ex">Atualizar Status</span>. Só aparecem os status que o seu perfil pode usar:</p>
+      <figure><img class="m" src="img/prof-backlog-acoes.png" alt="Ações de status"></figure>
+      <table>
+        <tr><th>De</th><th>Para</th><th>Quando</th></tr>
+        <tr><td>Projeto Aprovado</td><td>Em Planejamento</td><td>Ao começar a planejar os módulos.</td></tr>
+        <tr><td>Em Planejamento</td><td>Em Desenvolvimento</td><td>Ao começar a produzir os materiais.</td></tr>
+        <tr><td>Em Desenvolvimento</td><td>Pronto para Análise</td><td>Quando <b>todos os documentos obrigatórios</b> estiverem enviados (veja 7.3).</td></tr>
+        <tr><td>Recusado – Ajustes Necessários</td><td>Em Ajuste → Pronto para Nova Análise</td><td>Depois de corrigir os apontamentos.</td></tr>
+        <tr><td>Inserido</td><td>Aguardando Validação → Validado</td><td>Depois de conferir o curso na plataforma.</td></tr>
+      </table>
+    </section>
+
+    <section id="s6">
+      <h2><span class="n">6</span>Checklist do Professor</h2>
+      <p>É a sua lista de conferência (Planejamento, Produção, Entrega/Validação). Marque as caixas conforme avança e clique em <span class="btn-ex verde">Salvar Checklist</span>. O contador no canto mostra quantos itens estão concluídos. A equipe de TI tem um checklist próprio, que você não vê.</p>
+      <figure><img class="m" src="img/prof-checklist.png" alt="Checklist do Professor"></figure>
+    </section>
+
+    <section id="s7">
+      <h2><span class="n">7</span>Enviar os materiais (Arquivos do Curso)</h2>
+      <p>Os materiais são organizados por <b>módulo</b> (Geral e Módulos 1 a 8) e por <b>categoria</b> (Apresentação do Módulo, Slide, Vídeo, Anexo…). Você pode enviar <b>na ordem que preferir</b>.</p>
+      <ol class="passos">
+        <li>Escolha o <b>Módulo</b> e depois a <b>Categoria</b>.</li>
+        <li>Clique em <b>Escolher arquivo</b> e selecione o arquivo (até 25 MB; PDF, DOCX, PPTX, MP4, ZIP…).</li>
+        <li>Clique em <span class="btn-ex">Enviar</span>.</li>
+      </ol>
+      <figure><img src="img/prof-upload-form.png" alt="Formulário de envio de arquivos"></figure>
+      <p>O painel <b>Ordem de entrega</b> mostra a situação de cada categoria do módulo: <b>Enviado</b>, <b>Pendente (obrigatória)</b>, <b>Opcional</b>, <b>Sem material</b> ou <b>Aguardando aprovação do slide</b>.</p>
+      <figure><img src="img/prof-upload-fluxo.png" alt="Painel Ordem de entrega"></figure>
+      <p>Os arquivos enviados aparecem na tabela, na ordem oficial de entrega, com o botão <span class="btn-ex cinza">Download</span>:</p>
+      <figure><img src="img/prof-arquivos-tabela.png" alt="Tabela de arquivos"></figure>
+
+      <h3 id="s7b">7.1 "Não possuo este material"</h3>
+      <p>Categorias <b>opcionais</b> (Texto Complementar, Atividade Avaliativa, Atividade Avaliativa Geral) podem ser dispensadas: escolha a categoria, marque <b>Não possuo este material</b> e clique em <span class="btn-ex cinza">Registrar sem material</span>. Dá para desfazer depois pelo botão <b>Desfazer</b> no painel.</p>
+      <figure><img src="img/prof-sem-material.png" alt="Registrar sem material"></figure>
+
+      <h3 id="s7c">7.2 Vídeo só depois do slide aprovado</h3>
+      <p>Em cada módulo, a categoria <b>Vídeo</b> fica bloqueada até a equipe de TI <b>aprovar o Slide</b> daquele módulo. Enquanto isso, a lista mostra <i>"O envio deste vídeo ficará disponível após a aprovação dos slides correspondentes"</i>. Assim que a TI aprovar, o envio é liberado automaticamente.</p>
+
+      <h3 id="s7d">7.3 Documentos obrigatórios e o avanço de etapa</h3>
+      <p>Para mover o curso para <b>Pronto para Análise</b> (ou <b>Pronto para Nova Análise</b>), todos os documentos <b>obrigatórios</b> precisam estar enviados — do Geral e dos módulos previstos para a carga horária. Se faltar algo, o sistema bloqueia e mostra exatamente o que falta:</p>
+      <figure><img class="p" src="img/prof-swal-pendencias.png" alt="Aviso de documentos obrigatórios pendentes"></figure>
+      <p class="info">Nessa tentativa você e a TI recebem um e-mail com a lista de pendências (no máximo um e-mail a cada 6 horas por curso).</p>
+    </section>
+
+    <section id="s8">
+      <h2><span class="n">8</span>Apontamentos da TI/Qualidade</h2>
+      <p>Quando a equipe de TI encontra algo a ajustar, registra um <b>apontamento</b> (pode estar ligado a um arquivo específico). Você recebe um e-mail e o aviso vermelho aparece no sistema. Clique em <span class="btn-ex vermelho">Apontamentos</span> no cabeçalho do curso (ou em <b>Gerenciar</b> no quadro de apontamentos):</p>
+      <figure><img src="img/prof-apontamentos-lista.png" alt="Lista de apontamentos"></figure>
+      <table>
+        <tr><th>Coluna</th><th>Significado</th></tr>
+        <tr><td><b>Arquivo</b></td><td>O material ao qual o apontamento se refere (ou "—" quando é geral).</td></tr>
+        <tr><td><b>Status</b></td><td><span class="status" style="background:#fbbf24">Pendente de análise</span> aguarda a sua resposta • <span class="status" style="background:#f97316">Correção solicitada</span> a TI manteve o pedido • <span class="status" style="background:#38bdf8">Em correção pelo professor</span> você concordou e está corrigindo • <span class="status" style="background:#a78bfa">Reenviado para análise</span> você terminou • <span class="status" style="background:#34d399">Aprovado</span> / <span class="status" style="background:#22c55e">Concluído</span> encerrados.</td></tr>
+        <tr><td><b>Ação</b></td><td><span class="btn-ex amarelo">Visualizar</span> abre o apontamento completo (amarelo = precisa da sua ação).</td></tr>
+      </table>
+
+      <h3 id="s8b">8.1 Concordo / Não concordo</h3>
+      <p>Na tela do apontamento você lê a descrição completa, vê o arquivo relacionado e responde formalmente:</p>
+      <figure><img class="m" src="img/prof-apontamento-detalhe.png" alt="Detalhe do apontamento com botões de resposta"></figure>
+      <ul>
+        <li><span class="btn-ex verde">✔ Concordo com o apontamento</span> — registra a sua concordância e o status passa para <b>Em correção pelo professor</b>. Faça a correção no material (reenvie o arquivo, se for o caso).</li>
+        <li><span class="btn-ex vermelho">✖ Não concordo / Registrar objeção</span> — abre uma janela em que a <b>justificativa é obrigatória</b>. A objeção fica registrada para sempre no histórico e é enviada à TI, que responde alterando o status (mantendo a exigência ou concluindo o apontamento).</li>
+      </ul>
+      <figure><img class="p" src="img/prof-modal-objecao.png" alt="Janela de objeção"></figure>
+
+      <h3 id="s8c">8.2 Reenviar para análise</h3>
+      <p>Quando terminar a correção, escreva o que foi feito (opcional) e clique em <span class="btn-ex">↩ Correção concluída — reenviar para análise</span>. A TI recebe o e-mail, confere e marca <b>Aprovado</b> ou <b>Concluído</b>. Tudo fica na <b>linha do tempo</b> do apontamento:</p>
+      <figure><img class="m" src="img/prof-apontamento-timeline.png" alt="Linha do tempo do apontamento"></figure>
+      <p class="dica">Nenhum apontamento é apagado: mesmo concluídos, eles continuam na lista para consulta.</p>
+    </section>
+
+    <section id="s9">
+      <h2><span class="n">9</span>Analisar os vídeos da MB Estúdios</h2>
+      <p>Os vídeos são produzidos pela <b>MB Estúdios</b>. Quando um vídeo fica pronto, você recebe um e-mail com a descrição e o vídeo já aparece em <span class="btn-ex">🎬 Vídeos</span>:</p>
+      <figure><img src="img/prof-videos-lista.png" alt="Lista de vídeos do curso"></figure>
+      <ol class="passos">
+        <li>Clique em <span class="btn-ex cinza">Abrir revisão</span>. O vídeo toca dentro do sistema; use a barra para avançar e retroceder.
+          <figure><img class="m" src="img/prof-video-player.png" alt="Player do vídeo"></figure></li>
+        <li>Ao encontrar um problema, pause e clique em <span class="btn-ex cinza">◉ agora</span>: o sistema anota minuto, segundo e frame. Escolha a <b>classificação</b> (áudio, imagem, conteúdo, acessibilidade, edição, identidade visual, erro técnico), escreva o problema e a orientação de correção e clique em <span class="btn-ex">Registrar apontamento</span>. A imagem daquele momento vai anexada.
+          <figure><img class="m" src="img/prof-video-marcacao.png" alt="Formulário de marcação no vídeo"></figure></li>
+        <li>Os apontamentos ficam listados em ordem de tempo; clicar no horário leva o vídeo ao ponto exato. A MB responde e marca o andamento (Pendente → Em correção → Corrigido) e disponibiliza a nova versão.
+          <figure><img class="m" src="img/prof-video-apontamentos.png" alt="Apontamentos do vídeo"></figure></li>
+        <li>Quando tudo estiver resolvido, clique em <span class="btn-ex verde">Aprovar vídeo</span>.</li>
+      </ol>
+
+      <h3 id="s9b">9.1 Vídeos pelo Google Drive</h3>
+      <p>Vídeos grandes podem ser disponibilizados pela MB como <b>link do Google Drive</b>. Quando a integração está ativa, nada muda para você. Se a integração ainda não estiver configurada, o vídeo abre no player do Google e você informa o <b>minuto e segundo</b> manualmente no campo "Tempo" (a captura automática do frame fica indisponível nesse modo):</p>
+      <figure><img class="m" src="img/prof-video-drive.png" alt="Vídeo do Google Drive em modo de contingência"></figure>
+    </section>
+
+    <section id="s10">
+      <h2><span class="n">10</span>Meu Perfil</h2>
+      <p>Clique no seu nome no topo. Ali você troca a senha e escolhe como quer receber os e-mails: <b>imediato</b>, <b>resumo diário</b> (07h) ou <b>desativado</b>.</p>
+      <figure><img src="img/perfil.png" alt="Meu Perfil"></figure>
+    </section>
+
+    <section id="s11">
+      <h2><span class="n">11</span>E-mails que você recebe</h2>
+      <ul>
+        <li>Confirmação da proposta e <b>aprovação do projeto</b> (com a identificação oficial);</li>
+        <li>toda mudança de status feita por outra pessoa no seu curso;</li>
+        <li>cada <b>apontamento</b> criado ou alterado pela TI ("Olá, NOME, você indicou um apontamento…") com todos os detalhes;</li>
+        <li>tentativa de avanço com <b>documentos obrigatórios pendentes</b>;</li>
+        <li><b>vídeo disponível</b> (com a descrição da MB), respostas da MB e novas versões;</li>
+        <li>alertas de prazo e resumo semanal.</li>
+      </ul>
+    </section>
+
+    <section id="s12">
+      <h2><span class="n">12</span>Problemas comuns</h2>
+      <table>
+        <tr><th>Situação</th><th>O que fazer</th></tr>
+        <tr><td>Não consigo mover para "Pronto para Análise"</td><td>Leia a lista do aviso: envie os documentos obrigatórios que faltam (ou registre "sem material" nos opcionais).</td></tr>
+        <tr><td>A categoria Vídeo está bloqueada</td><td>O slide do módulo ainda não foi aprovado pela TI. Aguarde o e-mail de liberação.</td></tr>
+        <tr><td>Não consigo alterar carga horária, prioridade ou escola</td><td>Esses campos são da TI. Peça pelo e-mail ti.cecape@scseduca.com.br.</td></tr>
+        <tr><td>O aviso vermelho não some</td><td>Há apontamento pendente. Abra-o, responda (Concordo/Objeção) e, após corrigir, reenvie. O aviso some quando a TI concluir.</td></tr>
+        <tr><td>Arquivo recusado</td><td>Limite de 25 MB e tipos permitidos (PDF, DOCX, PPTX, ZIP, MP4, MP3, JPG, PNG). Vídeos grandes vão pela MB.</td></tr>
+      </table>
+    </section>
+  </main>
+</div>
+<a class="topo-link" href="#" title="Voltar ao topo">↑</a>
+<footer class="rodape">AutoriaSCS / CECAPE • Suporte: ti.cecape@scseduca.com.br • Tutorial atualizado para a versão V12</footer>
+<script src="_base.js"></script>
+</body>
+</html>

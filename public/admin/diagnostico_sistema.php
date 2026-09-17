@@ -38,10 +38,10 @@ $arquivos = [
   ['app/curso_repo.php', 'f693bdb1c8fae80a41079bba38b31799', 'function curso_coautor_adicionar('],
   ['app/entregas_repo.php', '315bf7b9103b57d9329a700612d89322', 'function entregas_pendentes('],
   ['app/niveis_repo.php', '43fd6beb60e20f12c7c8ce58a355fd3b', 'function niveis_lista('],
-  ['app/notify.php', '393456e1a3431d3e3341f9c9a5488f2e', 'function notify_apontamento_evento('],
+  ['app/notify.php', '67d77e4b528b1bff5c2051467f40b91b', 'faixaLogos'],
   ['app/status_repo.php', '2ca8a21929b36614d5a0642bedade037', 'return niveis_nomes('],
   ['public/_layout_bottom.php', 'e94ab6de52815f317b9fff6d944666db', 'data-etapa-regra'],
-  ['public/_layout_top.php', '7b238350264477122412868e51580c91', 'trocar_visao.php'],
+  ['public/_layout_top.php', '5a8279e6601905b9be38ce3d185a5636', 'tutoriais/'],
   ['public/admin/categorias.php', '1eb567da87c6f042cabccaa0a91e8bee', 'tipo_especial'],
   ['public/admin/checklists.php', '6d7b0418eec23acdfcd19507b5b91d5f', 'Checklists'],
   ['public/admin/index.php', 'b9f524c69fb7918fb20bb98880eaa128', 'checklists.php'],
@@ -61,7 +61,7 @@ $arquivos = [
   ['public/trocar_visao.php', 'edfe1f047eb980e24117950c6c267536', 'visao_alternar('],
   ['public/upload.php', '09a46da585ddf03174d97ffd0692af47', 'curso_eh_professor('],
   ['public/video_captura.php', 'e70e1c568e0e5ac9b14d886bc78be4c5', 'curso_eh_professor('],
-  ['public/video_revisao.php', 'e9ee4581a0d688b4df77df8acac98158', 'playerPreview'],
+  ['public/video_revisao.php', '80fb51683c63328c058792db4cbc409d', 'nunca vê a ferramenta'],
   ['public/video_stream.php', '29169e537e92f129b226ca691f089ed8', 'drive_stream_range('],
   ['database/upgrade_v10.sql', '47519a5fcc046333f168f8904fe4c30d', 'tb_niveis_ensino'],
   ['database/upgrade_v11.sql', '323e6271d2ee3d01e7b775da0584dc96', 'tb_apontamento_historico'],
@@ -70,6 +70,7 @@ $arquivos = [
   ['app/config.php', '571c5f48c5262a8f70ab039e5d4df221', 'key_file'],
   ['public/_video_fonte.php', '04ae234b07180fcfca17519e65022ec4', 'fonteDrive'],
   ['database/upgrade_v12.sql', 'a437828caf6c94dd88bd6165f5890878', 'drive_file_id'],
+  ['public/tutoriais/index.html', 'b6f5562a41840a722bc3e6f36869bb2a', 'Escolha o seu perfil'],
 ];
 
 $resArq = []; $arqOk = 0;

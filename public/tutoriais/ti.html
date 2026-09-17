@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tutorial da Equipe TI &amp; AutoriaSCS — AutoriaSCS</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tutorial.css">
+</head>
+<body>
+<header class="topo">
+  <div class="in">
+    <div class="logos">
+      <img src="https://cecapescs.com.br/logos/logo-cecape-new.png" alt="CECAPE" onerror="this.style.display='none'">
+      <img src="https://cecapescs.com.br/logos/logo-autoriascs.png" alt="AutoriaSCS" onerror="this.style.display='none'">
+      <img src="https://cecapescs.com.br/logos/logo-seeduc.png" alt="SEEDUC" onerror="this.style.display='none'">
+    </div>
+    <span class="titulo">Tutorial — Equipe TI &amp; AutoriaSCS</span>
+    <span class="perfil">TI</span>
+    <nav><a href="index.html">Todos os tutoriais</a><a href="../dashboard.php">← Voltar ao sistema</a></nav>
+    <button class="btn-menu" type="button">☰ Índice</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <aside class="toc">
+    <h3>Índice</h3>
+    <a href="#s1">1. Entrar e o Kanban</a>
+    <a href="#s1b" class="sub">1.1 Filtros e tabela</a>
+    <a href="#s2">2. Aprovar o projeto e a carga horária</a>
+    <a href="#s3">3. A página do curso (visão TI)</a>
+    <a href="#s3b" class="sub">3.1 Editar dados de gestão</a>
+    <a href="#s3c" class="sub">3.2 Checklist TI/Admin</a>
+    <a href="#s3d" class="sub">3.3 Aprovar slides (libera os vídeos)</a>
+    <a href="#s3e" class="sub">3.4 Professores do curso</a>
+    <a href="#s4">4. Apontamentos TI/Qualidade</a>
+    <a href="#s4b" class="sub">4.1 Registrar</a>
+    <a href="#s4c" class="sub">4.2 Responder e alterar o status</a>
+    <a href="#s5">5. Revisar e decidir</a>
+    <a href="#s5b" class="sub">5.1 Recusar com relatório</a>
+    <a href="#s6">6. Encaminhar para a MB e agendar a publicação</a>
+    <a href="#s7">7. Vídeos: a TI também pode marcar</a>
+    <a href="#s8">8. Biblioteca de Modelos</a>
+    <a href="#s9">9. Relatórios</a>
+    <a href="#s10">10. E-mails que a TI recebe</a>
+  </aside>
+
+  <main>
+    <h1>Tutorial da Equipe TI &amp; AutoriaSCS</h1>
+    <p class="lead">A TI aprova o projeto, define a carga horária, revisa, registra apontamentos, aprova slides e libera a publicação. Endereço: <b>cecapescs.com.br/autoriascs/scrum</b></p>
+
+    <section id="s1">
+      <h2><span class="n">1</span>Entrar e o quadro Kanban</h2>
+      <p>Entre com e-mail e senha (veja o tutorial do formador para a tela de login). A TI cai no <b>Kanban</b>: cada coluna é uma fase e cada card é um curso. Arraste um card para outra coluna para mudar o status (o sistema pede confirmação e só aceita transições permitidas). Cards com <b>Pendências</b> têm apontamentos abertos.</p>
+      <figure><img src="img/ti-kanban.png" alt="Kanban da TI"></figure>
+      <h3 id="s1b">1.1 Filtros e tabela</h3>
+      <p>Filtre por status, formador(a), prioridade, nível de ensino, unidade escolar ou texto, e clique em <span class="btn-ex">Filtrar</span>. O botão <span class="btn-ex cinza">Tabela</span> mostra os cursos em lista, com ordenação e paginação; <span class="btn-ex verde">CSV</span> exporta tudo.</p>
+      <figure><img src="img/ti-filtros.png" alt="Filtros"></figure>
+      <figure><img src="img/ti-tabela.png" alt="Visão em tabela"></figure>
+    </section>
+
+    <section id="s2">
+      <h2><span class="n">2</span>Aprovar o projeto e definir a carga horária</h2>
+      <ol class="passos">
+        <li>Abra um curso em <b>Curso Proposto</b> (coluna Backlog).</li>
+        <li>Em <b>Ações de Status</b>, escolha <b>Projeto Aprovado</b>. Aparece o campo <b>Carga horária do curso (obrigatória)</b>: 10, 20, 30 ou 40 horas.</li>
+        <li>Clique em <span class="btn-ex">Atualizar Status</span> e confirme.</li>
+      </ol>
+      <figure><img class="m" src="img/ti-projeto-aprovado.png" alt="Aprovação do projeto com carga horária"></figure>
+      <p class="dica">A carga horária define a <b>identificação oficial</b> (<i>Nome do curso - Formadores - Carga horária</i>), enviada por e-mail à MB Estúdios e à TI, e também quantos módulos são exigidos na entrega (10 h → 1, 20 h → 3, 30 h → 5, 40 h → 7 módulos mínimos).</p>
+    </section>
+
+    <section id="s3">
+      <h2><span class="n">3</span>A página do curso (visão TI)</h2>
+      <h3 id="s3b">3.1 Editar dados de gestão</h3>
+      <p>Em <span class="btn-ex cinza">Editar</span>, somente TI/ADMIN alteram <b>carga horária</b> (mesmo após a aprovação — a alteração é auditada), <b>unidade escolar</b> (lista de escolas), <b>prioridade</b> e <b>previsões</b>. Para o formador esses campos são apenas informativos.</p>
+
+      <h3 id="s3c">3.2 Checklist TI/Admin</h3>
+      <p>A TI vê o <b>Checklist TI/Admin</b> (critérios internos de validação — editáveis pelo administrador). O checklist do professor não é exibido para a TI.</p>
+      <figure><img class="m" src="img/ti-checklist.png" alt="Checklist TI/Admin"></figure>
+
+      <h3 id="s3d">3.3 Aprovar slides (libera os vídeos)</h3>
+      <p>Na tabela <b>Arquivos do Curso</b>, os arquivos da categoria <b>Slide</b> mostram <b>Aguardando aprovação</b> e o botão <span class="btn-ex verde">✔ Aprovar slide</span>. Ao aprovar, o formador passa a poder enviar o <b>Vídeo</b> daquele módulo. <span class="btn-ex amarelo">Revogar</span> desfaz a aprovação.</p>
+      <figure><img src="img/ti-aprovar-slide.png" alt="Aprovar slide"></figure>
+
+      <h3 id="s3e">3.4 Professores do curso</h3>
+      <p>A TI pode incluir ou remover <b>coautores</b> (o responsável nunca é removido). Coautores acessam o curso e recebem os e-mails.</p>
+      <figure><img src="img/ti-professores.png" alt="Professores do curso"></figure>
+    </section>
+
+    <section id="s4">
+      <h2><span class="n">4</span>Apontamentos TI/Qualidade</h2>
+      <h3 id="s4b">4.1 Registrar</h3>
+      <p>Clique em <span class="btn-ex">Apontamentos</span> no cabeçalho do curso. Escolha o <b>Tipo</b> (Técnico, Pedagógico, ABNT, Outro), o <b>Arquivo/Material relacionado</b> (opcional — vincula o apontamento ao arquivo pelo ID) e escreva o apontamento. Ao salvar, o(s) professor(es) e a caixa ti.cecape recebem e-mail.</p>
+      <figure><img src="img/ti-apontamento-novo.png" alt="Registrar novo apontamento"></figure>
+      <figure><img src="img/ti-apontamentos-lista.png" alt="Lista de apontamentos"></figure>
+
+      <h3 id="s4c">4.2 Responder e alterar o status</h3>
+      <p>Abra o apontamento em <span class="btn-ex cinza">Visualizar</span>. O professor responde com <b>Concordo</b> (status → Em correção pelo professor) ou <b>Objeção</b> (com justificativa, exibida no quadro <b>Manifestações</b>). A TI então altera o status:</p>
+      <figure><img class="m" src="img/ti-apontamento-status.png" alt="Alterar status do apontamento"></figure>
+      <table>
+        <tr><th>Status</th><th>Quando usar</th></tr>
+        <tr><td><span class="status" style="background:#f97316">Correção solicitada</span></td><td>Após uma objeção, quando a exigência é mantida.</td></tr>
+        <tr><td><span class="status" style="background:#fbbf24">Pendente de análise</span></td><td>Reabrir para nova análise do professor.</td></tr>
+        <tr><td><span class="status" style="background:#34d399">Aprovado</span></td><td>A correção reenviada foi aceita.</td></tr>
+        <tr><td><span class="status" style="background:#22c55e">Concluído</span></td><td>Encerra o apontamento (o aviso de pendência do professor some; o histórico permanece).</td></tr>
+      </table>
+      <figure><img class="m" src="img/ti-manifestacoes.png" alt="Manifestações do professor"></figure>
+      <p class="info">Cada alteração gera e-mail (professor(es) + ti.cecape) com curso, arquivo, status anterior/novo, descrição, observação, data/hora e responsável, e entra na linha do tempo do apontamento.</p>
+    </section>
+
+    <section id="s5">
+      <h2><span class="n">5</span>Revisar e decidir</h2>
+      <p>Quando o formador envia o curso para <b>Pronto para Análise</b> (o sistema só permite com todos os documentos obrigatórios entregues), mova-o para <b>Em Revisão</b>. Analise os materiais (downloads na tabela), os apontamentos e os vídeos. Depois decida em <b>Ações de Status</b>:</p>
+      <figure><img class="m" src="img/ti-acoes-revisao.png" alt="Ações de status em revisão"></figure>
+      <h3 id="s5b">5.1 Recusar com relatório</h3>
+      <p>O botão <span class="btn-ex vermelho">Recusar com relatório</span> abre uma janela para registrar até 5 apontamentos de uma vez (tipo, arquivo relacionado e texto) e move o curso para <b>Recusado – Ajustes Necessários</b>. O formador recebe um único e-mail com a lista.</p>
+      <figure><img class="m" src="img/ti-modal-recusa.png" alt="Modal de recusa com relatório"></figure>
+    </section>
+
+    <section id="s6">
+      <h2><span class="n">6</span>Encaminhar para a MB e agendar a publicação</h2>
+      <ul>
+        <li><b>Aprovado → Enviado para Inserção</b>: a MB Estúdios recebe o e-mail, baixa o pacote ZIP (na ordem de entrega) e produz.</li>
+        <li><b>Validado → Pronto para Publicação</b>: informe a <b>data de entrada na plataforma</b> (obrigatória). Formador e MB são avisados; a MB publica.</li>
+      </ul>
+    </section>
+
+    <section id="s7">
+      <h2><span class="n">7</span>Vídeos: a TI também pode marcar</h2>
+      <p>Em <span class="btn-ex">🎬 Vídeos</span> a TI assiste aos vídeos da MB e, como o formador, registra apontamentos no ponto exato (minuto/segundo/frame, com captura). A MB Estúdios <b>não</b> vê a ferramenta de marcação — apenas responde e reenvia versões.</p>
+      <figure><img class="m" src="img/ti-video-marcacao.png" alt="Marcação de vídeo pela TI"></figure>
+    </section>
+
+    <section id="s8">
+      <h2><span class="n">8</span>Biblioteca de Modelos</h2>
+      <p>Em <b>Modelos</b>, a TI publica os templates oficiais (título, versão, arquivo até 50 MB) e marca o <b>vigente</b>. Todos os formadores baixam.</p>
+      <figure><img src="img/ti-modelos-publicar.png" alt="Publicar modelo"></figure>
+    </section>
+
+    <section id="s9">
+      <h2><span class="n">9</span>Relatórios</h2>
+      <p>Cursos por status, por nível de ensino, prazos e produtividade, com exportação.</p>
+      <figure><img src="img/ti-relatorios.png" alt="Relatórios"></figure>
+    </section>
+
+    <section id="s10">
+      <h2><span class="n">10</span>E-mails que a TI recebe</h2>
+      <ul>
+        <li>Novo curso no backlog; curso aguardando revisão / nova análise;</li>
+        <li>toda movimentação feita por formadores e MB (caixa institucional ti.cecape);</li>
+        <li>todo apontamento criado/alterado, concordância, objeção e reenvio;</li>
+        <li>tentativa de avanço com documentos obrigatórios pendentes;</li>
+        <li>apontamentos, respostas e aprovações de vídeos;</li>
+        <li>projeto aprovado (identificação oficial), inserido, validado, publicado.</li>
+      </ul>
+    </section>
+  </main>
+</div>
+<a class="topo-link" href="#" title="Voltar ao topo">↑</a>
+<footer class="rodape">AutoriaSCS / CECAPE • Suporte: ti.cecape@scseduca.com.br • Tutorial atualizado para a versão V12</footer>
+<script src="_base.js"></script>
+</body>
+</html>

@@ -165,7 +165,9 @@ docs/       análise completa, proposta de auditoria/e-mails/repositório e road
 - **Vídeo tutorial do formador** (2 min, Full HD): [`docs/tutoriais/video/`](docs/tutoriais/video/) —
   com [roteiro de narração](docs/tutoriais/video/ROTEIRO_NARRACAO.md) para gravar a locução.
 - **Apresentações em slides** (PPTX) para treinamento, uma por perfil, em `docs/tutoriais/`.
-- **Tutoriais por perfil** (com imagens das telas): [`docs/tutoriais/TUTORIAL_PROFESSOR.md`](docs/tutoriais/TUTORIAL_PROFESSOR.md),
+- **Tutoriais HTML responsivos (V12, atuais)** — em `public/tutoriais/` (link **Ajuda** no menu do sistema,
+  aberto direto no perfil do usuário): `index.html`, `professor.html`, `ti.html`, `mb.html`, `admin.html`.
+- Tutoriais antigos em Markdown (fluxo V9, mantidos para referência): [`docs/tutoriais/TUTORIAL_PROFESSOR.md`](docs/tutoriais/TUTORIAL_PROFESSOR.md),
   [`docs/tutoriais/TUTORIAL_TI.md`](docs/tutoriais/TUTORIAL_TI.md),
   [`docs/tutoriais/TUTORIAL_MB.md`](docs/tutoriais/TUTORIAL_MB.md) e
   [`docs/tutoriais/TUTORIAL_ADMIN.md`](docs/tutoriais/TUTORIAL_ADMIN.md).

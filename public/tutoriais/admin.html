@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tutorial do Administrador — AutoriaSCS</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tutorial.css">
+</head>
+<body>
+<header class="topo">
+  <div class="in">
+    <div class="logos">
+      <img src="https://cecapescs.com.br/logos/logo-cecape-new.png" alt="CECAPE" onerror="this.style.display='none'">
+      <img src="https://cecapescs.com.br/logos/logo-autoriascs.png" alt="AutoriaSCS" onerror="this.style.display='none'">
+      <img src="https://cecapescs.com.br/logos/logo-seeduc.png" alt="SEEDUC" onerror="this.style.display='none'">
+    </div>
+    <span class="titulo">Tutorial — Administrador</span>
+    <span class="perfil">ADMIN</span>
+    <nav><a href="index.html">Todos os tutoriais</a><a href="../dashboard.php">← Voltar ao sistema</a></nav>
+    <button class="btn-menu" type="button">☰ Índice</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <aside class="toc">
+    <h3>Índice</h3>
+    <a href="#s1">1. O menu Admin</a>
+    <a href="#s2">2. Alternar visualização (Ver como)</a>
+    <a href="#s3">3. Colunas, Status e Transições</a>
+    <a href="#s3b" class="sub">3.1 Status: "Exige entregas"</a>
+    <a href="#s3c" class="sub">3.2 Exclusão protegida de etapas</a>
+    <a href="#s4">4. Usuários e Perfis de acesso</a>
+    <a href="#s5">5. Escolas</a>
+    <a href="#s6">6. Níveis de ensino</a>
+    <a href="#s7">7. Categorias de entrega</a>
+    <a href="#s8">8. Checklists</a>
+    <a href="#s9">9. Auditoria e Notificações</a>
+    <a href="#s10">10. Diagnóstico do sistema</a>
+    <a href="#s11">11. Google Drive (vídeos por link)</a>
+    <a href="#s12">12. Rotina do administrador</a>
+  </aside>
+
+  <main>
+    <h1>Tutorial do Administrador</h1>
+    <p class="lead">O ADMIN tem todas as permissões dos outros perfis e configura o sistema: fluxo do Kanban, usuários, perfis, cadastros, auditoria e diagnóstico.</p>
+
+    <section id="s1">
+      <h2><span class="n">1</span>O menu Admin</h2>
+      <p>Na barra superior, o item <b>Admin</b> abre o menu de administração. A <b>Visão geral</b> mostra um card para cada área:</p>
+      <figure><img class="p" src="img/admin-menu.png" alt="Menu Admin"></figure>
+      <figure><img src="img/admin-cards.png" alt="Visão geral da administração"></figure>
+    </section>
+
+    <section id="s2">
+      <h2><span class="n">2</span>Alternar visualização (Ver como)</h2>
+      <p>Só o ADMIN vê, no cabeçalho, a lista <b>Ver como</b>. Escolha PROFESSOR, TI ou MB para enxergar o sistema exatamente como aquele perfil (mesmas permissões). Uma faixa amarela lembra que você está nesse modo; clique em <span class="btn-ex amarelo">Voltar ao meu perfil (ADMIN)</span> para sair. A troca é validada no servidor e registrada na auditoria; outros perfis recebem "acesso negado" se tentarem.</p>
+      <figure><img class="p" src="img/admin-ver-como.png" alt="Seletor Ver como"></figure>
+      <figure><img src="img/admin-visao-banner.png" alt="Faixa do modo de visualização"></figure>
+    </section>
+
+    <section id="s3">
+      <h2><span class="n">3</span>Colunas, Status e Transições</h2>
+      <p><b>Colunas do Kanban</b>: adicionar, renomear, reordenar, cor e limite WIP. <b>Status</b>: cada status pertence a uma coluna; defina cor, status inicial (novos cursos) e finais (encerram o fluxo). Renomear um status atualiza automaticamente os cursos e o histórico. <b>Transições por perfil</b>: quais movimentações PROFESSOR, TI e MB podem fazer (o ADMIN pode todas).</p>
+      <figure><img src="img/admin-status.png" alt="Status do fluxo"></figure>
+      <figure><img src="img/admin-transicoes.png" alt="Transições por perfil"></figure>
+
+      <h3 id="s3b">3.1 Status: "Exige entregas"</h3>
+      <p>A coluna <b>Exige entregas</b> marca os status que só recebem o curso quando <b>todos os documentos obrigatórios</b> foram enviados (padrão: Pronto para Análise e Pronto para Nova Análise). O formador vê a lista do que falta e a TI recebe e-mail.</p>
+
+      <h3 id="s3c">3.2 Exclusão protegida de etapas</h3>
+      <p>Ao clicar em <span class="btn-ex vermelho">Excluir</span> em um status ou em uma categoria de entrega, o sistema aplica duas regras (também no servidor):</p>
+      <ul>
+        <li><b>Regra 1 — etapa concluída por algum curso</b>: a exclusão é bloqueada (apenas OK).
+          <figure><img class="p" src="img/admin-swal-regra1.png" alt="Exclusão bloqueada"></figure></li>
+        <li><b>Regra 2 — possui cursos ou dados vinculados, sem conclusão</b>: exige duas confirmações antes de excluir.
+          <figure><img class="p" src="img/admin-swal-regra2a.png" alt="Primeira confirmação"></figure>
+          <figure><img class="p" src="img/admin-swal-regra2b.png" alt="Segunda confirmação"></figure></li>
+      </ul>
+      <p class="dica">A exclusão é "soft delete": o registro é preservado e aparece na lista de excluídos com o botão <b>Restaurar</b>. Tudo fica na auditoria com os IDs impactados.</p>
+    </section>
+
+    <section id="s4">
+      <h2><span class="n">4</span>Usuários e Perfis de acesso</h2>
+      <p><b>Usuários</b>: cadastrar (nome, e-mail, perfil, senha inicial), ativar/desativar e redefinir senha. <b>Perfis</b>: cada perfil é um conjunto de permissões (propõe cursos, vê todos os cursos, move o Kanban, revisa cursos, gerencia modelos, recebe e-mails de revisão/inserção, administrador total). Os quatro perfis do sistema não podem ser removidos; você pode criar perfis personalizados.</p>
+      <figure><img src="img/admin-usuarios.png" alt="Usuários"></figure>
+      <figure><img src="img/admin-perfis.png" alt="Perfis de acesso"></figure>
+    </section>
+
+    <section id="s5">
+      <h2><span class="n">5</span>Escolas</h2>
+      <p>Cadastre as unidades escolares em lote (uma por linha). Elas alimentam a lista "Unidade escolar" da proposta e da edição do curso. Renomear atualiza os cursos; escolas em uso não podem ser excluídas, apenas inativadas.</p>
+      <figure><img class="m" src="img/admin-escolas.png" alt="Escolas"></figure>
+    </section>
+
+    <section id="s6">
+      <h2><span class="n">6</span>Níveis de ensino</h2>
+      <p>Cadastrar, renomear (os cursos são atualizados), reordenar (▲▼), ativar/inativar. A exclusão só é permitida quando nenhum curso usa o nível.</p>
+      <figure><img src="img/admin-niveis.png" alt="Níveis de ensino"></figure>
+    </section>
+
+    <section id="s7">
+      <h2><span class="n">7</span>Categorias de entrega</h2>
+      <p>As categorias de material do módulo <b>Geral</b> e dos <b>Módulos 1 a 8</b>: nome, ordem de entrega, <b>Obrigatória/Opcional</b> (opcionais podem ser dispensadas pelo formador), <b>Papel</b> (Slide = a aprovação pela TI libera o vídeo do módulo; Vídeo = só aceita envio após o slide aprovado) e ativa/inativa. Renomear atualiza os arquivos já enviados.</p>
+      <figure><img src="img/admin-categorias.png" alt="Categorias de entrega"></figure>
+    </section>
+
+    <section id="s8">
+      <h2><span class="n">8</span>Checklists</h2>
+      <p>Dois modelos: <b>Checklist do Professor</b> (visível ao formador) e <b>Checklist TI/Admin</b> (critérios internos). Adicione itens (grupo + descrição), reordene e inative — as respostas já registradas são preservadas. O sistema entrega a cada perfil apenas os itens do seu checklist.</p>
+      <figure><img src="img/admin-checklists.png" alt="Checklists"></figure>
+    </section>
+
+    <section id="s9">
+      <h2><span class="n">9</span>Auditoria e Notificações</h2>
+      <p><b>Auditoria</b>: registro de todas as ações (quem, o quê, quando, valores antes/depois, IP) — inclui alteração de carga horária e prioridade, exclusões, apontamentos, concordâncias/objeções, coautores e alternância de visualização. Exportável em CSV. <b>Notificações</b>: fila de e-mails (pendentes, enviados, erros) com processamento manual.</p>
+      <figure><img src="img/admin-auditoria.png" alt="Auditoria"></figure>
+      <figure><img src="img/admin-notificacoes.png" alt="Notificações"></figure>
+    </section>
+
+    <section id="s10">
+      <h2><span class="n">10</span>Diagnóstico do sistema</h2>
+      <p>Confere se a última atualização foi aplicada: cada arquivo da entrega (existe? versão nova? assinatura), funções realmente carregadas, migrações do banco (V2 a V12), cache do PHP (OPcache, com botão para limpar) e a integração com o Google Drive. Use sempre depois de subir arquivos pelo cPanel.</p>
+      <figure><img src="img/admin-diagnostico.png" alt="Diagnóstico do sistema"></figure>
+    </section>
+
+    <section id="s11">
+      <h2><span class="n">11</span>Google Drive (vídeos por link)</h2>
+      <ol class="passos">
+        <li>No <b>console.cloud.google.com</b>, crie um projeto e ative a <b>Google Drive API</b>.</li>
+        <li><b>IAM → Contas de serviço → Criar</b>; abra a conta, aba <b>Chaves</b> → <b>Adicionar chave → JSON</b>. (Em contas Workspace pode ser preciso liberar a política <i>iam.disableServiceAccountKeyCreation</i> no projeto.)</li>
+        <li>Salve o arquivo como <b>app/keys/drive.json</b> no servidor (fora de <i>public/</i>).</li>
+        <li>Abra o <b>Diagnóstico</b>: deve mostrar "Integração ativa" e o e-mail da conta de serviço.</li>
+        <li>Informe esse e-mail à MB Estúdios para compartilhar a pasta dos vídeos como <b>Leitor</b>.</li>
+      </ol>
+      <p class="info">Sem a chave, os links do Drive funcionam em modo de contingência (player do Google em iframe, sem captura de frame).</p>
+    </section>
+
+    <section id="s12">
+      <h2><span class="n">12</span>Rotina do administrador</h2>
+      <ul>
+        <li>Após cada atualização: rodar o SQL indicado no phpMyAdmin, subir os arquivos e conferir o <b>Diagnóstico</b> (limpar OPcache).</li>
+        <li>Acompanhar a fila de <b>Notificações</b> (erros de envio) e a <b>Auditoria</b>.</li>
+        <li>Manter escolas, níveis, categorias e checklists atualizados — mudanças valem imediatamente para todos.</li>
+        <li>Nunca excluir o que está em uso: inative ou renomeie.</li>
+      </ul>
+    </section>
+  </main>
+</div>
+<a class="topo-link" href="#" title="Voltar ao topo">↑</a>
+<footer class="rodape">AutoriaSCS / CECAPE • Suporte: ti.cecape@scseduca.com.br • Tutorial atualizado para a versão V12</footer>
+<script src="_base.js"></script>
+</body>
+</html>
