@@ -60,6 +60,7 @@ include __DIR__ . '/../_layout_top.php';
       ['Auditoria', $nAudit, 'Registro de todas as ações do sistema: quem fez, o quê, quando e de onde. Exportável em CSV.', 'auditoria.php'],
       ['Notificações', $nNotifP, 'Fila de e-mails do sistema (pendentes, enviados, erros) e processamento manual.', 'notificacoes.php'],
       ['Diagnóstico do sistema', '✓', 'Confere se a última atualização foi aplicada: arquivos, migrações do banco e cache do PHP.', 'diagnostico_sistema.php'],
+      ['Zerar dados', '⚠', 'Limpa cursos, materiais, vídeos e apontamentos para a entrada em produção (com backup). Preserva configurações e administradores.', 'zerar_dados.php'],
     ];
   ?>
   <?php foreach ($cards as [$titulo, $n, $desc, $link]): ?>

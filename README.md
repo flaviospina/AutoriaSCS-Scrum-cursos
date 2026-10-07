@@ -35,6 +35,13 @@ O fluxo do Kanban não é mais fixo no código — é configurável em `Admin`:
 - **Exclusão protegida de etapas** (status e categorias) — V11: bloqueada quando algum curso já concluiu a
   etapa; com dados vinculados exige dupla confirmação; soft delete com opção de restaurar.
 - **Diagnóstico do sistema** (`admin/diagnostico_sistema.php`): confere arquivos, migrações e OPcache.
+- **Zerar dados** (`admin/zerar_dados.php`, V13): limpeza da base para a entrada em produção. Apaga cursos,
+  entregas, vídeos, apontamentos, checklists respondidos, coautores e histórico (e, opcionalmente, fila de
+  e-mails, auditoria, modelos e usuários não administradores). Preserva colunas, status, transições, perfis,
+  escolas, níveis, categorias, itens de checklist e os administradores. Exige a senha do ADMIN e a frase
+  `ZERAR DADOS`; antes de apagar gera `storage/backups/reset-<data>/dados.sql` (reimportável no phpMyAdmin)
+  e **move** `storage/cursos` e `storage/videos` para a mesma pasta — apague-a pelo cPanel depois.
+  Alternativa manual: `database/zerar_dados.sql`.
 
 ## Ajustes V11 (PROMPT MESTRE)
 

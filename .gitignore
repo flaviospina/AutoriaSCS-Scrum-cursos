@@ -15,6 +15,10 @@ storage/modelos/*
 storage/videos/*
 !storage/videos/.gitkeep
 
+# backups gerados por Admin → Zerar dados
+storage/backups/*
+!storage/backups/.gitkeep
+
 # logs
 logs/
 *.log

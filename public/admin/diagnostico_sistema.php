@@ -41,10 +41,10 @@ $arquivos = [
   ['app/notify.php', '67d77e4b528b1bff5c2051467f40b91b', 'faixaLogos'],
   ['app/status_repo.php', '2ca8a21929b36614d5a0642bedade037', 'return niveis_nomes('],
   ['public/_layout_bottom.php', 'e94ab6de52815f317b9fff6d944666db', 'data-etapa-regra'],
-  ['public/_layout_top.php', '73bc669f9f9ce918489f98ef42141bed', 'tutorial.php'],
+  ['public/_layout_top.php', '410eca7960bedebf40abb55b60fe0984', 'zerar_dados.php'],
   ['public/admin/categorias.php', '1eb567da87c6f042cabccaa0a91e8bee', 'tipo_especial'],
   ['public/admin/checklists.php', '6d7b0418eec23acdfcd19507b5b91d5f', 'Checklists'],
-  ['public/admin/index.php', 'b9f524c69fb7918fb20bb98880eaa128', 'checklists.php'],
+  ['public/admin/index.php', '757dee1e224497b734d874bf58a7fea1', 'checklists.php'],
   ['public/admin/niveis.php', '5e20090d9ba7112fa7255efa3c7c6f2c', 'Níveis de Ensino'],
   ['public/admin/status.php', '290038baceefe4923c186b183cc91b69', 'exige_entregas'],
   ['public/apontamento_detalhe.php', '0c15146082ab673dd72298ad3011a83d', 'Registrar objeção'],
@@ -76,6 +76,9 @@ $arquivos = [
   ['public/tutorial_img.php', 'b097172b2237fe9f939eaed670ae15ca', 'tutorial_imagem_permitida('],
   ['public/tutorial_pdf.php', 'a9c0df566fbca522dbeaa2c5588a82e2', 'tutorial_pdf_baixado'],
   ['public/tutoriais/tutorial.css', '0905b41082d1d64c338d268ad5a6affa', '@media print'],
+  ['app/reset_repo.php', '3a057b1181b1d87fb4106bb4a7505b8e', 'function reset_executar('],
+  ['public/admin/zerar_dados.php', 'f2d88beef9330ed612f19cbc6a3026df', 'RESET_FRASE'],
+  ['database/zerar_dados.sql', 'cb633c0467358b39a133c5cbfd1a28a4', 'ZERAR DADOS'],
 ];
 
 $resArq = []; $arqOk = 0;
