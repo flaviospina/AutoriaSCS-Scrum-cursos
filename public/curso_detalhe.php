@@ -701,6 +701,10 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
           podem ser registradas como <b>sem material</b>. O <b>vídeo</b> de cada módulo só é liberado
           após a <b>aprovação do slide</b> do módulo pela TI.
         </div>
+        <div class="alert alert-success small d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <span>🎞 <b>Slides no padrão AutoriaSCS:</b> envie a apresentação do módulo <b>sem formatação</b> (.pptx); o sistema analisa, aplica o padrão oficial e gera o PDF para a entrega de Slide.</span>
+          <a class="btn btn-sm btn-success" href="slides_padrao.php?id=<?= (int)$id ?>">Analisar / converter apresentação</a>
+        </div>
 
         <form class="row g-2" method="post" action="upload.php" enctype="multipart/form-data" id="formUpload">
           <?= csrf_field() ?>

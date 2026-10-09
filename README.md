@@ -59,6 +59,24 @@ O fluxo do Kanban não é mais fixo no código — é configurável em `Admin`:
 - **Mais de um professor por curso**: responsável (`tb_cursos.id_professor`) + coautores
   (`tb_curso_professores`), que acessam o curso, recebem os e-mails e compõem a identificação oficial.
 
+## Slides no padrão AutoriaSCS (V15)
+
+- **Ferramenta** (`public/slides_padrao.php`, botão "Analisar / converter apresentação" na página do curso;
+  professores do curso e equipe; MB não envia): o(a) professor(a) envia a apresentação do módulo **sem
+  formatação** (.pptx) e informa o módulo e o seu nome. O sistema lê o arquivo (`app/slides_repo.php`:
+  ZipArchive + DOM), aplica as regras e devolve o **laudo** item a item (ERRO impede, AVISO recomenda, INFO).
+- **Regras:** proibidos vídeo/áudio embutido e link para vídeo; cada slide com título; até 120 palavras
+  (aviso a partir de 80) e o texto **precisa caber no espaço livre** (16 pt, senão 14 pt, senão erro, com a
+  sugestão de quantas palavras cabem); imagem JPG/PNG até 2 MB, mínimo 800 px (aviso), sempre com legenda
+  ("Figura N – Título. Fonte: AUTOR, ano."); 6 a 30 slides; animações/transições removidas; a capa do
+  professor é substituída pela capa padrão (nome do curso + "Módulo N: nome").
+- **Saída (se aprovada):** PDF 16:9 (960×540 pt) com os fundos do modelo oficial (`app/slides/bg`), Comfortaa
+  (TTF em `app/slides/fonts`, tFPDF em `app/lib/tfpdf`), título negrito #058285 (20/18 pt), texto #000000
+  (16/14 pt), legenda 10 pt, abertura e encerramento com as logos; e **PPTX editável** gerado a partir de
+  `app/slides/modelo.pptx` (layouts oficiais). O botão "Registrar como entrega" grava o PDF como entrega
+  **Slide** do módulo (mesma regra de aprovação da TI). Análises ficam em `storage/cursos/<id>/slides_padrao/`.
+- Não há migração de banco.
+
 ## Indicadores gerenciais e relatórios (V14)
 
 - **Indicadores** (`public/indicadores.php`, menu *Indicadores*; TI/MB/ADMIN): painel com mais de 60 KPIs em

@@ -50,7 +50,7 @@ $arquivos = [
   ['public/apontamento_detalhe.php', '0c15146082ab673dd72298ad3011a83d', 'Registrar objeção'],
   ['public/apontamentos.php', '9f7f92e00377bdbbf4238fc005b06f93', '<th>Arquivo</th>'],
   ['public/assets/autoria-dark.css', '2c2e6c9ee50ca75b70a626d0145c97f4', 'aviso-apontamentos'],
-  ['public/curso_detalhe.php', '86003f74949d98f509a2a9956e2fa9ab', 'coautoresAviso'],
+  ['public/curso_detalhe.php', 'af7651f8a71ce567990a86c76d32f224', 'slides_padrao.php'],
   ['public/curso_editar.php', '48f0e68583051e05fc920090dad53282', 'campo-ro'],
   ['public/curso_novo.php', '49ab64be883e9031b6445cecc4fb6486', 'formador_rotulo('],
   ['public/curso_videos.php', 'a843b233c19bbbd193b09a3c4250d2d4', 'video_receber_versao_form('],
@@ -87,6 +87,15 @@ $arquivos = [
   ['public/relatorios.php', 'bc39b9bbb00154eabfc679c62cc7a185', 'rel_catalogo()'],
   ['app/indicadores_repo.php', '926c5b99992d8108371fe8734ca6adb0', 'function rel_gerar('],
   ['public/indicadores.php', '5bbe37a93357efb023053672fe960ce9', 'Indicadores gerenciais'],
+  ['app/slides_repo.php', 'd98447bd793a79c7e70395d70523221a', 'function slides_analisar('],
+  ['app/slides_pdf.php', '28941abdf2c6145acda50bb5aa45c230', 'class SlidesPdf'],
+  ['app/slides/modelo.pptx', '102ab0e048ec0995129519e15dcf6e23', 'ppt/'],
+  ['app/slides/bg/conteudo.png', '385690371c8bb6d9958a729814b7aecd', 'PNG'],
+  ['app/slides/fonts/Comfortaa-Regular.ttf', 'd78f35a9643342e4e0cd1ad111e883a7', 'Comfortaa'],
+  ['app/lib/tfpdf/tfpdf.php', '4548761d363fda20a11fd69c000c9df3', 'class tFPDF'],
+  ['app/lib/tfpdf/font/unifont/comfortaa-regular.mtx.php', '4a92b6059f48d2623a1b8eb76c4984e6', '$name'],
+  ['public/slides_padrao.php', '028dea6f54c89cf78657c34201c3af4c', 'slides_processar('],
+  ['public/slides_padrao_download.php', 'd6694cde27da8ee7cb63bf0c2cb5607b', 'slides_arquivo('],
 ];
 
 $resArq = []; $arqOk = 0;
