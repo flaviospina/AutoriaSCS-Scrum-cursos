@@ -59,6 +59,19 @@ O fluxo do Kanban não é mais fixo no código — é configurável em `Admin`:
 - **Mais de um professor por curso**: responsável (`tb_cursos.id_professor`) + coautores
   (`tb_curso_professores`), que acessam o curso, recebem os e-mails e compõem a identificação oficial.
 
+## Indicadores gerenciais e relatórios (V14)
+
+- **Indicadores** (`public/indicadores.php`, menu *Indicadores*; TI/MB/ADMIN): painel com mais de 60 KPIs em
+  9 grupos — produção de cursos, fluxo Kanban e tempos (lead time, etapa mais demorada, WIP, parados), prazos,
+  formadores e equipe, qualidade (apontamentos, manifestações, recusas), materiais, vídeos, checklists e sistema —
+  com gráficos (produção mensal, cursos por etapa, apontamentos por status/tipo, carga horária, entregas) e,
+  em cada indicador, o link **Ver relatório →** para o relatório que o detalha.
+- **Relatórios** (`public/relatorios.php`): 25 relatórios por grupo, com filtros (período, status, formador,
+  escola, nível, prioridade, carga, situação, janela de dias, tipo, agrupamento), tabela com link para o registro,
+  **Exportar CSV** (Excel, `;` e UTF-8 com BOM; auditado) e **Imprimir**.
+- Lógica em `app/indicadores_repo.php` (`ind_todos()`, `ind_graficos()`, `rel_catalogo()`, `rel_gerar()`).
+  Não há migração de banco: usa as tabelas existentes e tolera as ainda não migradas.
+
 ## Coautores: TI/ADMIN elegíveis e e-mails de inclusão (V13)
 
 - A lista "Adicionar professor(a)" (página do curso e proposta) passa a incluir, além dos formadores,

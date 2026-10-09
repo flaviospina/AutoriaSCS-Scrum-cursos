@@ -54,6 +54,7 @@ $PAGINA = basename($_SERVER['PHP_SELF'] ?? '');
           <li class="nav-item"><a class="nav-link <?= $PAGINA==='dashboard.php'?'active':'' ?>" href="<?= $LP ?>dashboard.php">Dashboard</a></li>
           <li class="nav-item"><a class="nav-link <?= $PAGINA==='modelos.php'?'active':'' ?>" href="<?= $LP ?>modelos.php">Modelos</a></li>
           <?php if (is_staff()): ?>
+            <li class="nav-item"><a class="nav-link <?= $PAGINA==='indicadores.php'?'active':'' ?>" href="<?= $LP ?>indicadores.php">Indicadores</a></li>
             <li class="nav-item"><a class="nav-link <?= $PAGINA==='relatorios.php'?'active':'' ?>" href="<?= $LP ?>relatorios.php">Relatórios</a></li>
           <?php endif; ?>
           <li class="nav-item"><a class="nav-link" href="<?= $LP ?>tutorial.php" target="_blank" rel="noopener" title="Tutorial do seu nível de acesso (abre em nova aba)">Ajuda</a></li>

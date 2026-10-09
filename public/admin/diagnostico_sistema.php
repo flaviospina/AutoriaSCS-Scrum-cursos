@@ -41,7 +41,7 @@ $arquivos = [
   ['app/notify.php', '5e9445940d5b34497ea80baf24db367c', 'notify_coautores_incluidos'],
   ['app/status_repo.php', '2ca8a21929b36614d5a0642bedade037', 'return niveis_nomes('],
   ['public/_layout_bottom.php', 'e94ab6de52815f317b9fff6d944666db', 'data-etapa-regra'],
-  ['public/_layout_top.php', '410eca7960bedebf40abb55b60fe0984', 'zerar_dados.php'],
+  ['public/_layout_top.php', 'c1137e4895870313da88c4157c3e3941', 'indicadores.php'],
   ['public/admin/categorias.php', '1eb567da87c6f042cabccaa0a91e8bee', 'tipo_especial'],
   ['public/admin/checklists.php', '6d7b0418eec23acdfcd19507b5b91d5f', 'Checklists'],
   ['public/admin/index.php', '757dee1e224497b734d874bf58a7fea1', 'checklists.php'],
@@ -84,6 +84,9 @@ $arquivos = [
   ['cron/cron_notificacoes.php', '917ee68e68cfd2ed9246eae54dbc09c5', 'curso_coautores_notificar_atrasados('],
   ['public/admin/notificacoes.php', '3beb7db063b188cc6735eb83863147be', 'coautor_espera'],
   ['app/config_repo.php', '379fff4fa09c622e5251abf2892f81a1', 'function coautor_espera_seg('],
+  ['public/relatorios.php', 'bc39b9bbb00154eabfc679c62cc7a185', 'rel_catalogo()'],
+  ['app/indicadores_repo.php', '926c5b99992d8108371fe8734ca6adb0', 'function rel_gerar('],
+  ['public/indicadores.php', '5bbe37a93357efb023053672fe960ce9', 'Indicadores gerenciais'],
 ];
 
 $resArq = []; $arqOk = 0;
