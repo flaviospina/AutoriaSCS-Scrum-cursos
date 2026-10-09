@@ -35,10 +35,10 @@ $arquivos = [
   ['app/auth.php', '5ae623857bd0fd85a0ea58a9ab565e3c', 'function visao_alternar('],
   ['app/categorias_repo.php', '054ff959a0ed0f9a63b3ca531c609993', 'excluida_em'],
   ['app/checklist_repo.php', '9374cd1d2654f5ad94e6abeb183ee0dd', 'function checklist_salvar('],
-  ['app/curso_repo.php', '848e00f99760e873392415599e91c946', 'function curso_coautores_notificar('],
+  ['app/curso_repo.php', '51ea8e58f443269ccc550097d6be88b6', 'function curso_coautores_notificar('],
   ['app/entregas_repo.php', '315bf7b9103b57d9329a700612d89322', 'function entregas_pendentes('],
   ['app/niveis_repo.php', '43fd6beb60e20f12c7c8ce58a355fd3b', 'function niveis_lista('],
-  ['app/notify.php', '34c979cee7028fdd0543fd54882e8584', 'notify_coautores_incluidos'],
+  ['app/notify.php', '5e9445940d5b34497ea80baf24db367c', 'notify_coautores_incluidos'],
   ['app/status_repo.php', '2ca8a21929b36614d5a0642bedade037', 'return niveis_nomes('],
   ['public/_layout_bottom.php', 'e94ab6de52815f317b9fff6d944666db', 'data-etapa-regra'],
   ['public/_layout_top.php', '410eca7960bedebf40abb55b60fe0984', 'zerar_dados.php'],
@@ -79,9 +79,11 @@ $arquivos = [
   ['app/reset_repo.php', '3a057b1181b1d87fb4106bb4a7505b8e', 'function reset_executar('],
   ['public/admin/zerar_dados.php', 'f2d88beef9330ed612f19cbc6a3026df', 'RESET_FRASE'],
   ['database/zerar_dados.sql', 'cb633c0467358b39a133c5cbfd1a28a4', 'ZERAR DADOS'],
-  ['database/upgrade_v13.sql', 'ce3b3e55bb56fe6c18397ec749717cc4', 'notificado_em'],
+  ['database/upgrade_v13.sql', 'b94e0045fa7d8c8749aff9f5a6e3c9ba', 'notificado_em'],
   ['public/coautores_notificar.php', 'ab9e8899b3fd8119ade450a508da3c6b', 'curso_coautores_notificar('],
-  ['cron/cron_notificacoes.php', '940053964b983d1a4b11d01552fec9ca', 'curso_coautores_notificar_atrasados('],
+  ['cron/cron_notificacoes.php', '917ee68e68cfd2ed9246eae54dbc09c5', 'curso_coautores_notificar_atrasados('],
+  ['public/admin/notificacoes.php', '3beb7db063b188cc6735eb83863147be', 'coautor_espera'],
+  ['app/config_repo.php', '379fff4fa09c622e5251abf2892f81a1', 'function coautor_espera_seg('],
 ];
 
 $resArq = []; $arqOk = 0;
@@ -129,7 +131,7 @@ $migracoes = [
           diag_tabela('tb_checklist_itens') && diag_tabela('tb_apontamento_historico') && diag_tabela('tb_curso_professores')
           && diag_coluna('tb_curso_apontamentos', 'status') && diag_coluna('tb_curso_files', 'aprovado') && diag_coluna('tb_status', 'exige_entregas')],
   ['V12', 'Vídeos por link do Google Drive (origem da versão)', diag_coluna('tb_video_versoes', 'origem')],
-  ['V13', 'Coautores TI/ADMIN + e-mails de inclusão (notificado_em)', diag_coluna('tb_curso_professores', 'notificado_em')],
+  ['V13', 'Coautores TI/ADMIN + e-mails de inclusão + parâmetros (tb_config)', diag_coluna('tb_curso_professores', 'notificado_em') && diag_tabela('tb_config')],
 ];
 $dbInfo = db()->query("SELECT DATABASE() db, VERSION() v, @@character_set_database cs, USER() u")->fetch();
 $nNiveis = diag_count("SELECT COUNT(*) n FROM tb_niveis_ensino");

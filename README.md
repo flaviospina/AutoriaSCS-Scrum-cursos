@@ -63,14 +63,18 @@ O fluxo do Kanban não é mais fixo no código — é configurável em `Admin`:
 
 - A lista "Adicionar professor(a)" (página do curso e proposta) passa a incluir, além dos formadores,
   os usuários com perfil que revisa cursos (TI) e os administradores, identificados pelo perfil entre parênteses.
-- Ao incluir coautores pela página do curso, o sistema aguarda **20 segundos** após a última inclusão
-  (contagem regressiva visível para quem está incluindo; cada nova inclusão reinicia a contagem) e então envia,
+- Ao incluir coautores pela página do curso, o sistema aguarda um tempo após a última inclusão
+  (**padrão 20 s, ajustável pelo ADMIN em Admin → Notificações**, de 5 a 600 s; contagem regressiva visível
+  para quem está incluindo; cada nova inclusão reinicia a contagem) e então envia,
   de uma vez: um e-mail personalizado a cada coautor(a) incluído(a) e **um único** e-mail ao(à) responsável
   com todos os nomes. A página exibe "E-mails enviados" ao concluir.
+- Os e-mails de inclusão são **prioritários**: vão na hora mesmo que o(a) coautor(a) tenha escolhido
+  "resumo diário" ou "desativado" em Meu Perfil (aviso pessoal e direto).
 - Na proposta de curso os coautores escolhidos são comunicados imediatamente (envio único).
 - Retaguarda: se quem incluiu sair da página antes dos 20 s, o cron de notificações envia os pendentes
   (coautores com mais de 2 minutos sem aviso).
 - Migração: `database/upgrade_v13.sql` (colunas `adicionado_por` e `notificado_em` em `tb_curso_professores`;
+  tabela `tb_config` com o parâmetro `coautor_espera_seg`;
   coautores já existentes são marcados como comunicados e **não** recebem e-mail retroativo).
 
 ## Auditoria, E-mails e Biblioteca de Modelos (V3)

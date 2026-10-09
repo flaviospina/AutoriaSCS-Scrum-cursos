@@ -24,3 +24,17 @@ PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
 
 -- coautores anteriores à V13: considerados já comunicados
 UPDATE tb_curso_professores SET notificado_em = created_at WHERE notificado_em IS NULL;
+
+-- ------------------------------------------------------------
+-- Parâmetros do sistema ajustáveis pelo ADMIN (chave/valor)
+--   coautor_espera_seg: segundos da contagem regressiva antes do envio
+--   agrupado dos e-mails de coautores (padrão 20)
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tb_config (
+  chave      VARCHAR(60)  NOT NULL,
+  valor      VARCHAR(255) NOT NULL,
+  updated_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (chave)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO tb_config (chave, valor) VALUES ('coautor_espera_seg', '20');

@@ -481,6 +481,17 @@ CREATE TABLE IF NOT EXISTS tb_curso_professores (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------
+-- Parâmetros do sistema ajustáveis pelo ADMIN (V13) — chave/valor
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tb_config (
+  chave      VARCHAR(60)  NOT NULL,
+  valor      VARCHAR(255) NOT NULL,
+  updated_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (chave)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT IGNORE INTO tb_config (chave, valor) VALUES ('coautor_espera_seg', '20');
+
+-- ------------------------------------------------------------
 -- Links externos por curso (Google Drive / vídeos MB / outros)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS tb_curso_links (

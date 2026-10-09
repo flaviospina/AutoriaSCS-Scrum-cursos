@@ -244,8 +244,12 @@ function curso_coautor_adicionar(array $curso, int $idUser, array $user): void {
   audit_log('coautor_adicionado', 'curso', (int)$curso['id_curso'], null, ['id_usuario' => $idUser]);
 }
 
-/** Segundos de espera, após a última inclusão, antes do envio agrupado dos e-mails (V13). */
-const COAUTOR_EMAIL_ESPERA_SEG = 20;
+/** Segundos de espera, após a última inclusão, antes do envio agrupado dos e-mails (V13).
+ *  Ajustável pelo ADMIN em Admin → Notificações (tb_config.coautor_espera_seg; padrão 20). */
+function coautor_email_espera_seg(): int {
+  require_once __DIR__ . '/config_repo.php';
+  return coautor_espera_seg();
+}
 
 /**
  * Coautores do curso ainda não comunicados por e-mail (V13) e o tempo restante
@@ -262,9 +266,10 @@ function curso_coautores_pendentes(int $idCurso): array {
     $st->execute([$idCurso]);
     $rows = $st->fetchAll();
   } catch (Throwable $e) { return ['itens' => [], 'restante' => 0]; } // upgrade_v13.sql pendente
+  $espera = coautor_email_espera_seg();
   $restante = 0;
-  foreach ($rows as $r) $restante = max($restante, COAUTOR_EMAIL_ESPERA_SEG - (int)$r['idade_seg']);
-  return ['itens' => $rows, 'restante' => max(0, $restante)];
+  foreach ($rows as $r) $restante = max($restante, $espera - (int)$r['idade_seg']);
+  return ['itens' => $rows, 'restante' => max(0, $restante), 'espera' => $espera];
 }
 
 /**

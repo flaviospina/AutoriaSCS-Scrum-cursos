@@ -31,13 +31,21 @@ function ti_email(): string {
  * (IMEDIATO envia no próximo ciclo do cron; DIARIO agrupa para as 07h;
  * DESATIVADO descarta).
  */
-function notify_queue(string $email, string $nome, string $assunto, string $html): void {
+/**
+ * Enfileira (e tenta enviar na hora) um e-mail, respeitando a preferência do
+ * destinatário (IMEDIATO / DIARIO / DESATIVADO). $prioritario=true (V13):
+ * aviso pessoal e direto (ex.: inclusão como coautor) — vai na hora, mesmo
+ * que o destinatário tenha escolhido resumo diário ou desativado os avisos.
+ */
+function notify_queue(string $email, string $nome, string $assunto, string $html, bool $prioritario = false): void {
   try {
     $pref = 'IMEDIATO';
-    $st = db()->prepare("SELECT notif_pref FROM tb_users WHERE email=? LIMIT 1");
-    $st->execute([$email]);
-    $row = $st->fetch();
-    if ($row && !empty($row['notif_pref'])) $pref = $row['notif_pref'];
+    if (!$prioritario) {
+      $st = db()->prepare("SELECT notif_pref FROM tb_users WHERE email=? LIMIT 1");
+      $st->execute([$email]);
+      $row = $st->fetch();
+      if ($row && !empty($row['notif_pref'])) $pref = $row['notif_pref'];
+    }
 
     if ($pref === 'DESATIVADO') return;
 
@@ -331,10 +339,11 @@ function notify_coautores_incluidos(array $curso, array $coautores, ?array $por 
            . "<p>Como coautor(a), você passa a acessar o curso no sistema, recebe os e-mails das etapas "
            . "(revisão, apontamentos, inserção e publicação) e compõe a identificação oficial do curso "
            . "(<i>nome do curso - formadores - carga horária</i>).</p>"
-           . "<p>Responsável pelo curso: <b>{$resp}</b>.</p>";
+           . "<p>Responsável pelo curso: <b>{$resp}</b>.</p>"
+           . "<p style='color:#667;font-size:12px'>Este é um aviso pessoal e direto: ele é enviado mesmo que você tenha escolhido o resumo diário em Meu Perfil.</p>";
     notify_queue($co['email'], $co['nome'],
       "[AutoriaSCS] Você foi incluído(a) como coautor(a): {$curso['nome_curso']}",
-      mail_template('Você agora é coautor(a) deste curso', $corpo, $link, 'Abrir o curso'));
+      mail_template('Você agora é coautor(a) deste curso', $corpo, $link, 'Abrir o curso'), true);
   }
 
   // 2) um único e-mail para o responsável com todos os nomes
@@ -348,7 +357,7 @@ function notify_coautores_incluidos(array $curso, array $coautores, ?array $por 
              . "<i>Professores do curso</i> na página do curso.</p>";
   notify_queue($curso['professor_email'], $curso['professor_nome'],
     "[AutoriaSCS] Coautores incluídos no curso: {$curso['nome_curso']}",
-    mail_template($n === 1 ? 'Coautor(a) incluído(a) no seu curso' : 'Coautores incluídos no seu curso', $corpoResp, $link, 'Abrir o curso'));
+    mail_template($n === 1 ? 'Coautor(a) incluído(a) no seu curso' : 'Coautores incluídos no seu curso', $corpoResp, $link, 'Abrir o curso'), true);
 }
 
 /** Intervalo mínimo (minutos) entre e-mails de documentos pendentes do mesmo curso (item 11). */

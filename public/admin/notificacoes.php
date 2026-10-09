@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/_admin_top.php';
 require_once __DIR__ . '/../../app/notify.php';
+require_once __DIR__ . '/../../app/config_repo.php';
 
 $erro = null; $ok = null;
 
@@ -17,6 +18,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'processar') {
       [$okN, $errN] = notify_send_pending(25);
       $ok = "Processamento manual: {$okN} enviada(s), {$errN} com erro.";
+    }
+    if ($action === 'coautor_espera') { // V13: tempo da contagem regressiva dos e-mails de coautores
+      $seg = (int)($_POST['coautor_espera_seg'] ?? 0);
+      if ($seg < 5 || $seg > 600) throw new Exception("Informe um tempo entre 5 e 600 segundos.");
+      $antes = coautor_espera_seg();
+      cfg_set('coautor_espera_seg', (string)$seg);
+      audit_log('config_alterada', 'sistema', null, ['coautor_espera_seg' => $antes], ['coautor_espera_seg' => $seg]);
+      $ok = "Tempo da contagem regressiva dos e-mails de coautores: {$seg} segundos.";
     }
   } catch (Throwable $e) {
     $erro = $e->getMessage();
@@ -75,6 +84,25 @@ include __DIR__ . '/../_layout_top.php';
 
 <?php if ($erro): ?><div class="alert alert-danger"><?= htmlspecialchars($erro) ?></div><?php endif; ?>
 <?php if ($ok): ?><div class="alert alert-success"><?= htmlspecialchars($ok) ?></div><?php endif; ?>
+
+<div class="card shadow-sm mb-3">
+  <div class="card-body">
+    <h2 class="h6 mb-1">Coautores: tempo da contagem regressiva</h2>
+    <p class="small text-muted mb-2">Ao incluir coautores na página do curso, o sistema aguarda este tempo após a <b>última</b> inclusão
+      (cada nova inclusão reinicia a contagem) e então envia, de uma vez, um e-mail a cada coautor(a) e um único e-mail ao(à) responsável.
+      <?php if (!cfg_tabela_ok()): ?><span class="text-danger">Execute <code>database/upgrade_v13.sql</code> para poder alterar.</span><?php endif; ?></p>
+    <form method="post" class="d-flex flex-wrap gap-2 align-items-end">
+      <?= csrf_field() ?><input type="hidden" name="action" value="coautor_espera">
+      <div>
+        <label class="form-label small mb-0" for="coautorEspera">Segundos (5 a 600)</label>
+        <input type="number" class="form-control form-control-sm" id="coautorEspera" name="coautor_espera_seg" min="5" max="600" step="1"
+               value="<?= coautor_espera_seg() ?>" style="width:120px" required <?= cfg_tabela_ok() ? '' : 'disabled' ?>>
+      </div>
+      <button class="btn btn-sm btn-primary" <?= cfg_tabela_ok() ? '' : 'disabled' ?>>Salvar</button>
+      <span class="small text-muted">Atual: <b><?= coautor_espera_seg() ?> s</b> (padrão 20 s).</span>
+    </form>
+  </div>
+</div>
 
 <div class="d-flex gap-2 mb-3">
   <a class="btn btn-sm <?= $fStatus===''?'btn-primary':'btn-outline-primary' ?>" href="notificacoes.php">Todas (<?= $total = array_sum($resumo) ?>)</a>
