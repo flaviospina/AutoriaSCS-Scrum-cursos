@@ -469,10 +469,13 @@ CREATE TABLE IF NOT EXISTS tb_curso_professores (
   id_curso   INT UNSIGNED NOT NULL,
   id_usuario INT UNSIGNED NOT NULL,
   tipo       ENUM('RESPONSAVEL','COAUTOR') NOT NULL DEFAULT 'COAUTOR',
+  adicionado_por INT UNSIGNED NULL,                      -- V13: quem incluiu o coautor
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  notificado_em DATETIME NULL,                           -- V13: envio agrupado dos e-mails (NULL = pendente)
   PRIMARY KEY (id_curso_professor),
   UNIQUE KEY uq_curso_prof (id_curso, id_usuario),
   KEY ix_cprof_usuario (id_usuario),
+  KEY ix_cprof_notif (notificado_em),
   CONSTRAINT fk_cprof_curso FOREIGN KEY (id_curso)   REFERENCES tb_cursos (id_curso) ON DELETE CASCADE,
   CONSTRAINT fk_cprof_user  FOREIGN KEY (id_usuario) REFERENCES tb_users (id_user)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

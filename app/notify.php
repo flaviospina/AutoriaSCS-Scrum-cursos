@@ -309,6 +309,48 @@ function notify_professores_curso(array $curso): array {
   return $profs;
 }
 
+/**
+ * V13 — Coautores incluídos no curso: um e-mail personalizado para cada coautor
+ * e um único e-mail para o responsável com todos os nomes.
+ * $por: quem incluiu (id_user, nome); null = o próprio responsável.
+ */
+function notify_coautores_incluidos(array $curso, array $coautores, ?array $por = null): void {
+  if (!$coautores) return;
+  $link  = app_base_url() . '/curso_detalhe.php?id=' . (int)$curso['id_curso'];
+  $nome  = htmlspecialchars($curso['nome_curso']);
+  $resp  = htmlspecialchars($curso['professor_nome']);
+  $carga = htmlspecialchars((string)$curso['carga_horaria']);
+  $porEhResp = !$por || (int)($por['id_user'] ?? 0) === (int)$curso['id_professor'];
+  $quemIncluiu = $porEhResp ? "pelo(a) professor(a) responsável <b>{$resp}</b>" : "por <b>" . htmlspecialchars($por['nome']) . "</b>";
+
+  // 1) um e-mail para cada coautor
+  foreach ($coautores as $co) {
+    $primeiro = htmlspecialchars($co['nome']);
+    $corpo = "<p>Olá, <b>{$primeiro}</b>, você foi incluído(a) como <b>coautor(a)</b> do curso "
+           . "<b>{$nome}</b> ({$carga} horas) {$quemIncluiu}.</p>"
+           . "<p>Como coautor(a), você passa a acessar o curso no sistema, recebe os e-mails das etapas "
+           . "(revisão, apontamentos, inserção e publicação) e compõe a identificação oficial do curso "
+           . "(<i>nome do curso - formadores - carga horária</i>).</p>"
+           . "<p>Responsável pelo curso: <b>{$resp}</b>.</p>";
+    notify_queue($co['email'], $co['nome'],
+      "[AutoriaSCS] Você foi incluído(a) como coautor(a): {$curso['nome_curso']}",
+      mail_template('Você agora é coautor(a) deste curso', $corpo, $link, 'Abrir o curso'));
+  }
+
+  // 2) um único e-mail para o responsável com todos os nomes
+  $lista = '<ul>' . implode('', array_map(fn($c) => '<li><b>' . htmlspecialchars($c['nome']) . '</b> — ' . htmlspecialchars($c['email']) . '</li>', $coautores)) . '</ul>';
+  $n = count($coautores);
+  $corpoResp = "<p>Olá, <b>{$resp}</b>, "
+             . ($porEhResp ? "você incluiu" : htmlspecialchars($por['nome']) . " incluiu")
+             . " " . ($n === 1 ? "o(a) seguinte coautor(a)" : "os(as) seguintes {$n} coautores(as)")
+             . " no curso <b>{$nome}</b>:</p>{$lista}"
+             . "<p>Cada coautor(a) recebeu um e-mail avisando da inclusão. Para remover alguém, use o cartão "
+             . "<i>Professores do curso</i> na página do curso.</p>";
+  notify_queue($curso['professor_email'], $curso['professor_nome'],
+    "[AutoriaSCS] Coautores incluídos no curso: {$curso['nome_curso']}",
+    mail_template($n === 1 ? 'Coautor(a) incluído(a) no seu curso' : 'Coautores incluídos no seu curso', $corpoResp, $link, 'Abrir o curso'));
+}
+
 /** Intervalo mínimo (minutos) entre e-mails de documentos pendentes do mesmo curso (item 11). */
 const ENTREGAS_EMAIL_COOLDOWN_MIN = 360;
 

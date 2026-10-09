@@ -35,10 +35,10 @@ $arquivos = [
   ['app/auth.php', '5ae623857bd0fd85a0ea58a9ab565e3c', 'function visao_alternar('],
   ['app/categorias_repo.php', '054ff959a0ed0f9a63b3ca531c609993', 'excluida_em'],
   ['app/checklist_repo.php', '9374cd1d2654f5ad94e6abeb183ee0dd', 'function checklist_salvar('],
-  ['app/curso_repo.php', 'f693bdb1c8fae80a41079bba38b31799', 'function curso_coautor_adicionar('],
+  ['app/curso_repo.php', '848e00f99760e873392415599e91c946', 'function curso_coautores_notificar('],
   ['app/entregas_repo.php', '315bf7b9103b57d9329a700612d89322', 'function entregas_pendentes('],
   ['app/niveis_repo.php', '43fd6beb60e20f12c7c8ce58a355fd3b', 'function niveis_lista('],
-  ['app/notify.php', '67d77e4b528b1bff5c2051467f40b91b', 'faixaLogos'],
+  ['app/notify.php', '34c979cee7028fdd0543fd54882e8584', 'notify_coautores_incluidos'],
   ['app/status_repo.php', '2ca8a21929b36614d5a0642bedade037', 'return niveis_nomes('],
   ['public/_layout_bottom.php', 'e94ab6de52815f317b9fff6d944666db', 'data-etapa-regra'],
   ['public/_layout_top.php', '410eca7960bedebf40abb55b60fe0984', 'zerar_dados.php'],
@@ -50,9 +50,9 @@ $arquivos = [
   ['public/apontamento_detalhe.php', '0c15146082ab673dd72298ad3011a83d', 'Registrar objeção'],
   ['public/apontamentos.php', '9f7f92e00377bdbbf4238fc005b06f93', '<th>Arquivo</th>'],
   ['public/assets/autoria-dark.css', '2c2e6c9ee50ca75b70a626d0145c97f4', 'aviso-apontamentos'],
-  ['public/curso_detalhe.php', 'c9742f2d55be336746cf8b76a044939c', 'avisaPendencias'],
+  ['public/curso_detalhe.php', '86003f74949d98f509a2a9956e2fa9ab', 'coautoresAviso'],
   ['public/curso_editar.php', '48f0e68583051e05fc920090dad53282', 'campo-ro'],
-  ['public/curso_novo.php', '6f76063474dcb6b0279fdb1dcf9b632e', 'coautores'],
+  ['public/curso_novo.php', '49ab64be883e9031b6445cecc4fb6486', 'formador_rotulo('],
   ['public/curso_videos.php', 'a843b233c19bbbd193b09a3c4250d2d4', 'video_receber_versao_form('],
   ['public/dashboard.php', 'be88da4a8dc845c41a359957043e7488', 'apont_pendentes_por_curso('],
   ['public/download.php', '28b48691153a77cb34b65b4b1e163806', 'curso_eh_professor('],
@@ -79,6 +79,9 @@ $arquivos = [
   ['app/reset_repo.php', '3a057b1181b1d87fb4106bb4a7505b8e', 'function reset_executar('],
   ['public/admin/zerar_dados.php', 'f2d88beef9330ed612f19cbc6a3026df', 'RESET_FRASE'],
   ['database/zerar_dados.sql', 'cb633c0467358b39a133c5cbfd1a28a4', 'ZERAR DADOS'],
+  ['database/upgrade_v13.sql', 'ce3b3e55bb56fe6c18397ec749717cc4', 'notificado_em'],
+  ['public/coautores_notificar.php', 'ab9e8899b3fd8119ade450a508da3c6b', 'curso_coautores_notificar('],
+  ['cron/cron_notificacoes.php', '940053964b983d1a4b11d01552fec9ca', 'curso_coautores_notificar_atrasados('],
 ];
 
 $resArq = []; $arqOk = 0;
@@ -126,6 +129,7 @@ $migracoes = [
           diag_tabela('tb_checklist_itens') && diag_tabela('tb_apontamento_historico') && diag_tabela('tb_curso_professores')
           && diag_coluna('tb_curso_apontamentos', 'status') && diag_coluna('tb_curso_files', 'aprovado') && diag_coluna('tb_status', 'exige_entregas')],
   ['V12', 'Vídeos por link do Google Drive (origem da versão)', diag_coluna('tb_video_versoes', 'origem')],
+  ['V13', 'Coautores TI/ADMIN + e-mails de inclusão (notificado_em)', diag_coluna('tb_curso_professores', 'notificado_em')],
 ];
 $dbInfo = db()->query("SELECT DATABASE() db, VERSION() v, @@character_set_database cs, USER() u")->fetch();
 $nNiveis = diag_count("SELECT COUNT(*) n FROM tb_niveis_ensino");

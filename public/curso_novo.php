@@ -139,7 +139,7 @@ include __DIR__ . '/_layout_top.php';
               <select class="form-select" id="coautorSel">
                 <option value="">Adicionar professor(a)...</option>
                 <?php foreach ($formadores as $f): ?>
-                  <option value="<?= (int)$f['id_user'] ?>"><?= htmlspecialchars($f['nome']) ?></option>
+                  <option value="<?= (int)$f['id_user'] ?>"><?= htmlspecialchars(formador_rotulo($f)) ?></option>
                 <?php endforeach; ?>
               </select>
             </div>

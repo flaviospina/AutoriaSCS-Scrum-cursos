@@ -43,11 +43,17 @@ function curso_create(int $id_prof, array $d, array $coautores = []): int {
   db()->prepare("INSERT INTO tb_curso_checklist (id_curso) VALUES (?)")->execute([$id]);
 
   // professores do curso (V11): responsável + coautores escolhidos na proposta
+  $coautoresInseridos = 0;
   if (curso_professores_disponivel()) {
     db()->prepare("INSERT IGNORE INTO tb_curso_professores (id_curso, id_usuario, tipo) VALUES (?,?,'RESPONSAVEL')")->execute([$id, $id_prof]);
     foreach (array_unique(array_map('intval', $coautores)) as $idCo) {
       if ($idCo === $id_prof || !formador_valido($idCo)) continue;
-      db()->prepare("INSERT IGNORE INTO tb_curso_professores (id_curso, id_usuario, tipo) VALUES (?,?,'COAUTOR')")->execute([$id, $idCo]);
+      if (curso_coautores_v13()) {
+        db()->prepare("INSERT IGNORE INTO tb_curso_professores (id_curso, id_usuario, tipo, adicionado_por) VALUES (?,?,'COAUTOR',?)")->execute([$id, $idCo, $id_prof]);
+      } else {
+        db()->prepare("INSERT IGNORE INTO tb_curso_professores (id_curso, id_usuario, tipo) VALUES (?,?,'COAUTOR')")->execute([$id, $idCo]);
+      }
+      $coautoresInseridos++;
       audit_log('coautor_adicionado', 'curso', $id, null, ['id_usuario' => $idCo]);
     }
   }
@@ -75,6 +81,10 @@ function curso_create(int $id_prof, array $d, array $coautores = []): int {
       mail_template('Sua proposta de curso foi registrada', $corpo, $link, 'Acompanhar meu curso'));
     notify_flag('recebe_email_revisao', "[AutoriaSCS] Novo curso no backlog: {$curso['nome_curso']}",
       mail_template('Novo curso proposto por ' . $curso['professor_nome'], $corpo, $link, 'Ver curso'));
+    // coautores indicados na proposta: e-mails imediatos (V13) — a proposta é um envio único
+    if ($coautoresInseridos > 0 && curso_coautores_v13()) {
+      curso_coautores_notificar($id, ['id_user' => $id_prof, 'nome' => $curso['professor_nome']], true);
+    }
   }
 
   n8n_emit_event('curso_created', ['id_curso' => $id, 'id_professor' => $id_prof]);
@@ -182,25 +192,35 @@ function curso_get(int $id_curso): ?array {
   return $c ?: null;
 }
 
-/** Usuário ativo com perfil que propõe cursos (formador)? */
+/**
+ * Usuário elegível a coautor (V13): ativo, com perfil que propõe cursos
+ * (formador), que revisa cursos (TI) ou com administração total (ADMIN).
+ */
 function formador_valido(int $idUser): bool {
   $st = db()->prepare("SELECT role FROM tb_users WHERE id_user=? AND ativo=1");
   $st->execute([$idUser]);
   $r = $st->fetch();
-  return $r && perfil_flag($r['role'], 'propoe_cursos') && !perfil_flag($r['role'], 'admin_total');
+  return $r && (perfil_flag($r['role'], 'propoe_cursos') || perfil_flag($r['role'], 'revisa_cursos') || perfil_flag($r['role'], 'admin_total'));
 }
 
-/** Formadores ativos (id + nome) para seleção de coautores. */
+/** Usuários elegíveis a coautor (id, nome, e-mail, perfil) para seleção — formadores, TI e ADMIN (V13). */
 function formadores_usuarios(): array {
   try {
     return db()->query("
-      SELECT u.id_user, u.nome, u.email FROM tb_users u
+      SELECT u.id_user, u.nome, u.email, u.role, p.nome AS perfil_nome,
+             (p.propoe_cursos=1 AND p.admin_total=0 AND p.revisa_cursos=0) AS eh_formador
+      FROM tb_users u
       JOIN tb_perfis p ON p.codigo = u.role
-      WHERE u.ativo=1 AND p.propoe_cursos=1 AND p.admin_total=0
+      WHERE u.ativo=1 AND (p.propoe_cursos=1 OR p.revisa_cursos=1 OR p.admin_total=1)
       ORDER BY u.nome")->fetchAll();
   } catch (Throwable $e) {
-    return db()->query("SELECT id_user, nome, email FROM tb_users WHERE ativo=1 AND role='PROFESSOR' ORDER BY nome")->fetchAll();
+    return db()->query("SELECT id_user, nome, email, role, role AS perfil_nome, 1 AS eh_formador FROM tb_users WHERE ativo=1 AND role IN ('PROFESSOR','TI','ADMIN') ORDER BY nome")->fetchAll();
   }
+}
+
+/** Rótulo do usuário na lista de coautores: "Nome" ou "Nome (TI)" para quem não é formador. */
+function formador_rotulo(array $f): string {
+  return $f['nome'] . (empty($f['eh_formador']) ? ' (' . ($f['perfil_nome'] ?: $f['role']) . ')' : '');
 }
 
 /** Pode gerenciar coautores: responsável do curso ou equipe de revisão/ADMIN. */
@@ -215,11 +235,78 @@ function curso_coautor_adicionar(array $curso, int $idUser, array $user): void {
   if (!curso_pode_gerir_professores($curso, $user)) { http_response_code(403); throw new Exception("Sem permissão para incluir professores neste curso."); }
   if (!curso_professores_disponivel()) throw new Exception("Execute database/upgrade_v11.sql para habilitar coautores.");
   if ($idUser === (int)$curso['id_professor']) { http_response_code(422); throw new Exception("Este usuário já é o professor responsável."); }
-  if (!formador_valido($idUser)) { http_response_code(422); throw new Exception("Selecione um(a) formador(a) ativo(a) cadastrado(a) no sistema."); }
-  $st = db()->prepare("INSERT IGNORE INTO tb_curso_professores (id_curso, id_usuario, tipo) VALUES (?,?,'COAUTOR')");
-  $st->execute([(int)$curso['id_curso'], $idUser]);
+  if (!formador_valido($idUser)) { http_response_code(422); throw new Exception("Selecione um(a) usuário(a) ativo(a) elegível (formador, TI ou administrador)."); }
+  $st = db()->prepare(curso_coautores_v13()
+    ? "INSERT IGNORE INTO tb_curso_professores (id_curso, id_usuario, tipo, adicionado_por) VALUES (?,?,'COAUTOR',?)"
+    : "INSERT IGNORE INTO tb_curso_professores (id_curso, id_usuario, tipo) VALUES (?,?,'COAUTOR')");
+  $st->execute(curso_coautores_v13() ? [(int)$curso['id_curso'], $idUser, (int)$user['id_user']] : [(int)$curso['id_curso'], $idUser]);
   if ($st->rowCount() === 0) { http_response_code(422); throw new Exception("Este(a) professor(a) já participa do curso."); }
   audit_log('coautor_adicionado', 'curso', (int)$curso['id_curso'], null, ['id_usuario' => $idUser]);
+}
+
+/** Segundos de espera, após a última inclusão, antes do envio agrupado dos e-mails (V13). */
+const COAUTOR_EMAIL_ESPERA_SEG = 20;
+
+/**
+ * Coautores do curso ainda não comunicados por e-mail (V13) e o tempo restante
+ * (segundos, pelo relógio do banco) até o envio agrupado.
+ */
+function curso_coautores_pendentes(int $idCurso): array {
+  try {
+    $st = db()->prepare("
+      SELECT cp.id_usuario AS id_user, u.nome, u.email, cp.adicionado_por,
+             TIMESTAMPDIFF(SECOND, cp.created_at, NOW()) AS idade_seg
+      FROM tb_curso_professores cp JOIN tb_users u ON u.id_user = cp.id_usuario
+      WHERE cp.id_curso=? AND cp.tipo='COAUTOR' AND cp.notificado_em IS NULL
+      ORDER BY cp.created_at");
+    $st->execute([$idCurso]);
+    $rows = $st->fetchAll();
+  } catch (Throwable $e) { return ['itens' => [], 'restante' => 0]; } // upgrade_v13.sql pendente
+  $restante = 0;
+  foreach ($rows as $r) $restante = max($restante, COAUTOR_EMAIL_ESPERA_SEG - (int)$r['idade_seg']);
+  return ['itens' => $rows, 'restante' => max(0, $restante)];
+}
+
+/**
+ * Envia os e-mails dos coautores pendentes do curso (um personalizado para cada
+ * coautor + um único para o responsável com todos os nomes) e marca o envio.
+ * $forcar=true ignora a espera de 20 s (criação do curso / cron de retaguarda).
+ * Retorna ['enviado'=>bool, 'nomes'=>[], 'restante'=>seg].
+ */
+function curso_coautores_notificar(int $idCurso, ?array $byUser = null, bool $forcar = false): array {
+  $p = curso_coautores_pendentes($idCurso);
+  if (!$p['itens']) return ['enviado' => false, 'nomes' => [], 'restante' => 0];
+  if (!$forcar && $p['restante'] > 0) return ['enviado' => false, 'nomes' => array_column($p['itens'], 'nome'), 'restante' => $p['restante']];
+
+  $curso = curso_get($idCurso);
+  if (!$curso) return ['enviado' => false, 'nomes' => [], 'restante' => 0];
+
+  // quem incluiu (para o texto do e-mail ao responsável): o último que adicionou
+  $idPor = (int)(end($p['itens'])['adicionado_por'] ?? 0);
+  $por = null;
+  if ($byUser && !empty($byUser['nome'])) $por = $byUser;
+  elseif ($idPor) { $st = db()->prepare("SELECT id_user, nome FROM tb_users WHERE id_user=?"); $st->execute([$idPor]); $por = $st->fetch() ?: null; }
+
+  require_once __DIR__ . '/notify.php';
+  notify_coautores_incluidos($curso, $p['itens'], $por);
+
+  $ids = array_map(fn($r) => (int)$r['id_user'], $p['itens']);
+  $in  = implode(',', array_fill(0, count($ids), '?'));
+  db()->prepare("UPDATE tb_curso_professores SET notificado_em=NOW() WHERE id_curso=? AND tipo='COAUTOR' AND notificado_em IS NULL AND id_usuario IN ($in)")
+      ->execute(array_merge([$idCurso], $ids));
+  audit_log('coautores_notificados', 'curso', $idCurso, null, ['coautores' => array_column($p['itens'], 'nome')], $byUser['id_user'] ?? null);
+  return ['enviado' => true, 'nomes' => array_column($p['itens'], 'nome'), 'restante' => 0];
+}
+
+/** Retaguarda (cron): envia e-mails de coautores esquecidos (quem incluiu saiu da página antes dos 20 s). */
+function curso_coautores_notificar_atrasados(int $minIdadeSeg = 120): int {
+  try {
+    $st = db()->prepare("SELECT DISTINCT id_curso FROM tb_curso_professores WHERE tipo='COAUTOR' AND notificado_em IS NULL AND created_at < NOW() - INTERVAL ? SECOND");
+    $st->execute([$minIdadeSeg]);
+  } catch (Throwable $e) { return 0; }
+  $n = 0;
+  foreach ($st->fetchAll() as $r) { if (curso_coautores_notificar((int)$r['id_curso'], null, true)['enviado']) $n++; }
+  return $n;
 }
 
 /** Remove um coautor (o responsável nunca é removido por aqui). */
@@ -237,6 +324,16 @@ function curso_professores_disponivel(): bool {
   static $ok = null;
   if ($ok === null) {
     try { db()->query("SELECT 1 FROM tb_curso_professores LIMIT 1"); $ok = true; }
+    catch (Throwable $e) { $ok = false; }
+  }
+  return $ok;
+}
+
+/** As colunas da V13 (adicionado_por / notificado_em) já existem? (cache por requisição) */
+function curso_coautores_v13(): bool {
+  static $ok = null;
+  if ($ok === null) {
+    try { db()->query("SELECT adicionado_por, notificado_em FROM tb_curso_professores LIMIT 1"); $ok = true; }
     catch (Throwable $e) { $ok = false; }
   }
   return $ok;

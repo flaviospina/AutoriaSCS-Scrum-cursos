@@ -995,10 +995,19 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
               <?= csrf_field() ?><input type="hidden" name="action" value="add_coautor">
               <select class="form-select form-select-sm" name="id_usuario" required style="max-width:320px">
                 <option value="">Adicionar professor(a)...</option>
-                <?php foreach ($outros as $f): ?><option value="<?= (int)$f['id_user'] ?>"><?= htmlspecialchars($f['nome']) ?></option><?php endforeach; ?>
+                <?php foreach ($outros as $f): ?><option value="<?= (int)$f['id_user'] ?>"><?= htmlspecialchars(formador_rotulo($f)) ?></option><?php endforeach; ?>
               </select>
               <button class="btn btn-sm btn-outline-primary">+ Adicionar professor</button>
             </form>
+          <?php endif; ?>
+          <?php $coPend = curso_coautores_v13() ? curso_coautores_pendentes($id) : ['itens' => [], 'restante' => 0]; ?>
+          <?php if ($coPend['itens']): ?>
+            <div class="alert alert-warning py-2 px-3 mt-2 mb-0 small" id="coautoresAviso"
+                 data-id-curso="<?= $id ?>" data-restante="<?= (int)$coPend['restante'] ?>">
+              ⏳ Os e-mails para <b><?= htmlspecialchars(implode(', ', array_column($coPend['itens'], 'nome'))) ?></b>
+              e para o(a) responsável serão enviados em <b><span id="coautoresContador"><?= (int)$coPend['restante'] ?></span> s</b>.
+              Se incluir outro(a) coautor(a) nesse intervalo, a contagem recomeça e todos vão em um único aviso.
+            </div>
           <?php endif; ?>
         <?php endif; ?>
         <div class="small text-muted mt-2">Coautores acessam o curso, recebem os e-mails e compõem a identificação oficial (<i>nome do curso - formadores - carga horária</i>).</div>
@@ -1183,4 +1192,50 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
   </div>
 </div>
 
+<script>
+// V13 — contagem regressiva do envio agrupado dos e-mails de coautores
+(function () {
+  var av = document.getElementById('coautoresAviso');
+  if (!av) return;
+  var cont = document.getElementById('coautoresContador');
+  var restante = parseInt(av.dataset.restante, 10) || 0;
+  var idCurso = av.dataset.idCurso;
+  var csrf = (document.querySelector('input[name="csrf_token"]') || {}).value || '';
+  var timer = null;
+
+  function mostrarEnvio(r) {
+    var nomes = (r.nomes || []).join(', ');
+    av.className = 'alert alert-success py-2 px-3 mt-2 mb-0 small';
+    av.innerHTML = '✅ E-mails enviados para <b>' + nomes.replace(/</g, '&lt;') + '</b> e para o(a) responsável <b>' +
+                   String(r.responsavel || '').replace(/</g, '&lt;') + '</b>.';
+    if (window.Swal) Swal.fire({ icon: 'success', title: 'E-mails enviados', html: 'Coautores: <b>' + nomes.replace(/</g, '&lt;') + '</b><br>Responsável: <b>' + String(r.responsavel || '').replace(/</g, '&lt;') + '</b>', timer: 6000, timerProgressBar: true, showConfirmButton: false });
+  }
+  function enviar() {
+    cont.textContent = '0';
+    av.innerHTML = '📨 Enviando os e-mails…';
+    var fd = new FormData(); fd.append('csrf_token', csrf); fd.append('id_curso', idCurso);
+    fetch('coautores_notificar.php', { method: 'POST', body: fd, credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        if (r.enviado) { mostrarEnvio(r); return; }
+        if (r.restante > 0) { // relógio do servidor ainda não chegou aos 20 s: continua a contagem
+          restante = r.restante;
+          av.innerHTML = '⏳ Enviando em <b><span id="coautoresContador">' + restante + '</span> s</b>…';
+          cont = document.getElementById('coautoresContador'); tick();
+          return;
+        }
+        if (r.erro) { av.className = 'alert alert-danger py-2 px-3 mt-2 mb-0 small'; av.textContent = r.erro; return; }
+        av.className = 'alert alert-secondary py-2 px-3 mt-2 mb-0 small';
+        av.textContent = 'Nenhum e-mail pendente (já enviado ou coautor removido).';
+      })
+      .catch(function () { av.className = 'alert alert-danger py-2 px-3 mt-2 mb-0 small'; av.textContent = 'Falha ao enviar os e-mails. Recarregue a página: o envio será retomado automaticamente.'; });
+  }
+  function tick() {
+    if (restante <= 0) { enviar(); return; }
+    cont.textContent = restante;
+    timer = setTimeout(function () { restante--; tick(); }, 1000);
+  }
+  tick();
+})();
+</script>
 <?php include __DIR__ . '/_layout_bottom.php'; ?>

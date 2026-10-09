@@ -23,3 +23,9 @@ if ($chaveEsperada === '' || !hash_equals($chaveEsperada, $chaveRecebida)) {
 
 [$ok, $err] = notify_send_pending(25);
 echo "Notificações: {$ok} enviada(s), {$err} com erro.\n";
+
+// V13 — retaguarda: coautores incluídos há mais de 2 min sem o envio agrupado
+// (quem incluiu saiu da página antes do fim da contagem de 20 s)
+require_once __DIR__ . '/../app/curso_repo.php';
+$nCo = curso_coautores_notificar_atrasados(120);
+if ($nCo) echo "Coautores: e-mails enviados para {$nCo} curso(s) pendente(s).\n";
