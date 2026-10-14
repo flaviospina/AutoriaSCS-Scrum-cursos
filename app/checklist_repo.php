@@ -47,7 +47,33 @@ function checklist_pode_editar(string $codigo, array $user, array $curso): bool 
   return in_array($codigo, checklists_visiveis($user, $curso), true);
 }
 
-/** Itens ativos do checklist, em ordem, agrupados por "grupo". */
+/** Chave de comparação de grupo: sem acentos/caixa/espaços duplicados ("Revisão Pedagógica" = "revisao pedagogica"). */
+function checklist_grupo_chave(string $grupo): string {
+  $g = mb_strtolower(trim(preg_replace('/\s+/u', ' ', $grupo)));
+  $t = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $g);
+  return $t !== false && $t !== '' ? preg_replace('/[^a-z0-9 ]/', '', $t) : $g;
+}
+
+/**
+ * Renumera a ordem dos itens de um checklist para que os itens do mesmo grupo
+ * fiquem contíguos (grupos na ordem em que aparecem; itens na ordem atual).
+ * Também unifica a grafia do grupo pela primeira ocorrência.
+ */
+function checklist_reordenar_por_grupo(int $idChecklist): void {
+  $st = db()->prepare("SELECT id_item, grupo FROM tb_checklist_itens WHERE id_checklist=? ORDER BY ordem, id_item");
+  $st->execute([$idChecklist]);
+  $grupos = []; // chave => ['nome' => grafia, 'itens' => [ids]]
+  foreach ($st->fetchAll() as $r) {
+    $k = checklist_grupo_chave((string)$r['grupo']);
+    if (!isset($grupos[$k])) $grupos[$k] = ['nome' => trim(preg_replace('/\s+/u', ' ', (string)$r['grupo'])), 'itens' => []];
+    $grupos[$k]['itens'][] = (int)$r['id_item'];
+  }
+  $up = db()->prepare("UPDATE tb_checklist_itens SET ordem=?, grupo=? WHERE id_item=?");
+  $n = 1;
+  foreach ($grupos as $g) foreach ($g['itens'] as $id) $up->execute([$n++, $g['nome'], $id]);
+}
+
+/** Itens ativos do checklist, em ordem, com os grupos contíguos (mesmo grupo = mesmo bloco). */
 function checklist_itens(string $codigo, bool $incluirInativos = false): array {
   $st = db()->prepare("
     SELECT i.* FROM tb_checklist_itens i
@@ -56,7 +82,18 @@ function checklist_itens(string $codigo, bool $incluirInativos = false): array {
     ORDER BY i.ordem, i.id_item
   ");
   $st->execute([$codigo]);
-  return $st->fetchAll();
+  $rows = $st->fetchAll();
+  // agrupa por grupo normalizado, preservando a ordem de aparição dos grupos e dos itens
+  $grupos = [];
+  foreach ($rows as $r) {
+    $k = checklist_grupo_chave((string)$r['grupo']);
+    if (!isset($grupos[$k])) $grupos[$k] = ['nome' => trim(preg_replace('/\s+/u', ' ', (string)$r['grupo'])), 'itens' => []];
+    $r['grupo'] = $grupos[$k]['nome'];
+    $grupos[$k]['itens'][] = $r;
+  }
+  $out = [];
+  foreach ($grupos as $g) foreach ($g['itens'] as $r) $out[] = $r;
+  return $out;
 }
 
 /** Respostas do curso para um checklist: id_item => marcado(0/1). */

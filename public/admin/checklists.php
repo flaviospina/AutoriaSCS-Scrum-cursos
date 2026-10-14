@@ -36,6 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       db()->prepare("INSERT INTO tb_checklist_itens (id_checklist, chave, grupo, descricao, obrigatorio, ordem, ativo) VALUES (?,NULL,?,?,?,?,1)")
         ->execute([$idc, mb_substr($grupo, 0, 80), mb_substr($desc, 0, 200), !empty($_POST['obrigatorio']) ? 1 : 0, $ordem]);
       audit_log('checklist_item_criado', 'checklist_item', (int)db()->lastInsertId(), null, ['checklist' => $codigo, 'grupo' => $grupo, 'descricao' => $desc]);
+      checklist_reordenar_por_grupo($idc); // item entra junto do grupo já existente (mesmo nome)
       $ok = "Item adicionado ao {$listas[$codigo]['nome']}.";
     }
 
@@ -50,6 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       audit_log('checklist_item_editado', 'checklist_item', (int)$i['id_item'],
         ['descricao' => $i['descricao'], 'grupo' => $i['grupo'], 'obrigatorio' => (int)$i['obrigatorio']],
         ['descricao' => $desc, 'grupo' => $grupo, 'obrigatorio' => !empty($_POST['obrigatorio']) ? 1 : 0]);
+      checklist_reordenar_por_grupo((int)$i['id_checklist']); // se mudou de grupo, vai para o bloco do grupo
       $ok = "Item atualizado.";
     }
 
@@ -105,7 +107,7 @@ include __DIR__ . '/../_layout_top.php';
 <?php if ($ok): ?><div class="alert alert-success"><?= htmlspecialchars($ok) ?></div><?php endif; ?>
 
 <div class="row g-3">
-  <?php foreach ($listas as $codigo => $lista): $itens = checklist_itens($codigo, true); $tot = count($itens); ?>
+  <?php foreach ($listas as $codigo => $lista): checklist_reordenar_por_grupo((int)$lista['id_checklist']); $itens = checklist_itens($codigo, true); $tot = count($itens); ?>
     <div class="col-12 col-xl-6">
       <div class="card shadow-sm h-100">
         <div class="card-body">
