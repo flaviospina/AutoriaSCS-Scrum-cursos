@@ -40,7 +40,7 @@ $arquivos = [
   ['app/niveis_repo.php', '43fd6beb60e20f12c7c8ce58a355fd3b', 'function niveis_lista('],
   ['app/notify.php', '5e9445940d5b34497ea80baf24db367c', 'notify_coautores_incluidos'],
   ['app/status_repo.php', '2ca8a21929b36614d5a0642bedade037', 'return niveis_nomes('],
-  ['public/_layout_bottom.php', 'e94ab6de52815f317b9fff6d944666db', 'data-etapa-regra'],
+  ['public/_layout_bottom.php', 'a9d0499811c0d118ca26a7825343fa85', 'data-etapa-regra'],
   ['public/_layout_top.php', 'c1137e4895870313da88c4157c3e3941', 'indicadores.php'],
   ['public/admin/categorias.php', '1eb567da87c6f042cabccaa0a91e8bee', 'tipo_especial'],
   ['public/admin/checklists.php', '6d7b0418eec23acdfcd19507b5b91d5f', 'Checklists'],
@@ -50,7 +50,7 @@ $arquivos = [
   ['public/apontamento_detalhe.php', '0c15146082ab673dd72298ad3011a83d', 'Registrar objeção'],
   ['public/apontamentos.php', '9f7f92e00377bdbbf4238fc005b06f93', '<th>Arquivo</th>'],
   ['public/assets/autoria-dark.css', '2c2e6c9ee50ca75b70a626d0145c97f4', 'aviso-apontamentos'],
-  ['public/curso_detalhe.php', 'af7651f8a71ce567990a86c76d32f224', 'slides_padrao.php'],
+  ['public/curso_detalhe.php', '8a1ada52844863eb7f3945e1a38b9aa9', 'alert-fixo'],
   ['public/curso_editar.php', '48f0e68583051e05fc920090dad53282', 'campo-ro'],
   ['public/curso_novo.php', '49ab64be883e9031b6445cecc4fb6486', 'formador_rotulo('],
   ['public/curso_videos.php', 'a843b233c19bbbd193b09a3c4250d2d4', 'video_receber_versao_form('],
@@ -94,7 +94,7 @@ $arquivos = [
   ['app/slides/fonts/Comfortaa-Regular.ttf', 'cc69f09f260be74d0437725deb63f5bb', 'Comfortaa'],
   ['app/lib/tfpdf/tfpdf.php', '4548761d363fda20a11fd69c000c9df3', 'class tFPDF'],
   ['app/lib/tfpdf/font/unifont/comfortaa-regular.mtx.php', '4a92b6059f48d2623a1b8eb76c4984e6', '$name'],
-  ['public/slides_padrao.php', '028dea6f54c89cf78657c34201c3af4c', 'slides_processar('],
+  ['public/slides_padrao.php', '57345361e368e53d17cbd52ec37968ca', 'slides_processar('],
   ['public/slides_padrao_download.php', 'd6694cde27da8ee7cb63bf0c2cb5607b', 'slides_arquivo('],
 ];
 

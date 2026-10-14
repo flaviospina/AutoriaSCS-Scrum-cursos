@@ -148,7 +148,7 @@ include __DIR__ . '/_layout_top.php';
             </div>
             <div class="small text-muted mt-2">Confira o PDF. Se quiser ajustar algo, corrija a apresentação e envie de novo; ou edite o PPTX no padrão e envie o resultado pela entrega normal de Slide.</div>
             <?php if (!empty($r['registrado'])): ?>
-              <div class="alert alert-success small mt-2 mb-0">Registrado como entrega em <?= date('d/m/Y H:i', strtotime($r['registrado']['quando'])) ?>: <b><?= htmlspecialchars($r['registrado']['nome']) ?></b>. <a href="curso_detalhe.php?id=<?= $id ?>#entregas">Ver no curso</a>.</div>
+              <div class="alert alert-success alert-fixo small mt-2 mb-0">Registrado como entrega em <?= date('d/m/Y H:i', strtotime($r['registrado']['quando'])) ?>: <b><?= htmlspecialchars($r['registrado']['nome']) ?></b>. <a href="curso_detalhe.php?id=<?= $id ?>#entregas">Ver no curso</a>.</div>
             <?php elseif ($podeEnviar): ?>
               <form method="post" class="mt-2" data-confirm="Registrar o PDF no padrão como a entrega <b>Slide do Módulo <?= (int)$r['modulo'] ?></b>? A TI será responsável pela aprovação." data-confirm-title="Registrar entrega" data-confirm-btn="Sim, registrar">
                 <?= csrf_field() ?><input type="hidden" name="action" value="registrar"><input type="hidden" name="id_curso" value="<?= $id ?>"><input type="hidden" name="token" value="<?= $r['token'] ?>">

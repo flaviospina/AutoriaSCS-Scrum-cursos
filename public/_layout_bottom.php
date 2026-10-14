@@ -131,10 +131,10 @@
     });
   }
   document.querySelectorAll('main > .alert-success, main > .row .alert-success').forEach(function (el) {
-    if (!el.closest('.modal')) toastFrom(el, 'success');
+    if (!el.closest('.modal') && !el.classList.contains('alert-fixo')) toastFrom(el, 'success');
   });
   document.querySelectorAll('main > .alert-danger, main > .row .alert-danger').forEach(function (el) {
-    if (!el.closest('.modal')) toastFrom(el, 'error');
+    if (!el.closest('.modal') && !el.classList.contains('alert-fixo')) toastFrom(el, 'error');
   });
 })();
 </script>
