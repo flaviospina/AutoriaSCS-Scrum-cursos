@@ -92,8 +92,8 @@ $arquivos = [
   ['app/slides/modelo.pptx', '7d065dc2bcae7506dcc56df313fc776c', 'ppt/'],
   ['app/slides/bg/conteudo.png', '0b2e357685eaa6fe38e5344e815d5246', 'PNG'],
   ['app/slides/fonts/Comfortaa-Regular.ttf', 'cc69f09f260be74d0437725deb63f5bb', 'Comfortaa'],
-  ['app/lib/tfpdf/tfpdf.php', '4548761d363fda20a11fd69c000c9df3', 'class tFPDF'],
-  ['app/lib/tfpdf/font/unifont/comfortaa-regular.mtx.php', '4a92b6059f48d2623a1b8eb76c4984e6', '$name'],
+  ['app/lib/tfpdf/tfpdf.php', 'bc47ab116dd99f8753acb9576412ba15', 'class tFPDF'],
+  ['app/lib/tfpdf/font/unifont/comfortaa-regular.mtx.php', '20d4d877b6bd5342a792004326040ead', '$name'],
   ['public/slides_padrao.php', '417184c11c6f4c717237d0cc3b3e8744', 'slides_processar('],
   ['public/slides_padrao_download.php', 'd6694cde27da8ee7cb63bf0c2cb5607b', 'slides_arquivo('],
 ];

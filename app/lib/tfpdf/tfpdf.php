@@ -489,6 +489,8 @@ function AddFont($family, $style='', $file='', $uni=false)
 		if (file_exists($unifilename.'.mtx.php')) {
 			include($unifilename.'.mtx.php');
 		}
+		// AutoriaSCS: o cache (.mtx.php) pode ter sido gerado em outro servidor — usa sempre o caminho real daqui
+		$ttffile = $ttffilename;
 		if (!isset($type) ||  !isset($name) || $originalsize != $ttfstat['size']) {
 			$ttffile = $ttffilename;
 //			require_once($this->fontpath.'unifont/ttfonts.php');

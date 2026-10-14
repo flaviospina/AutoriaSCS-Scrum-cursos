@@ -13,7 +13,7 @@ $desc=array (
 );
 $up=-100;
 $ut=50;
-$ttffile='/home/user/AutoriaSCS-Scrum-cursos/app/slides/fonts/Comfortaa-Regular.ttf';
+$ttffile='Comfortaa-Regular.ttf';
 $originalsize=140176;
 $fontkey='comfortaa';
 ?>
