@@ -54,8 +54,8 @@ if (($_GET['ok'] ?? '') === 'upload') $ok = "Arquivo enviado com sucesso.";
 if (($_GET['ok'] ?? '') === 'dispensa') $ok = "Categoria registrada como \"sem material\".";
 if (($_GET['ok'] ?? '') === 'coautor_add') $ok = "Professor(a) incluído(a) como coautor(a) do curso.";
 if (($_GET['ok'] ?? '') === 'coautor_del') $ok = "Coautor(a) removido(a) do curso.";
-if (($_GET['ok'] ?? '') === 'slide_ok') $ok = "Slide aprovado. O envio do vídeo deste módulo foi liberado.";
-if (($_GET['ok'] ?? '') === 'slide_rev') $ok = "Aprovação do slide revogada. O envio do vídeo deste módulo voltou a ficar bloqueado.";
+if (($_GET["ok"] ?? "") === "slide_ok") $ok = "Arquivo aprovado pela TI. Se for o slide do módulo, o envio do vídeo foi liberado.";
+if (($_GET['ok'] ?? '') === 'slide_rev') $ok = "Aprovação do arquivo revogada. Se for o slide do módulo, o envio do vídeo voltou a ficar bloqueado.";
 if (($_GET['ok'] ?? '') === 'reativa') $ok = "Registro \"sem material\" desfeito. A categoria voltou a aceitar envio.";
 if (($_GET['ok'] ?? '') === 'delarq') $ok = "Arquivo excluído.";
 if (($_GET['err'] ?? '') !== '') {
@@ -931,8 +931,8 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
                     <td>
                       <span class="badge bg-info text-dark"><?= htmlspecialchars($f['categoria']) ?></span>
                       <?php if (!empty($f['aprovado'])): ?>
-                        <span class="badge bg-success" title="Aprovado por <?= htmlspecialchars($f['aprovado_por_nome'] ?? 'TI') ?> em <?= htmlspecialchars($f['aprovado_em'] ?? '') ?>">✔ Slide aprovado</span>
-                      <?php elseif (arquivo_eh_slide($f)): ?>
+                        <span class="badge bg-success" title="Aprovado por <?= htmlspecialchars($f['aprovado_por_nome'] ?? 'TI') ?> em <?= htmlspecialchars($f['aprovado_em'] ?? '') ?>">✔ Aprovado pela TI</span>
+                      <?php else: ?>
                         <span class="badge bg-warning text-dark">Aguardando aprovação</span>
                       <?php endif; ?>
                     </td>
@@ -942,14 +942,14 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
                       <?php if (!$ehMB): ?>
                         <a class="btn btn-sm btn-outline-primary" href="download.php?id=<?= (int)$f['id_file'] ?>">Download</a>
                       <?php endif; ?>
-                      <?php if (perm('revisa_cursos') && arquivo_eh_slide($f)): ?>
+                      <?php if (perm('revisa_cursos')): $ehSlide = arquivo_eh_slide($f); ?>
                         <form method="post" class="d-inline"
-                              data-confirm="<?= !empty($f['aprovado']) ? 'Revogar a aprovação deste slide?<br>O envio do vídeo do módulo voltará a ficar bloqueado.' : 'Aprovar este slide?<br>O envio do <b>vídeo</b> deste módulo será liberado para o formador.' ?>"
-                              data-confirm-title="<?= !empty($f['aprovado']) ? 'Revogar aprovação' : 'Aprovar slide' ?>" data-confirm-btn="<?= !empty($f['aprovado']) ? 'Sim, revogar' : 'Sim, aprovar' ?>">
+                              data-confirm="<?= !empty($f['aprovado']) ? 'Revogar a aprovação deste arquivo?' . ($ehSlide ? '<br>O envio do vídeo do módulo voltará a ficar bloqueado.' : '') : 'Aprovar este arquivo?' . ($ehSlide ? '<br>O envio do <b>vídeo</b> deste módulo será liberado para o formador.' : '') ?>"
+                              data-confirm-title="<?= !empty($f['aprovado']) ? 'Revogar aprovação' : 'Aprovar arquivo' ?>" data-confirm-btn="<?= !empty($f['aprovado']) ? 'Sim, revogar' : 'Sim, aprovar' ?>">
                           <?= csrf_field() ?>
                           <input type="hidden" name="action" value="<?= !empty($f['aprovado']) ? 'revogar_slide' : 'aprovar_slide' ?>">
                           <input type="hidden" name="id_file" value="<?= (int)$f['id_file'] ?>">
-                          <button class="btn btn-sm <?= !empty($f['aprovado']) ? 'btn-outline-warning' : 'btn-success' ?>"><?= !empty($f['aprovado']) ? 'Revogar' : '✔ Aprovar slide' ?></button>
+                          <button class="btn btn-sm <?= !empty($f['aprovado']) ? 'btn-outline-warning' : 'btn-success' ?>"><?= !empty($f['aprovado']) ? 'Revogar' : '✔ Aprovar' ?></button>
                         </form>
                       <?php endif; ?>
                       <?php if (is_admin()): ?>

@@ -195,21 +195,21 @@ function arquivo_eh_slide(array $f): bool {
   return in_array($f['categoria'], entregas_categorias_por_tipo((int)$f['modulo'], 'SLIDE'), true);
 }
 
-/** TI/ADMIN aprova (ou revoga a aprovação de) um slide — libera o vídeo do módulo. */
+/** TI/ADMIN aprova (ou revoga a aprovação de) qualquer arquivo entregue (V15). Slide aprovado libera o vídeo do módulo. */
 function arquivo_aprovar(int $idFile, array $user, bool $aprovar): array {
   if (empty($user['role']) || !perfil_flag($user['role'], 'revisa_cursos')) {
-    http_response_code(403); throw new Exception("Somente a equipe de TI/ADMIN aprova slides.");
+    http_response_code(403); throw new Exception("Somente a equipe de TI/ADMIN aprova arquivos.");
   }
   $st = db()->prepare("SELECT * FROM tb_curso_files WHERE id_file=?");
   $st->execute([$idFile]);
   $f = $st->fetch();
   if (!$f) { http_response_code(404); throw new Exception("Arquivo não encontrado."); }
-  if (!arquivo_eh_slide($f)) { http_response_code(422); throw new Exception("Apenas arquivos da categoria de slides podem ser aprovados."); }
-  if ((bool)$f['aprovado'] === $aprovar) { http_response_code(422); throw new Exception($aprovar ? "Este slide já está aprovado." : "Este slide não está aprovado."); }
+  if ((bool)$f['aprovado'] === $aprovar) { http_response_code(422); throw new Exception($aprovar ? "Este arquivo já está aprovado." : "Este arquivo não está aprovado."); }
+  $ehSlide = arquivo_eh_slide($f);
 
   db()->prepare("UPDATE tb_curso_files SET aprovado=?, aprovado_por=?, aprovado_em=? WHERE id_file=?")
     ->execute([$aprovar ? 1 : 0, $aprovar ? (int)$user['id_user'] : null, $aprovar ? date('Y-m-d H:i:s') : null, $idFile]);
-  audit_log($aprovar ? 'slide_aprovado' : 'slide_aprovacao_revogada', 'curso', (int)$f['id_curso'],
+  audit_log($aprovar ? ($ehSlide ? 'slide_aprovado' : 'arquivo_aprovado') : ($ehSlide ? 'slide_aprovacao_revogada' : 'arquivo_aprovacao_revogada'), 'curso', (int)$f['id_curso'],
     ['id_file' => $idFile, 'aprovado' => (int)$f['aprovado']],
     ['id_file' => $idFile, 'aprovado' => $aprovar ? 1 : 0, 'arquivo' => $f['original_name'], 'modulo' => (int)$f['modulo']]);
   return $f;

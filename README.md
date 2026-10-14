@@ -65,16 +65,21 @@ O fluxo do Kanban não é mais fixo no código — é configurável em `Admin`:
   professores do curso e equipe; MB não envia): o(a) professor(a) envia a apresentação do módulo **sem
   formatação** (.pptx) e informa o módulo e o seu nome. O sistema lê o arquivo (`app/slides_repo.php`:
   ZipArchive + DOM), aplica as regras e devolve o **laudo** item a item (ERRO impede, AVISO recomenda, INFO).
-- **Regras:** proibidos vídeo/áudio embutido e link para vídeo; cada slide com título; até 120 palavras
-  (aviso a partir de 80) e o texto **precisa caber no espaço livre** (16 pt, senão 14 pt, senão erro, com a
-  sugestão de quantas palavras cabem); imagem JPG/PNG até 2 MB, mínimo 800 px (aviso), sempre com legenda
-  ("Figura N – Título. Fonte: AUTOR, ano."); 6 a 30 slides; animações/transições removidas; a capa do
-  professor é substituída pela capa padrão (nome do curso + "Módulo N: nome").
-- **Saída (se aprovada):** PDF 16:9 (960×540 pt) com os fundos do modelo oficial (`app/slides/bg`), Comfortaa
+- **Regras (revisadas em 14/10/2026):** impedem a conversão apenas vídeo/áudio embutido, link para vídeo e mais
+  de 30 slides. Tudo o mais é apontado no laudo e a conversão segue: slide sem título (primeira linha curta),
+  acima de 80 palavras (ideal) ou 120 (máximo recomendado), texto que não cabe (16 → 14 → 12 pt; se ainda não
+  couber, o slide é dividido em continuações), imagem com conteúdo sem legenda ("Figura N – Título. Fonte:
+  AUTOR, ano."), imagem acima de 2 MB ou abaixo de 800 px, animações/transições removidas, tabela em texto.
+  O slide inicial só com logos e a capa do professor são substituídos pela abertura e capa padrão; as logos do
+  modelo são ignoradas; as demais imagens são mantidas **no tamanho e na posição entregues** (imagens com fundo
+  transparente não exigem legenda) e o texto ocupa o espaço livre ao lado delas.
+- **Saída:** PDF 16:9 (960×540 pt) com os fundos do modelo oficial (`app/slides/bg`), Comfortaa
   (TTF em `app/slides/fonts`, tFPDF em `app/lib/tfpdf`), título negrito #058285 (20/18 pt), texto #000000
-  (16/14 pt), legenda 10 pt, abertura e encerramento com as logos; e **PPTX editável** gerado a partir de
-  `app/slides/modelo.pptx` (layouts oficiais). O botão "Registrar como entrega" grava o PDF como entrega
-  **Slide** do módulo (mesma regra de aprovação da TI). Análises ficam em `storage/cursos/<id>/slides_padrao/`.
+  (16/14/12 pt), legenda 10 pt, abertura e encerramento com as logos; e **PPTX editável** gerado a partir de
+  `app/slides/modelo.pptx` (layouts oficiais). O PDF é **registrado automaticamente** em Arquivos do Curso como
+  entrega **Slide** do módulo (aguardando aprovação da TI). Análises ficam em `storage/cursos/<id>/slides_padrao/`.
+- **Aprovação de arquivos (V15):** a TI/ADMIN aprova (ou revoga) **qualquer** arquivo entregue, não só os slides;
+  todo arquivo nasce "Aguardando aprovação". O slide aprovado continua liberando o vídeo do módulo.
 - Não há migração de banco.
 
 ## Indicadores gerenciais e relatórios (V14)

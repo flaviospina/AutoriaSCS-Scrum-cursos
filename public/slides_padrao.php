@@ -106,9 +106,10 @@ include __DIR__ . '/_layout_top.php';
       <hr>
       <h2 class="h6">O que é verificado</h2>
       <ul class="small regras mb-0">
-        <li><b>Bloqueia:</b> vídeo ou áudio embutido, link para vídeo, slide sem título, mais de <?= SLIDES_MAX_PAL_ERRO ?> palavras no slide, texto que não cabe no espaço livre (16 pt, depois 14 pt), imagem fora de JPG/PNG, imagem acima de 2 MB, imagem sem legenda, mais de <?= SLIDES_MAX_SLIDES ?> slides.</li>
-        <li><b>Avisa:</b> mais de <?= SLIDES_MAX_PAL_AVISO ?> palavras, menos de <?= SLIDES_MIN_SLIDES ?> slides, animações e transições (removidas), tabela convertida em texto, imagem com menos de <?= SLIDES_IMG_MIN_PX ?> px, legenda sem fonte, mais de uma imagem no slide.</li>
-        <li><b>Aplica:</b> fundos e logos do modelo oficial, Comfortaa, título em negrito #058285 (18–20 pt), texto em #000000 (16 ou 14 pt), legenda em 10 pt, capa com nome do curso e módulo, slides de abertura e encerramento.</li>
+        <li><b>Impede a conversão:</b> vídeo ou áudio embutido, link para vídeo, mais de <?= SLIDES_MAX_SLIDES ?> slides, arquivo que não é .pptx.</li>
+        <li><b>Apontado no laudo (a conversão segue):</b> slide sem título (primeira linha curta), mais de <?= SLIDES_MAX_PAL_AVISO ?> palavras (ideal) ou <?= SLIDES_MAX_PAL_ERRO ?> (máximo recomendado), texto que não cabe no espaço livre (o slide é dividido em continuações), imagem com conteúdo sem legenda ("Figura N – Título. Fonte: AUTOR, ano."), imagem acima de 2 MB ou com menos de <?= SLIDES_IMG_MIN_PX ?> px, animações e transições (removidas), tabela convertida em texto, menos de <?= SLIDES_MIN_SLIDES ?> slides.</li>
+        <li><b>Aplicado:</b> slide inicial com logos e capa do professor substituídos pela abertura e capa padrão (nome do curso + módulo); fundos e logos oficiais; Comfortaa; título negrito #058285 (20/18 pt); texto #000000 (16, 14 ou 12 pt, conforme o espaço); legenda 10 pt; imagens mantidas no tamanho e posição entregues (logos do modelo são ignoradas; imagens com fundo transparente não exigem legenda); encerramento com logos.</li>
+        <li><b>Ao final:</b> o PDF é registrado automaticamente em <i>Arquivos do Curso</i> como entrega <b>Slide</b> do módulo, aguardando a aprovação da TI.</li>
       </ul>
     </div></div>
   </div>
@@ -118,7 +119,7 @@ include __DIR__ . '/_layout_top.php';
       <div class="card shadow-sm mb-3 <?= $r['aprovado'] ? 'border-success' : 'border-danger' ?>"><div class="card-body">
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
           <div>
-            <h2 class="h6 mb-1">2. Laudo da análise — <?= $r['aprovado'] ? '<span class="text-success">✅ APROVADA, apta para conversão</span>' : '<span class="text-danger">❌ REPROVADA</span>' ?></h2>
+            <h2 class="h6 mb-1">2. Laudo da análise — <?= $r['aprovado'] ? '<span class="text-success">✅ CONVERTIDA' . ((int)($r['resumo']['avisos'] ?? 0) ? ' (com ' . (int)$r['resumo']['avisos'] . ' observação(ões) a revisar)' : '') . '</span>' : '<span class="text-danger">❌ NÃO CONVERTIDA</span>' ?></h2>
             <div class="small text-muted">Arquivo <b><?= htmlspecialchars($r['original']) ?></b> • Módulo <?= (int)$r['modulo'] ?>: <?= htmlspecialchars($r['nome_modulo']) ?> • enviado em <?= date('d/m/Y H:i', strtotime($r['quando'])) ?> por <?= htmlspecialchars($r['por']) ?></div>
           </div>
           <div class="small">
@@ -148,8 +149,9 @@ include __DIR__ . '/_layout_top.php';
             </div>
             <div class="small text-muted mt-2">Confira o PDF. Se quiser ajustar algo, corrija a apresentação e envie de novo; ou edite o PPTX no padrão e envie o resultado pela entrega normal de Slide.</div>
             <?php if (!empty($r['registrado'])): ?>
-              <div class="alert alert-success alert-fixo small mt-2 mb-0">Registrado como entrega em <?= date('d/m/Y H:i', strtotime($r['registrado']['quando'])) ?>: <b><?= htmlspecialchars($r['registrado']['nome']) ?></b>. <a href="curso_detalhe.php?id=<?= $id ?>#entregas">Ver no curso</a>.</div>
+              <div class="alert alert-success alert-fixo small mt-2 mb-0">📎 Registrado automaticamente em <i>Arquivos do Curso</i> (entrega Slide do Módulo <?= (int)$r['modulo'] ?>, aguardando aprovação da TI) em <?= date('d/m/Y H:i', strtotime($r['registrado']['quando'])) ?>: <b><?= htmlspecialchars($r['registrado']['nome']) ?></b>. <a href="curso_detalhe.php?id=<?= $id ?>#entregas">Ver no curso</a>.</div>
             <?php elseif ($podeEnviar): ?>
+              <?php if (!empty($r['erro_registro'])): ?><div class="alert alert-warning small mt-2">Não foi possível registrar automaticamente como entrega: <?= htmlspecialchars($r['erro_registro']) ?></div><?php endif; ?>
               <form method="post" class="mt-2" data-confirm="Registrar o PDF no padrão como a entrega <b>Slide do Módulo <?= (int)$r['modulo'] ?></b>? A TI será responsável pela aprovação." data-confirm-title="Registrar entrega" data-confirm-btn="Sim, registrar">
                 <?= csrf_field() ?><input type="hidden" name="action" value="registrar"><input type="hidden" name="id_curso" value="<?= $id ?>"><input type="hidden" name="token" value="<?= $r['token'] ?>">
                 <button class="btn btn-primary btn-sm">📎 Registrar o PDF como entrega "Slide" do Módulo <?= (int)$r['modulo'] ?></button>
