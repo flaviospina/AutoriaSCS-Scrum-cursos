@@ -89,9 +89,9 @@ $arquivos = [
   ['public/indicadores.php', '5bbe37a93357efb023053672fe960ce9', 'Indicadores gerenciais'],
   ['app/slides_repo.php', 'd98447bd793a79c7e70395d70523221a', 'function slides_analisar('],
   ['app/slides_pdf.php', '28941abdf2c6145acda50bb5aa45c230', 'class SlidesPdf'],
-  ['app/slides/modelo.pptx', '102ab0e048ec0995129519e15dcf6e23', 'ppt/'],
-  ['app/slides/bg/conteudo.png', '385690371c8bb6d9958a729814b7aecd', 'PNG'],
-  ['app/slides/fonts/Comfortaa-Regular.ttf', 'd78f35a9643342e4e0cd1ad111e883a7', 'Comfortaa'],
+  ['app/slides/modelo.pptx', '7d065dc2bcae7506dcc56df313fc776c', 'ppt/'],
+  ['app/slides/bg/conteudo.png', '0b2e357685eaa6fe38e5344e815d5246', 'PNG'],
+  ['app/slides/fonts/Comfortaa-Regular.ttf', 'cc69f09f260be74d0437725deb63f5bb', 'Comfortaa'],
   ['app/lib/tfpdf/tfpdf.php', '4548761d363fda20a11fd69c000c9df3', 'class tFPDF'],
   ['app/lib/tfpdf/font/unifont/comfortaa-regular.mtx.php', '4a92b6059f48d2623a1b8eb76c4984e6', '$name'],
   ['public/slides_padrao.php', '028dea6f54c89cf78657c34201c3af4c', 'slides_processar('],
@@ -106,7 +106,8 @@ foreach ($arquivos as [$rel, $md5Esp, $marcador]) {
   if ($r['existe']) {
     $r['data']    = date('d/m/Y H:i:s', filemtime($abs));
     $r['tamanho'] = filesize($abs);
-    $r['md5']     = md5_file($abs);
+    // assinatura tolerante a quebras de linha do Windows (arquivo colado pelo editor do cPanel)
+    $r['md5']     = md5(str_replace("\r\n", "\n", (string)file_get_contents($abs)));
     $r['md5_ok']  = ($r['md5'] === $md5Esp);
     $r['marcador'] = strpos((string)file_get_contents($abs), $marcador) !== false;
   }
