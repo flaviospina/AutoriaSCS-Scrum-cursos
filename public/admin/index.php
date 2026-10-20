@@ -56,6 +56,7 @@ include __DIR__ . '/../_layout_top.php';
       ['Escolas', $nEscolas, 'Cadastrar as unidades escolares em lote; alimentam a lista "Unidade escolar" dos cursos.', 'escolas.php'],
       ['Níveis de ensino', $nNiveis, 'Cadastrar, renomear, ordenar e ativar/inativar os níveis de ensino dos cursos.', 'niveis.php'],
       ['Categorias de entrega', $nCateg, 'Categorias de material (Geral e Módulos): ordem de entrega e obrigatoriedade.', 'categorias.php'],
+      ['Cores dos módulos', '🎨', 'Uma cor para cada módulo (1 a 8) e para Geral, usada nos selos "Módulo N" em todo o sistema.', 'modulos.php'],
       ['Checklists', $nChk, 'Itens do Checklist do Professor e do Checklist TI/Admin (critérios internos).', 'checklists.php'],
       ['Auditoria', $nAudit, 'Registro de todas as ações do sistema: quem fez, o quê, quando e de onde. Exportável em CSV.', 'auditoria.php'],
       ['Notificações', $nNotifP, 'Fila de e-mails do sistema (pendentes, enviados, erros) e processamento manual.', 'notificacoes.php'],

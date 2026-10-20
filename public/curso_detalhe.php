@@ -924,9 +924,7 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
                   <tr>
                     <td class="text-nowrap"><?= htmlspecialchars($f['created_at']) ?></td>
                     <td>
-                      <span class="badge <?= ((int)($f['modulo'] ?? 0)) ? 'bg-primary' : 'bg-secondary' ?>">
-                        <?= ((int)($f['modulo'] ?? 0)) ? 'Módulo ' . (int)$f['modulo'] : 'Geral' ?>
-                      </span>
+                      <?= modulo_badge((int)($f['modulo'] ?? 0)) ?>
                     </td>
                     <td>
                       <span class="badge bg-info text-dark"><?= htmlspecialchars($f['categoria']) ?></span>

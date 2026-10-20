@@ -423,7 +423,12 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.72); cur
 .opacity-75 { opacity: .6 !important; }
 
 /* ── KANBAN ────────────────────────────────────────────────── */
-.kanban-wrap { overflow-x: auto; padding-bottom: .5rem; }
+.kanban-wrap { overflow-x: auto; padding-bottom: .5rem; cursor: grab; }
+.kanban-wrap.is-panning { cursor: grabbing; user-select: none; }
+.kanban-wrap.is-panning * { cursor: grabbing !important; }
+.kanban-wrap::-webkit-scrollbar { height: 12px; }
+.kanban-wrap::-webkit-scrollbar-thumb { background: rgba(148,163,184,.45); border-radius: 6px; }
+.kanban-wrap::-webkit-scrollbar-track { background: rgba(148,163,184,.12); }
 .kanban-board { display: flex; gap: 1rem; align-items: flex-start; min-height: 70vh; }
 .kanban-col {
   width: 340px; flex: 0 0 340px;

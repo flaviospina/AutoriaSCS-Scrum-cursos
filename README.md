@@ -59,6 +59,16 @@ O fluxo do Kanban não é mais fixo no código — é configurável em `Admin`:
 - **Mais de um professor por curso**: responsável (`tb_cursos.id_professor`) + coautores
   (`tb_curso_professores`), que acessam o curso, recebem os e-mails e compõem a identificação oficial.
 
+## Kanban com "pan" e cores dos módulos (V16)
+
+- **Kanban:** além da barra de rolagem horizontal (mantida e mais visível), o quadro pode ser arrastado com o
+  mouse: clique numa área livre (fora dos cartões e botões) e arraste para os lados. A roda do mouse rola o
+  quadro para os lados quando a página já chegou ao topo/fim.
+- **Cores dos módulos** (Admin → Cores dos módulos, `admin/modulos.php`): uma cor para "Geral" e para cada
+  módulo 1 a 8, guardadas em `tb_config` (`modulos_cores`) e aplicadas em todo o sistema pelo helper
+  `modulo_badge()` (`app/modulos_repo.php`, carregado pelo layout): arquivos do curso, vídeos, revisão de vídeo,
+  slides no padrão. O texto do selo fica preto ou branco conforme o contraste. Sem migração (usa `tb_config` da V13).
+
 ## Slides no padrão AutoriaSCS (V15)
 
 - **Ferramenta** (`public/slides_padrao.php`, botão "Analisar / converter apresentação" na página do curso;

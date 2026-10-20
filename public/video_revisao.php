@@ -247,7 +247,7 @@ include __DIR__ . '/_layout_top.php';
   <div>
     <h1 class="h4 mb-0">🎬 <?= htmlspecialchars($video['titulo']) ?></h1>
     <div class="text-muted small">
-      <?= ((int)$video['modulo']) ? 'Módulo ' . (int)$video['modulo'] : 'Geral' ?> •
+      <?= modulo_badge((int)$video['modulo']) ?> •
       Curso: <b><?= htmlspecialchars($video['nome_curso']) ?></b> •
       Formador(a): <b><?= htmlspecialchars($video['professor_nome']) ?></b> •
       <span class="badge" style="background:<?= $stv['cor'] ?>;color:#08131f"><?= $stv['label'] ?></span>

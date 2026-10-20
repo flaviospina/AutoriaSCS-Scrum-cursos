@@ -120,7 +120,7 @@ include __DIR__ . '/_layout_top.php';
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
           <div>
             <h2 class="h6 mb-1">2. Laudo da análise — <?= $r['aprovado'] ? '<span class="text-success">✅ CONVERTIDA' . ((int)($r['resumo']['avisos'] ?? 0) ? ' (com ' . (int)$r['resumo']['avisos'] . ' observação(ões) a revisar)' : '') . '</span>' : '<span class="text-danger">❌ NÃO CONVERTIDA</span>' ?></h2>
-            <div class="small text-muted">Arquivo <b><?= htmlspecialchars($r['original']) ?></b> • Módulo <?= (int)$r['modulo'] ?>: <?= htmlspecialchars($r['nome_modulo']) ?> • enviado em <?= date('d/m/Y H:i', strtotime($r['quando'])) ?> por <?= htmlspecialchars($r['por']) ?></div>
+            <div class="small text-muted">Arquivo <b><?= htmlspecialchars($r['original']) ?></b> • <?= modulo_badge((int)$r['modulo']) ?> <?= htmlspecialchars($r['nome_modulo']) ?> • enviado em <?= date('d/m/Y H:i', strtotime($r['quando'])) ?> por <?= htmlspecialchars($r['por']) ?></div>
           </div>
           <div class="small">
             <span class="badge bg-secondary"><?= (int)($r['resumo']['slides'] ?? 0) ?> slides</span>

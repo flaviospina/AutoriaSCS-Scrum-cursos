@@ -161,9 +161,7 @@ include __DIR__ . '/_layout_top.php';
                 <?php foreach ($videos as $v): $stv = VIDEO_STATUS[$v['status']] ?? VIDEO_STATUS['EM_ANALISE']; ?>
                   <tr>
                     <td>
-                      <span class="badge <?= ((int)$v['modulo']) ? 'bg-primary' : 'bg-secondary' ?>">
-                        <?= ((int)$v['modulo']) ? 'Módulo ' . (int)$v['modulo'] : 'Geral' ?>
-                      </span>
+                      <?= modulo_badge((int)$v['modulo']) ?>
                     </td>
                     <td><?= htmlspecialchars($v['titulo']) ?></td>
                     <td><span class="badge" style="background:<?= $stv['cor'] ?>;color:#08131f"><?= $stv['label'] ?></span></td>

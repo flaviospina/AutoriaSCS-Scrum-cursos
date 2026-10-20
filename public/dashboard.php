@@ -644,4 +644,36 @@ include __DIR__ . '/_layout_top.php';
 
 <?php endif; ?>
 
+<script>
+// V16 — "pan" do Kanban: clique numa área livre e arraste para os lados (a barra de rolagem continua disponível)
+(function () {
+  var wrap = document.querySelector('.kanban-wrap');
+  if (!wrap) return;
+  var ativo = false, moveu = false, startX = 0, startScroll = 0;
+  wrap.addEventListener('mousedown', function (e) {
+    if (e.button !== 0) return;
+    if (e.target.closest('.kanban-card, a, button, input, select, textarea, label, [draggable="true"], form')) return; // não atrapalha cartões e controles
+    ativo = true; moveu = false; startX = e.pageX; startScroll = wrap.scrollLeft;
+    wrap.classList.add('is-panning');
+  });
+  window.addEventListener('mousemove', function (e) {
+    if (!ativo) return;
+    var dx = e.pageX - startX;
+    if (Math.abs(dx) > 3) moveu = true;
+    wrap.scrollLeft = startScroll - dx;
+    if (moveu) e.preventDefault();
+  });
+  function soltar() { if (!ativo) return; ativo = false; wrap.classList.remove('is-panning'); }
+  window.addEventListener('mouseup', soltar);
+  window.addEventListener('mouseleave', soltar);
+  // roda do mouse (vertical) sobre o quadro também rola para os lados quando o quadro é mais largo que a tela
+  wrap.addEventListener('wheel', function (e) {
+    if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; // já é rolagem horizontal nativa
+    if (wrap.scrollWidth <= wrap.clientWidth) return;
+    var noTopo = window.scrollY <= 0, noFim = (window.innerHeight + window.scrollY) >= (document.body.scrollHeight - 2);
+    if ((e.deltaY > 0 && !noFim) || (e.deltaY < 0 && !noTopo)) return; // deixa a página rolar primeiro
+    wrap.scrollLeft += e.deltaY; e.preventDefault();
+  }, { passive: false });
+})();
+</script>
 <?php include __DIR__ . '/_layout_bottom.php'; ?>
