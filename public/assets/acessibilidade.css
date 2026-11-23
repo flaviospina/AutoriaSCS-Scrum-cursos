@@ -1,0 +1,125 @@
+/* ============================================================
+   AutoriaSCS • Acessibilidade (V17)
+   Modos ativados por classes no <html>:
+     a11y-tema-claro | a11y-contraste | a11y-fonte-1/2/3 | a11y-dislexia |
+     a11y-espacamento | a11y-links | a11y-sem-animacao | a11y-cursor |
+     a11y-bg (cor de fundo personalizada em --a11y-bg)
+   ============================================================ */
+
+/* ── Botão flutuante e painel ───────────────────────────────── */
+.a11y-btn {
+  position: fixed; left: 16px; bottom: 16px; z-index: 1080;
+  width: 48px; height: 48px; border-radius: 50%; border: 2px solid #fff;
+  background: #0d6efd; color: #fff; font-size: 24px; line-height: 44px; text-align: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,.45); cursor: pointer; padding: 0;
+}
+.a11y-btn:focus-visible { outline: 3px solid #ffbf00; outline-offset: 2px; }
+.a11y-painel {
+  position: fixed; left: 16px; bottom: 76px; z-index: 1081; width: min(360px, calc(100vw - 32px));
+  max-height: calc(100vh - 100px); overflow: auto; border-radius: 12px;
+  background: var(--bg-card, #0f2044); color: var(--text, #fff); border: 1px solid var(--border-light, rgba(30,80,160,.55));
+  box-shadow: 0 12px 40px rgba(0,0,0,.6); padding: 14px 16px; font-size: 14px;
+}
+.a11y-painel[hidden] { display: none; }
+.a11y-painel h2 { font-size: 16px; margin: 0 0 8px; display: flex; justify-content: space-between; align-items: center; }
+.a11y-painel h3 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted, #8baac8); margin: 12px 0 6px; }
+.a11y-grupo { display: flex; flex-wrap: wrap; gap: 6px; }
+.a11y-opt {
+  border: 1px solid var(--border-light, rgba(30,80,160,.55)); background: var(--bg-input, #0b1e3d); color: var(--text, #fff);
+  border-radius: 8px; padding: 6px 10px; font-size: 13px; cursor: pointer; line-height: 1.2;
+}
+.a11y-opt[aria-pressed="true"] { background: #0d6efd; border-color: #0d6efd; color: #fff; }
+.a11y-opt:focus-visible { outline: 3px solid #ffbf00; outline-offset: 1px; }
+.a11y-fechar { background: transparent; border: 0; color: inherit; font-size: 20px; line-height: 1; cursor: pointer; }
+.a11y-cores { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.a11y-cor { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; padding: 0; }
+.a11y-cor[aria-pressed="true"] { outline: 3px solid #ffbf00; }
+.a11y-painel input[type="color"] { width: 44px; height: 30px; padding: 0; border: 1px solid var(--border-light); border-radius: 6px; background: transparent; }
+.a11y-rodape { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; gap: 8px; }
+.a11y-skip {
+  position: absolute; left: -9999px; top: 8px; z-index: 2000; background: #ffbf00; color: #000;
+  padding: 8px 14px; border-radius: 6px; font-weight: 700;
+}
+.a11y-skip:focus { left: 16px; }
+
+/* ── Tema claro ─────────────────────────────────────────────── */
+html.a11y-tema-claro {
+  --bg: #f3f6fa; --bg-nav: #ffffff; --bg-card: #ffffff; --bg-card2: #eef2f7; --bg-input: #ffffff; --bg-hover: #e3e9f2;
+  --border: rgba(30, 80, 160, .22); --border-light: rgba(30, 80, 160, .4);
+  --text: #132238; --text-muted: #4b5f7a; --text-dim: #7a8ca3;
+  --cyan: #0369a1; --autoria-teal: #0369a1; --autoria-teal-dark: #075985; --autoria-teal-light: rgba(3,105,161,.1);
+  --grad-bg: linear-gradient(160deg, #f3f6fa 0%, #e9eef5 100%);
+  --shadow: 0 4px 24px rgba(0,0,0,.08); --shadow-lg: 0 10px 48px rgba(0,0,0,.12); --shadow-card: 0 2px 12px rgba(0,0,0,.06);
+  --glow-blue: none; --glow-orange: none;
+}
+html.a11y-tema-claro .navbar-dark .nav-link, html.a11y-tema-claro .navbar-dark .navbar-brand, html.a11y-tema-claro .navbar-dark .navbar-brand .brand-title { color: var(--text) !important; }
+html.a11y-tema-claro .navbar-dark .nav-link.active { color: var(--cyan) !important; }
+html.a11y-tema-claro .navbar-dark .navbar-toggler { border-color: var(--border-light); }
+html.a11y-tema-claro .navbar-dark .navbar-toggler-icon { filter: invert(1); }
+html.a11y-tema-claro .btn-outline-light { color: var(--text); border-color: var(--border-light); }
+html.a11y-tema-claro .btn-outline-light:hover { background: var(--bg-hover); color: var(--text); }
+html.a11y-tema-claro .user-badge, html.a11y-tema-claro .visao-select { color: var(--text) !important; }
+html.a11y-tema-claro ::-webkit-scrollbar-thumb { background: #9fb3cc; }
+html.a11y-tema-claro .table thead th, html.a11y-tema-claro .table-light { color: var(--text); }
+html.a11y-tema-claro .dropdown-menu { background: var(--bg-card); border-color: var(--border); }
+html.a11y-tema-claro .dropdown-item { color: var(--text); }
+html.a11y-tema-claro .dropdown-item:hover { background: var(--bg-hover); }
+html.a11y-tema-claro .text-white, html.a11y-tema-claro .text-light { color: var(--text) !important; }
+html.a11y-tema-claro .alert-info { color: #0b4a8a; } html.a11y-tema-claro .alert-success { color: #0f6b43; }
+html.a11y-tema-claro .alert-danger { color: #8f1d1d; } html.a11y-tema-claro .alert-warning { color: #7a5200; }
+html.a11y-tema-claro .btn-close-white { filter: invert(1); }
+
+/* ── Alto contraste (preto/amarelo/branco) ──────────────────── */
+html.a11y-contraste {
+  --bg: #000; --bg-nav: #000; --bg-card: #000; --bg-card2: #000; --bg-input: #000; --bg-hover: #222;
+  --border: #fff; --border-light: #fff; --text: #fff; --text-muted: #ffff00; --text-dim: #ffff00;
+  --cyan: #ffff00; --autoria-teal: #ffff00; --autoria-teal-dark: #ffff00; --autoria-teal-light: rgba(255,255,0,.15);
+  --grad-bg: none; --grad-btn: #ffff00; --grad-orange: #ffff00; --shadow: none; --shadow-lg: none; --shadow-card: none; --glow-blue: none; --glow-orange: none;
+}
+html.a11y-contraste body { background: #000 !important; background-image: none !important; color: #fff; }
+html.a11y-contraste a { color: #ffff00 !important; text-decoration: underline !important; }
+html.a11y-contraste .card, html.a11y-contraste .kanban-col, html.a11y-contraste .kanban-card, html.a11y-contraste .dropdown-menu, html.a11y-contraste .modal-content, html.a11y-contraste .alert { background: #000 !important; border: 2px solid #fff !important; color: #fff !important; }
+html.a11y-contraste .btn { border: 2px solid #fff !important; color: #fff !important; background: #000 !important; background-image: none !important; }
+html.a11y-contraste .btn-primary, html.a11y-contraste .btn-success, html.a11y-contraste .btn-danger, html.a11y-contraste .btn-warning { background: #ffff00 !important; color: #000 !important; border-color: #ffff00 !important; }
+html.a11y-contraste .badge { border: 1px solid #fff; }
+html.a11y-contraste .form-control, html.a11y-contraste .form-select { background: #000 !important; color: #fff !important; border: 2px solid #fff !important; }
+html.a11y-contraste .table, html.a11y-contraste .table td, html.a11y-contraste .table th { color: #fff !important; border-color: #fff !important; background: #000 !important; }
+html.a11y-contraste .progress { background: #333; } html.a11y-contraste .progress-bar { background: #ffff00 !important; }
+html.a11y-contraste .logo-chip { background: #fff; }
+html.a11y-contraste *:focus-visible { outline: 3px solid #ffff00 !important; outline-offset: 2px; }
+
+/* ── Cor de fundo personalizada ─────────────────────────────── */
+html.a11y-bg { --grad-bg: none; }
+html.a11y-bg body { background: var(--a11y-bg) !important; background-image: none !important; }
+html.a11y-bg.a11y-bg-claro { --text: #132238; --text-muted: #3f5570; }
+html.a11y-bg.a11y-bg-claro .navbar-dark .nav-link, html.a11y-bg.a11y-bg-claro .navbar-dark .navbar-brand .brand-title { color: #132238 !important; }
+html.a11y-bg.a11y-bg-claro .card { color: #fff; } /* cartões mantêm o tema escuro */
+html.a11y-bg.a11y-bg-claro .card .text-muted { color: #8baac8 !important; }
+
+/* ── Tamanho do texto (zoom do conteúdo) ────────────────────── */
+html.a11y-fonte-1 body { zoom: 1.12; }
+html.a11y-fonte-2 body { zoom: 1.25; }
+html.a11y-fonte-3 body { zoom: 1.4; }
+
+/* ── Fonte legível (dislexia / baixa visão) ─────────────────── */
+html.a11y-dislexia, html.a11y-dislexia body, html.a11y-dislexia * { font-family: 'Atkinson Hyperlegible', 'Lexend', Verdana, sans-serif !important; }
+
+/* ── Espaçamento de leitura ─────────────────────────────────── */
+html.a11y-espacamento body { line-height: 1.9 !important; letter-spacing: .04em; word-spacing: .12em; }
+html.a11y-espacamento p, html.a11y-espacamento li { margin-bottom: .6em; }
+
+/* ── Destaque de links e foco ───────────────────────────────── */
+html.a11y-links a { text-decoration: underline !important; text-underline-offset: 3px; font-weight: 600; }
+html.a11y-links a:focus, html.a11y-links button:focus, html.a11y-links input:focus, html.a11y-links select:focus { outline: 3px solid #ffbf00 !important; outline-offset: 2px; }
+
+/* ── Sem animações ──────────────────────────────────────────── */
+html.a11y-sem-animacao *, html.a11y-sem-animacao *::before, html.a11y-sem-animacao *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+
+/* ── Cursor grande ──────────────────────────────────────────── */
+html.a11y-cursor, html.a11y-cursor * { cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'><path d='M4 2 L4 30 L12 23 L17 36 L23 33 L18 21 L28 21 Z' fill='white' stroke='black' stroke-width='2.5'/></svg>") 4 2, auto !important; }
+html.a11y-cursor a, html.a11y-cursor button, html.a11y-cursor .btn, html.a11y-cursor [role="button"] { cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'><path d='M4 2 L4 30 L12 23 L17 36 L23 33 L18 21 L28 21 Z' fill='%23ffbf00' stroke='black' stroke-width='2.5'/></svg>") 4 2, pointer !important; }
+
+/* ── VLibras: posição do botão (lado direito, acima do rodapé) ── */
+[vw] [vw-access-button] { bottom: 70px !important; }
+
+@media print { .a11y-btn, .a11y-painel, [vw] { display: none !important; } }

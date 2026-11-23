@@ -59,6 +59,19 @@ O fluxo do Kanban não é mais fixo no código — é configurável em `Admin`:
 - **Mais de um professor por curso**: responsável (`tb_cursos.id_professor`) + coautores
   (`tb_curso_professores`), que acessam o curso, recebem os e-mails e compõem a identificação oficial.
 
+## Acessibilidade e aparência (V17)
+
+- **Painel de acessibilidade** (botão ♿ fixo no canto inferior esquerdo; atalho Alt+A; Esc fecha), em todas
+  as páginas: tema **escuro / claro / alto contraste**, **cor de fundo** (8 presets + seletor livre; o texto fora
+  dos cartões se ajusta ao contraste), tamanho do texto (A, A+, A++, A+++), fonte legível para dislexia
+  (Atkinson Hyperlegible, carregada só quando ativada), mais espaçamento, destaque de links e foco, sem
+  animações, cursor grande e **Libras** (widget VLibras do governo federal, carregado só quando ativado).
+- Link "Ir para o conteúdo" para navegação por teclado; `main#conteudo` como marco.
+- Preferências guardadas no navegador (aplicadas antes da página aparecer, sem "piscar") e no servidor por
+  usuário (`tb_config`, chave `ui_prefs_<id>`, via `public/prefs_ui.php`), valendo em qualquer computador.
+- Arquivos: `public/assets/acessibilidade.css`, `public/assets/acessibilidade.js`, `public/prefs_ui.php`,
+  `public/_layout_top.php`. Sem migração.
+
 ## Kanban com "pan" e cores dos módulos (V16)
 
 - **Kanban:** além da barra de rolagem horizontal (mantida e mais visível), o quadro pode ser arrastado com o

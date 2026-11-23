@@ -29,8 +29,17 @@ $PAGINA = basename($_SERVER['PHP_SELF'] ?? '');
   <?php $cssV = @filemtime(__DIR__ . '/assets/autoria-dark.css') ?: 1; ?>
   <link href="<?= $LP ?>assets/autoria-dark.css?v=<?= $cssV ?>" rel="stylesheet">
   <style><?= modulos_css() ?></style>
+  <?php // V17 — acessibilidade: preferências do usuário (servidor) + painel; o JS aplica as classes antes da página aparecer
+    $a11yPrefs = null;
+    if ($u) { require_once __DIR__ . '/../app/config_repo.php'; $a11yJson = cfg_get('ui_prefs_' . (int)($_SESSION['user']['id_user'] ?? 0), ''); if ($a11yJson) $a11yPrefs = json_decode($a11yJson, true); }
+    $a11yV = @filemtime(__DIR__ . '/assets/acessibilidade.js') ?: 1; ?>
+  <meta name="csrf-token" content="<?= htmlspecialchars(csrf_token()) ?>">
+  <link href="<?= $LP ?>assets/acessibilidade.css?v=<?= $a11yV ?>" rel="stylesheet">
+  <script>window.A11Y_PREFS = <?= json_encode($a11yPrefs ?: null) ?>; window.A11Y_URL = <?= json_encode($LP . 'prefs_ui.php') ?>;</script>
+  <script src="<?= $LP ?>assets/acessibilidade.js?v=<?= $a11yV ?>"></script>
 </head>
 <body class="bg-light">
+<a class="a11y-skip" href="#conteudo">Ir para o conteúdo</a>
 
 <nav class="navbar navbar-expand-lg navbar-dark navbar-autoria py-2">
   <div class="container">
@@ -127,4 +136,4 @@ $PAGINA = basename($_SERVER['PHP_SELF'] ?? '');
   </div>
 <?php endif; ?>
 
-<main class="container my-4">
+<main class="container my-4" id="conteudo" tabindex="-1">
