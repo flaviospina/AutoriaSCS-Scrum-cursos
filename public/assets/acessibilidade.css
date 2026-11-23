@@ -89,12 +89,24 @@ html.a11y-contraste .logo-chip { background: #fff; }
 html.a11y-contraste *:focus-visible { outline: 3px solid #ffff00 !important; outline-offset: 2px; }
 
 /* ── Cor de fundo personalizada ─────────────────────────────── */
+/* Só o fundo da página muda; cartões, tabelas, menus e o painel mantêm as cores do tema.
+   O texto que fica DIRETAMENTE sobre o fundo (títulos, parágrafos soltos) ganha a cor contrastante. */
 html.a11y-bg { --grad-bg: none; }
 html.a11y-bg body { background: var(--a11y-bg) !important; background-image: none !important; }
-html.a11y-bg.a11y-bg-claro { --text: #132238; --text-muted: #3f5570; }
-html.a11y-bg.a11y-bg-claro .navbar-dark .nav-link, html.a11y-bg.a11y-bg-claro .navbar-dark .navbar-brand .brand-title { color: #132238 !important; }
-html.a11y-bg.a11y-bg-claro .card { color: #fff; } /* cartões mantêm o tema escuro */
-html.a11y-bg.a11y-bg-claro .card .text-muted { color: #8baac8 !important; }
+/* fundo claro com tema escuro: texto solto escuro */
+html.a11y-bg-claro:not(.a11y-tema-claro) main,
+html.a11y-bg-claro:not(.a11y-tema-claro) main :is(h1, h2, h3, h4, h5, h6) { color: #132238; }
+html.a11y-bg-claro:not(.a11y-tema-claro) main .text-muted { color: #3f5570 !important; }
+html.a11y-bg-claro:not(.a11y-tema-claro) main :is(.card, .kanban-col, .kanban-card, .modal-content, .dropdown-menu, .alert, .list-group),
+html.a11y-bg-claro:not(.a11y-tema-claro) main :is(.card, .kanban-col, .kanban-card, .modal-content, .dropdown-menu, .list-group) :is(h1, h2, h3, h4, h5, h6) { color: var(--text); }
+html.a11y-bg-claro:not(.a11y-tema-claro) main :is(.card, .kanban-col, .kanban-card, .modal-content, .dropdown-menu) .text-muted { color: var(--text-muted) !important; }
+/* fundo escuro com tema claro: texto solto claro */
+html.a11y-bg-escuro.a11y-tema-claro main,
+html.a11y-bg-escuro.a11y-tema-claro main :is(h1, h2, h3, h4, h5, h6) { color: #f3f6fa; }
+html.a11y-bg-escuro.a11y-tema-claro main .text-muted { color: #d2dbe8 !important; }
+html.a11y-bg-escuro.a11y-tema-claro main :is(.card, .kanban-col, .kanban-card, .modal-content, .dropdown-menu, .alert, .list-group),
+html.a11y-bg-escuro.a11y-tema-claro main :is(.card, .kanban-col, .kanban-card, .modal-content, .dropdown-menu, .list-group) :is(h1, h2, h3, h4, h5, h6) { color: var(--text); }
+html.a11y-bg-escuro.a11y-tema-claro main :is(.card, .kanban-col, .kanban-card, .modal-content, .dropdown-menu) .text-muted { color: var(--text-muted) !important; }
 
 /* ── Tamanho do texto (zoom do conteúdo) ────────────────────── */
 html.a11y-fonte-1 body { zoom: 1.12; }

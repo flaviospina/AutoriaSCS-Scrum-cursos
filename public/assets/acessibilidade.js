@@ -23,11 +23,11 @@
   function luminancia(hex) { if (!/^#[0-9a-f]{6}$/i.test(hex)) return 0; var r = parseInt(hex.substr(1, 2), 16), g = parseInt(hex.substr(3, 2), 16), b = parseInt(hex.substr(5, 2), 16); return (0.299 * r + 0.587 * g + 0.114 * b); }
 
   function aplicar() {
-    var cls = ['a11y-tema-claro', 'a11y-contraste', 'a11y-fonte-1', 'a11y-fonte-2', 'a11y-fonte-3', 'a11y-dislexia', 'a11y-espacamento', 'a11y-links', 'a11y-sem-animacao', 'a11y-cursor', 'a11y-bg', 'a11y-bg-claro'];
+    var cls = ['a11y-tema-claro', 'a11y-contraste', 'a11y-fonte-1', 'a11y-fonte-2', 'a11y-fonte-3', 'a11y-dislexia', 'a11y-espacamento', 'a11y-links', 'a11y-sem-animacao', 'a11y-cursor', 'a11y-bg', 'a11y-bg-claro', 'a11y-bg-escuro'];
     cls.forEach(function (c) { html.classList.remove(c); });
     if (prefs.tema === 'claro') html.classList.add('a11y-tema-claro');
     if (prefs.tema === 'contraste') html.classList.add('a11y-contraste');
-    if (prefs.bg && prefs.tema !== 'contraste') { html.classList.add('a11y-bg'); html.style.setProperty('--a11y-bg', prefs.bg); if (luminancia(prefs.bg) > 150) html.classList.add('a11y-bg-claro'); }
+    if (prefs.bg && prefs.tema !== 'contraste') { html.classList.add('a11y-bg'); html.style.setProperty('--a11y-bg', prefs.bg); html.classList.add(luminancia(prefs.bg) > 150 ? 'a11y-bg-claro' : 'a11y-bg-escuro'); }
     else html.style.removeProperty('--a11y-bg');
     if (prefs.fonte > 0) html.classList.add('a11y-fonte-' + Math.min(3, prefs.fonte));
     if (prefs.dislexia) { html.classList.add('a11y-dislexia'); carregarFonteLegivel(); }
