@@ -211,6 +211,24 @@ include __DIR__ . '/_layout_top.php';
                 <?php foreach (array_column(ind_rows("SELECT DISTINCT status FROM tb_videos ORDER BY 1"), 'status') as $s): ?><option value="<?= htmlspecialchars($s) ?>" <?= ($f['situacao'] ?? '') === $s ? 'selected' : '' ?>><?= htmlspecialchars($s) ?></option><?php endforeach; ?>
               </select></div>
           <?php endif; ?>
+          <?php if (in_array('situacao_filmagem', $filtrosRel, true)): ?>
+            <div class="col-6 col-md-2"><label class="form-label small mb-0">Filmagem</label>
+              <select class="form-select form-select-sm" name="situacao"><option value="">Todas</option>
+                <?php foreach (FILMAGEM_SITUACOES as $k => $d): ?><option value="<?= $k ?>" <?= ($f['situacao'] ?? '') === $k ? 'selected' : '' ?>><?= $d['label'] ?></option><?php endforeach; ?>
+              </select></div>
+          <?php endif; ?>
+          <?php if (in_array('filtro_filmagens', $filtrosRel, true)): ?>
+            <div class="col-6 col-md-2"><label class="form-label small mb-0">Vínculo</label>
+              <select class="form-select form-select-sm" name="filtro"><option value="">Todas</option>
+                <option value="sem_curso" <?= ($f['filtro'] ?? '') === 'sem_curso' ? 'selected' : '' ?>>Sem curso vinculado</option>
+              </select></div>
+          <?php endif; ?>
+          <?php if (in_array('situacao_pend_video', $filtrosRel, true)): ?>
+            <div class="col-6 col-md-2"><label class="form-label small mb-0">Vídeo</label>
+              <select class="form-select form-select-sm" name="situacao"><option value="">Todos</option>
+                <option value="pendentes" <?= ($f['situacao'] ?? '') === 'pendentes' ? 'selected' : '' ?>>Somente pendentes</option>
+              </select></div>
+          <?php endif; ?>
           <?php if (in_array('situacao_marc', $filtrosRel, true)): ?>
             <div class="col-6 col-md-2"><label class="form-label small mb-0">Situação</label>
               <select class="form-select form-select-sm" name="situacao"><option value="">Todas</option>

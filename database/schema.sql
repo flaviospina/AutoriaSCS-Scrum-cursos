@@ -649,3 +649,40 @@ INSERT IGNORE INTO tb_checklist_itens (id_checklist, chave, grupo, descricao, ob
 INSERT INTO tb_users (nome, email, senha_hash, role, ativo) VALUES
   ('Administrador CECAPE', 'admin@scseduca.com.br',
    '$2y$12$pMB304Ini2Ia9zTyfT5Pfua5aJZemFvaxphnQNOJfFRMC3pEy86WK', 'ADMIN', 1);
+
+-- ------------------------------------------------------------
+-- V19 — Filmagens (Estúdio MB): reservas lidas do Sistema de Reservas
+-- (banco separado, mesmo servidor) + registro da filmagem pela MB
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tb_filmagens (
+  id_filmagem        INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  id_reserva         INT UNSIGNED NULL,
+  id_curso           INT UNSIGNED NULL,
+  modulo             TINYINT UNSIGNED NULL,
+  vinculo_manual     TINYINT(1) NOT NULL DEFAULT 0,
+  professor_nome     VARCHAR(150) NULL,
+  professor_email    VARCHAR(150) NULL,
+  curso_nome         VARCHAR(250) NULL,
+  sala               VARCHAR(150) NULL,
+  ambiente           VARCHAR(100) NULL,
+  data_reserva       DATE NOT NULL,
+  hora_reserva       TIME NULL,
+  estado_reserva     VARCHAR(20) NOT NULL DEFAULT 'Pendente',
+  motivo_reserva     TEXT NULL,
+  reserva_criada_em  DATETIME NULL,
+  removida_na_origem TINYINT(1) NOT NULL DEFAULT 0,
+  filmagem           ENUM('PENDENTE','REALIZADA','NAO_REALIZADA') NOT NULL DEFAULT 'PENDENTE',
+  filmada_em         DATE NULL,
+  filmagem_obs       VARCHAR(500) NULL,
+  registrado_por     INT UNSIGNED NULL,
+  registrado_em      DATETIME NULL,
+  sincronizado_em    DATETIME NULL,
+  created_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_filmagem),
+  UNIQUE KEY uq_filmagens_reserva (id_reserva),
+  KEY ix_filmagens_curso (id_curso),
+  KEY ix_filmagens_data (data_reserva),
+  KEY ix_filmagens_filmagem (filmagem),
+  CONSTRAINT fk_filmagens_curso FOREIGN KEY (id_curso) REFERENCES tb_cursos (id_curso) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -14,6 +14,7 @@
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/status_repo.php';
 require_once __DIR__ . '/curso_repo.php'; // V18: admin_v18() / situação dos cursos
+require_once __DIR__ . '/filmagens_repo.php'; // V19: filmagens (Estúdio MB)
 
 /* ============================================================
  * Utilitários
@@ -247,6 +248,22 @@ function ind_todos(): array {
     'volume_videos'   => ['Volume de vídeos armazenado', ind_fmt_bytes(ind_n("SELECT COALESCE(SUM(file_size),0) FROM tb_video_versoes WHERE origem<>'DRIVE'")), 'videos&tipo=UPLOAD', 'Somente arquivos enviados (Drive não ocupa espaço).'],
   ]];
 
+  // ---------- 7b. Filmagens (Estúdio MB) — V19 ----------
+  if (filmagens_tabela()) {
+    $fm = filmagens_metricas();
+    $g['filmagens'] = ['titulo' => 'Filmagens (Estúdio MB)', 'icone' => '🎥', 'itens' => [
+      'film_reservas'   => ['Reservas de estúdio', $fm['reservas'], 'filmagens', 'Reservas lidas do Sistema de Reservas (+ avulsas).'],
+      'film_aguard'     => ['Aguardando registro da filmagem', $fm['aguardando'], 'filmagens&situacao=PENDENTE', 'Reservas com data já passada e sem filmagem registrada pela MB.', $fm['aguardando'] ? '#fd7e14' : '#198754'],
+      'film_realizadas' => ['Filmagens realizadas', $fm['realizadas'], 'filmagens&situacao=REALIZADA', 'Registradas pela MB.', '#198754'],
+      'film_nao'        => ['Não realizadas', $fm['nao_realizadas'], 'filmagens&situacao=NAO_REALIZADA', 'Reservas em que a filmagem não aconteceu.'],
+      'film_sem_curso'  => ['Reservas sem curso vinculado', $fm['sem_curso'], 'filmagens&filtro=sem_curso', 'Precisam de vínculo manual pela TI.', $fm['sem_curso'] ? '#fd7e14' : '#198754'],
+      'film_rf'         => ['Média reserva → filmagem', ind_dias($fm['media_reserva_filmagem']), 'filmagens_atraso', 'Dias entre a data reservada e a filmagem realizada.'],
+      'film_fv'         => ['Média filmagem → vídeo entregue', ind_dias($fm['media_filmagem_video']), 'filmagens_atraso', 'Dias entre a filmagem e a primeira versão do vídeo no AutoriaSCS (atraso da MB).', '#0dcaf0'],
+      'film_max'        => ['Maior atraso filmagem → vídeo', $fm['max_filmagem_video'] === null ? '—' : $fm['max_filmagem_video'] . ' d', 'filmagens_atraso', 'Pior caso entre os vídeos já entregues.', '#fd7e14'],
+      'film_pend'       => ['Vídeos pendentes após filmagem', $fm['videos_pendentes'] . ($fm['pendentes_7d'] ? ' (' . $fm['pendentes_7d'] . ' há +7 d)' : ''), 'filmagens_atraso&situacao=pendentes', 'Filmagens realizadas ainda sem vídeo entregue.', $fm['pendentes_7d'] ? '#dc3545' : '#198754'],
+    ]];
+  }
+
   // ---------- 8. Checklists ----------
   if (ind_tabela('tb_curso_checklist_respostas')) {
     $itensProf = ind_n("SELECT COUNT(*) FROM tb_checklist_itens i JOIN tb_checklists ck ON ck.id_checklist=i.id_checklist WHERE i.ativo=1");
@@ -324,6 +341,8 @@ function rel_catalogo(): array {
     'notificacoes'       => ['E-mails enviados', 'Fila de notificações por status, destinatário e assunto.', 'sistema', ['periodo', 'situacao_notif']],
     'auditoria_resumo'   => ['Auditoria (resumo)', 'Ações registradas por tipo e por usuário no período.', 'sistema', ['periodo', 'tipo_acao']],
     'modelos'            => ['Biblioteca de modelos', 'Modelos cadastrados, vigência e downloads.', 'sistema', []],
+    'filmagens'          => ['Filmagens (reservas de estúdio)', 'Reservas do Sistema de Reservas, vínculo com o curso, filmagem registrada pela MB e entrega do vídeo.', 'filmagens', ['periodo', 'situacao_filmagem', 'formador', 'filtro_filmagens']],
+    'filmagens_atraso'   => ['Atraso da MB (filmagem → vídeo)', 'Por filmagem realizada: dias da reserva até a filmagem e da filmagem até a entrega do vídeo, com pendências.', 'filmagens', ['periodo', 'formador', 'situacao_pend_video']],
   ];
 }
 
@@ -608,6 +627,38 @@ function rel_gerar(string $r, array $f): ?array {
         $out['links'][] = 'video_revisao.php?id=' . (int)$x['id_video'];
       }
       $out['resumo'] = ['Versões' => count($out['linhas'])];
+      break;
+
+    case 'filmagens':
+      $out['colunas'] = ['Data', 'Hora', 'Sala', 'Professor(a)', 'Curso (reserva)', 'Curso no AutoriaSCS', 'Reserva', 'Filmagem', 'Filmada em', 'Reserva→filmagem', 'Vídeo entregue', 'Filmagem→vídeo', 'Observação'];
+      $ff = ['de' => $f['de'] ?? '', 'ate' => $f['ate'] ?? '', 'id_professor' => $f['id_professor'] ?? ''];
+      if (!empty($f['situacao']) && isset(FILMAGEM_SITUACOES[$f['situacao']])) { $ff['filmagem'] = $f['situacao']; $out['filtros_desc'][] = FILMAGEM_SITUACOES[$f['situacao']]['label']; }
+      if (($f['filtro'] ?? '') === 'sem_curso') { $ff['sem_curso'] = 1; $out['filtros_desc'][] = 'sem curso vinculado'; }
+      if (!empty($f['de']) || !empty($f['ate'])) $out['filtros_desc'][] = 'data da reserva ' . ($f['de'] ?? '…') . ' a ' . ($f['ate'] ?? '…');
+      $porSit = [];
+      foreach (filmagens_listar($ff, 5000) as $x) {
+        $porSit[FILMAGEM_SITUACOES[$x['filmagem']]['label']] = ($porSit[FILMAGEM_SITUACOES[$x['filmagem']]['label']] ?? 0) + 1;
+        $out['linhas'][] = [date('d/m/Y', strtotime($x['data_reserva'])), $x['hora_reserva'] ? substr($x['hora_reserva'], 0, 5) : '', $x['sala'], $x['professor_nome'], $x['curso_nome'], $x['nome_curso'] ?: '(sem vínculo)', $x['estado_reserva'], FILMAGEM_SITUACOES[$x['filmagem']]['label'], $x['filmada_em'] ? date('d/m/Y', strtotime($x['filmada_em'])) : '', $x['dias_reserva_filmagem'] !== null ? $x['dias_reserva_filmagem'] . ' d' : '', $x['video_em'] ? date('d/m/Y', strtotime($x['video_em'])) : '', $x['dias_filmagem_video'] !== null ? $x['dias_filmagem_video'] . ' d' : '', $x['filmagem_obs']];
+        $out['links'][] = $x['id_curso'] ? 'curso_detalhe.php?id=' . (int)$x['id_curso'] : 'filmagens.php';
+      }
+      $out['resumo'] = array_merge(['Reservas' => count($out['linhas'])], $porSit);
+      break;
+
+    case 'filmagens_atraso':
+      $out['colunas'] = ['Curso', 'Módulo', 'Professor(a)', 'Reservado para', 'Filmada em', 'Reserva→filmagem', 'Vídeo entregue em', 'Filmagem→vídeo', 'Situação do vídeo'];
+      $ff = ['de' => $f['de'] ?? '', 'ate' => $f['ate'] ?? '', 'id_professor' => $f['id_professor'] ?? '', 'filmagem' => 'REALIZADA'];
+      $soPend = ($f['situacao'] ?? '') === 'pendentes'; if ($soPend) $out['filtros_desc'][] = 'somente vídeos pendentes';
+      $somaRF = 0; $nRF = 0; $somaFV = 0; $nFV = 0; $pend = 0; $max = null; $hoje = new DateTime('today');
+      foreach (filmagens_listar($ff, 5000) as $x) {
+        $entregue = $x['video_em'] !== null && $x['id_curso'] !== null;
+        if ($soPend && $entregue) continue;
+        if ($x['dias_reserva_filmagem'] !== null) { $somaRF += (int)$x['dias_reserva_filmagem']; $nRF++; }
+        if ($entregue) { $somaFV += (int)$x['dias_filmagem_video']; $nFV++; $max = max((int)$max, (int)$x['dias_filmagem_video']); $sit = 'Entregue'; }
+        else { $pend++; $dp = (int)$hoje->diff(new DateTime($x['filmada_em']))->days; $sit = $x['id_curso'] ? ('PENDENTE há ' . $dp . ' d') : 'Sem curso vinculado'; }
+        $out['linhas'][] = [$x['nome_curso'] ?: $x['curso_nome'], $x['modulo'] ? 'Módulo ' . $x['modulo'] : '', $x['professor_nome'], date('d/m/Y', strtotime($x['data_reserva'])), date('d/m/Y', strtotime($x['filmada_em'])), $x['dias_reserva_filmagem'] !== null ? $x['dias_reserva_filmagem'] . ' d' : '', $entregue ? date('d/m/Y', strtotime($x['video_em'])) : '', $entregue ? $x['dias_filmagem_video'] . ' d' : '', $sit];
+        $out['links'][] = $x['id_curso'] ? 'curso_detalhe.php?id=' . (int)$x['id_curso'] : 'filmagens.php';
+      }
+      $out['resumo'] = ['Filmagens' => count($out['linhas']), 'Média reserva→filmagem' => ind_dias($nRF ? $somaRF / $nRF : null), 'Média filmagem→vídeo' => ind_dias($nFV ? $somaFV / $nFV : null), 'Maior atraso' => $max === null ? '—' : $max . ' d', 'Vídeos pendentes' => $pend];
       break;
 
     case 'marcacoes':

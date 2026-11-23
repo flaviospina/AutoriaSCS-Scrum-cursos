@@ -67,6 +67,7 @@ $PAGINA = basename($_SERVER['PHP_SELF'] ?? '');
           <?php if (is_staff()): ?>
             <li class="nav-item"><a class="nav-link <?= $PAGINA==='indicadores.php'?'active':'' ?>" href="<?= $LP ?>indicadores.php">Indicadores</a></li>
             <li class="nav-item"><a class="nav-link <?= $PAGINA==='relatorios.php'?'active':'' ?>" href="<?= $LP ?>relatorios.php">Relatórios</a></li>
+            <li class="nav-item"><a class="nav-link <?= $PAGINA==='filmagens.php'?'active':'' ?>" href="<?= $LP ?>filmagens.php" title="Reservas de estúdio e filmagens realizadas (MB)">Filmagens</a></li>
           <?php endif; ?>
           <li class="nav-item"><a class="nav-link" href="<?= $LP ?>tutorial.php" target="_blank" rel="noopener" title="Tutorial do seu nível de acesso (abre em nova aba)">Ajuda</a></li>
           <li class="nav-item"><a class="nav-link text-nowrap" href="?a11y=reset" data-a11y-abrir="1" title="Opções de acessibilidade (Alt+A). Se o painel não abrir, o clique restaura o padrão." onclick="if(window.a11yAlternar){window.a11yAlternar(true);return false;}">&#9855; Acessibilidade</a></li>

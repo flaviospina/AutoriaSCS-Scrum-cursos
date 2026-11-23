@@ -59,6 +59,26 @@ O fluxo do Kanban não é mais fixo no código — é configurável em `Admin`:
 - **Mais de um professor por curso**: responsável (`tb_cursos.id_professor`) + coautores
   (`tb_curso_professores`), que acessam o curso, recebem os e-mails e compõem a identificação oficial.
 
+## Filmagens do Estúdio MB (V19)
+
+Integra o **Sistema de Reservas do Estúdio MB** (mesmo servidor, banco separado) ao controle de produção:
+
+- `app/config.local.php`, bloco `'reservas'` (host, name, user, pass): conexão **somente leitura** com o banco
+  do sistema de reservas. Sem `name`, a integração fica desligada e o restante do sistema não é afetado.
+- Tabela `tb_filmagens` (`database/upgrade_v19.sql`): cópia das reservas (professor, curso informado, sala, data,
+  hora, estado Pendente/Aceita/Recusada) + vínculo com o curso do AutoriaSCS + registro da filmagem.
+- Sincronização automática (no máximo a cada 10 min) ao abrir Filmagens/Indicadores, ou pelo botão
+  "Sincronizar reservas" (TI/Admin). O vínculo com o curso é automático pelo nome do curso e pelo e-mail do
+  professor; o que não casar, a TI vincula manualmente (não é sobrescrito pela sincronização).
+- **Só a MB registra** "Filmagem realizada em [data]" ou "Não realizada (motivo)", na página **Filmagens** ou no
+  cartão "Filmagens (Estúdio MB)" da página do curso. O ADMIN real pode corrigir (auditado). A MB também pode
+  registrar uma **filmagem avulsa** (sem reserva no sistema).
+- Tempos medidos: **reserva → filmagem** e **filmagem → vídeo entregue** (primeira versão de vídeo enviada no
+  AutoriaSCS para o curso/módulo após a filmagem). Vídeos pendentes há mais de 7 dias ficam em vermelho.
+- Indicadores: grupo "Filmagens (Estúdio MB)". Relatórios: "Filmagens (reservas de estúdio)" e
+  "Atraso da MB (filmagem → vídeo)". Exportação CSV na página Filmagens.
+- Arquivos: `app/filmagens_repo.php`, `public/filmagens.php`, `database/upgrade_v19.sql`.
+
 ## Administração total — etapa 1 (V18)
 
 O **administrador real** (perfil ADMIN, sem "Ver como") passa a ter poderes de intervenção em qualquer fase.

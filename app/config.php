@@ -61,6 +61,17 @@ $config = [
     // chave exigida pelos scripts de cron quando chamados via URL
     'chave' => 'troque-esta-chave-cron',
   ],
+  // V19 — Sistema de Reservas do Estúdio MB (mesmo servidor MariaDB).
+  // O AutoriaSCS só LÊ a tabela `reservas` desse banco. Com 'name' vazio a
+  // integração fica desligada. Informe em config.local.php os dados do banco
+  // do sistema de reservas (ex.: cecape_reservas / cecape_reser / senha).
+  'reservas' => [
+    'host'    => 'localhost',
+    'name'    => '',
+    'user'    => '',
+    'pass'    => '',
+    'charset' => 'utf8mb4',
+  ],
 ];
 
 $local = __DIR__ . '/config.local.php';

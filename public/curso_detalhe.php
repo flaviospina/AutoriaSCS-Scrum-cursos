@@ -10,6 +10,7 @@ require_once __DIR__ . '/../app/csrf.php';
 require_once __DIR__ . '/../app/audit.php';
 require_once __DIR__ . '/../app/apontamento_repo.php';
 require_once __DIR__ . '/../app/checklist_repo.php';
+require_once __DIR__ . '/../app/filmagens_repo.php'; // V19: filmagens (Estúdio MB)
 
 require_login();
 $u = auth_user();
@@ -292,6 +293,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? '', ['
 // Transição de status
 $pendenciasBloqueio = [];
 // V18 — ações administrativas (ADMIN real): situação, mover forçado, trocar responsável, editar datas
+// V19 — registro da filmagem (MB) direto na página do curso
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'filmagem_registrar') {
+  csrf_check();
+  try {
+    $fg = filmagem_get((int)($_POST['id_filmagem'] ?? 0));
+    if (!$fg || (int)$fg['id_curso'] !== $id) throw new Exception('Reserva não pertence a este curso.');
+    filmagem_registrar((int)$fg['id_filmagem'], (string)($_POST['situacao'] ?? ''), $_POST['filmada_em'] ?? null, $_POST['obs'] ?? null, auth_user_real());
+    header("Location: curso_detalhe.php?id={$id}&ok=filmagem"); exit;
+  } catch (Throwable $e) { $erro = $e->getMessage(); }
+}
+if (($_GET['ok'] ?? '') === 'filmagem') $ok = 'Filmagem registrada.';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && str_starts_with($_POST['action'] ?? '', 'adm_')) {
   csrf_check();
   try {
@@ -1112,6 +1125,52 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
           <?php endif; ?>
         <?php endif; ?>
         <div class="small text-muted mt-2">Coautores acessam o curso, recebem os e-mails e compõem a identificação oficial (<i>nome do curso - formadores - carga horária</i>).</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- V19: Filmagens (Estúdio MB) -->
+  <?php $filmagensCurso = filmagens_tabela() ? filmagens_do_curso((int)$id) : []; $podeRegFilm = filmagem_pode_registrar(); $hojeF = date('Y-m-d'); ?>
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <h2 class="h6 mb-0">🎥 Filmagens (Estúdio MB)</h2>
+          <?php if (is_staff()): ?><a class="btn btn-sm btn-outline-secondary" href="filmagens.php?q=<?= urlencode($curso['nome_curso']) ?>">Todas as filmagens</a><?php endif; ?>
+        </div>
+        <div class="small text-muted mb-2">Reservas feitas no Sistema de Reservas do estúdio, ligadas a este curso. A MB registra a data em que a filmagem aconteceu; o sistema compara com a entrega do vídeo.</div>
+        <?php if (!$filmagensCurso): ?>
+          <p class="text-muted small mb-0">Nenhuma reserva de estúdio vinculada a este curso<?= is_staff() ? ' (a TI pode vincular em Filmagens)' : '' ?>.</p>
+        <?php else: ?>
+          <div class="table-responsive"><table class="table table-sm align-middle mb-1">
+            <thead><tr><th>Data / hora</th><th>Sala</th><th>Reserva</th><th>Filmagem</th><th>Vídeo entregue</th><?php if ($podeRegFilm): ?><th class="text-end">Ações</th><?php endif; ?></tr></thead>
+            <tbody>
+            <?php foreach ($filmagensCurso as $fl): $fid = (int)$fl['id_filmagem']; ?>
+              <tr class="<?= $fl['filmagem'] === 'PENDENTE' && $fl['estado_reserva'] !== 'Recusada' && $fl['data_reserva'] < $hojeF ? 'table-warning' : '' ?>">
+                <td class="text-nowrap"><?= date('d/m/Y', strtotime($fl['data_reserva'])) ?><?= $fl['hora_reserva'] ? ' ' . substr($fl['hora_reserva'], 0, 5) : '' ?><?= $fl['modulo'] ? ' <span class="badge bg-light text-dark">Mód. ' . (int)$fl['modulo'] . '</span>' : '' ?></td>
+                <td class="small"><?= htmlspecialchars((string)$fl['sala']) ?></td>
+                <td><?= reserva_badge($fl['estado_reserva']) ?></td>
+                <td><?= $fl['filmagem'] === 'PENDENTE' && $fl['estado_reserva'] === 'Recusada' ? '<span class="text-muted">—</span>' : filmagem_badge($fl['filmagem']) ?><?php if ($fl['filmagem'] === 'REALIZADA'): ?><div class="small"><?= date('d/m/Y', strtotime($fl['filmada_em'])) ?></div><?php endif; ?><?php if ($fl['filmagem_obs']): ?><div class="small text-muted"><?= htmlspecialchars($fl['filmagem_obs']) ?></div><?php endif; ?></td>
+                <td class="small"><?php if ($fl['filmagem'] === 'REALIZADA'): ?><?php if ($fl['video_em']): ?><span class="text-success">✔ <?= date('d/m/Y', strtotime($fl['video_em'])) ?></span> <span class="text-muted">(<?= (int)$fl['dias_filmagem_video'] ?> d)</span><?php else: $dpf = (int)(new DateTime('today'))->diff(new DateTime($fl['filmada_em']))->days; ?><span class="<?= $dpf > 7 ? 'text-danger' : 'text-warning' ?>">pendente há <?= $dpf ?> d</span><?php endif; ?><?php else: ?>—<?php endif; ?></td>
+                <?php if ($podeRegFilm): ?>
+                <td class="text-end"><?php if (!($fl['filmagem'] === 'PENDENTE' && $fl['estado_reserva'] === 'Recusada')): ?><button class="btn btn-sm <?= $fl['filmagem'] === 'PENDENTE' ? 'btn-success' : 'btn-outline-secondary' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#filmReg<?= $fid ?>"><?= $fl['filmagem'] === 'PENDENTE' ? 'Registrar' : 'Alterar' ?></button><?php endif; ?></td>
+                <?php endif; ?>
+              </tr>
+              <?php if ($podeRegFilm): ?>
+              <tr class="collapse" id="filmReg<?= $fid ?>"><td colspan="6">
+                <form method="post" class="row g-2 align-items-end">
+                  <?= csrf_field() ?><input type="hidden" name="action" value="filmagem_registrar"><input type="hidden" name="id_filmagem" value="<?= $fid ?>">
+                  <div class="col-6 col-md-3"><label class="form-label small mb-0">Situação</label><select class="form-select form-select-sm" name="situacao"><?php foreach (FILMAGEM_SITUACOES as $k => $d): ?><option value="<?= $k ?>" <?= $fl['filmagem'] === $k || ($fl['filmagem'] === 'PENDENTE' && $k === 'REALIZADA') ? 'selected' : '' ?>><?= $d['label'] ?></option><?php endforeach; ?></select></div>
+                  <div class="col-6 col-md-2"><label class="form-label small mb-0">Filmada em</label><input type="date" class="form-control form-control-sm" name="filmada_em" max="<?= $hojeF ?>" value="<?= htmlspecialchars($fl['filmada_em'] ?: $fl['data_reserva']) ?>"></div>
+                  <div class="col-12 col-md-5"><label class="form-label small mb-0">Observação</label><input class="form-control form-control-sm" name="obs" maxlength="500" value="<?= htmlspecialchars((string)$fl['filmagem_obs']) ?>"></div>
+                  <div class="col-12 col-md-2"><button class="btn btn-primary btn-sm w-100">Salvar</button></div>
+                </form>
+              </td></tr>
+              <?php endif; ?>
+            <?php endforeach; ?>
+            </tbody>
+          </table></div>
+        <?php endif; ?>
       </div>
     </div>
   </div>
