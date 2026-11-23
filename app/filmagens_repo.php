@@ -58,8 +58,10 @@ function filmagens_tabela(): bool {
 function reservas_ler(): array {
   $pdo = reservas_db(); if (!$pdo) return [];
   $cols = array_column($pdo->query("SHOW COLUMNS FROM reservas")->fetchAll(), 'Field');
-  $sel = ['r.id', 'r.usuario_id', 'r.sala', 'r.data', 'r.hora', 'r.curso', 'r.created_at'];
-  foreach (['ambiente', 'estado', 'motivo'] as $c) $sel[] = in_array($c, $cols, true) ? "r.$c" : "NULL AS $c";
+  foreach (['id', 'data'] as $c) if (!in_array($c, $cols, true)) throw new Exception("A tabela reservas não tem a coluna '$c'.");
+  $sel = ['r.id', 'r.data'];
+  // as demais colunas variam conforme a versão do Sistema de Reservas: o que não existir vem como NULL
+  foreach (['usuario_id', 'sala', 'hora', 'curso', 'ambiente', 'estado', 'motivo', 'created_at'] as $c) $sel[] = in_array($c, $cols, true) ? "r.$c" : "NULL AS $c";
   $temUsers = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='usuarios'")->fetchColumn() > 0;
   $join = $temUsers ? "LEFT JOIN usuarios u ON u.id = r.usuario_id" : '';
   $sel[] = $temUsers ? 'u.nome AS professor' : 'NULL AS professor';
