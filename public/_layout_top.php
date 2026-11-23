@@ -69,6 +69,7 @@ $PAGINA = basename($_SERVER['PHP_SELF'] ?? '');
             <li class="nav-item"><a class="nav-link <?= $PAGINA==='relatorios.php'?'active':'' ?>" href="<?= $LP ?>relatorios.php">Relatórios</a></li>
           <?php endif; ?>
           <li class="nav-item"><a class="nav-link" href="<?= $LP ?>tutorial.php" target="_blank" rel="noopener" title="Tutorial do seu nível de acesso (abre em nova aba)">Ajuda</a></li>
+          <li class="nav-item"><a class="nav-link text-nowrap" href="?a11y=reset" data-a11y-abrir="1" title="Opções de acessibilidade (Alt+A). Se o painel não abrir, o clique restaura o padrão." onclick="if(window.a11yAlternar){window.a11yAlternar(true);return false;}">&#9855; Acessibilidade</a></li>
           <?php if (is_admin()): ?>
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle <?= $LP !== '' ? 'active' : '' ?>" href="#" data-bs-toggle="dropdown">Admin</a>

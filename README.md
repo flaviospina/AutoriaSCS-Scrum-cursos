@@ -86,6 +86,8 @@ Toda ação exige **motivo (mínimo 10 caracteres)** e fica registrada na audito
   (Atkinson Hyperlegible, carregada só quando ativada), mais espaçamento, destaque de links e foco, sem
   animações, cursor grande e **Libras** (widget VLibras do governo federal, carregado só quando ativado).
 - Link "Ir para o conteúdo" para navegação por teclado; `main#conteudo` como marco.
+- Item **♿ Acessibilidade** no menu superior (abre o painel; se o script falhar, o link recarrega com `?a11y=reset`,
+  que restaura o padrão). O script tolera preferência inválida e adia o VLibras até o DOM existir.
 - Preferências guardadas no navegador (aplicadas antes da página aparecer, sem "piscar") e no servidor por
   usuário (`tb_config`, chave `ui_prefs_<id>`, via `public/prefs_ui.php`), valendo em qualquer computador.
 - Arquivos: `public/assets/acessibilidade.css`, `public/assets/acessibilidade.js`, `public/prefs_ui.php`,

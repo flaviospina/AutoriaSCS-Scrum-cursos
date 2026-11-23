@@ -58,6 +58,8 @@
   }
   function carregarLibras() {
     if (document.getElementById('a11yLibras')) return;
+    // o script roda no <head>: sem <body> ainda, adia para o DOM pronto (antes isso quebrava e o botão sumia)
+    if (!document.body) { document.addEventListener('DOMContentLoaded', carregarLibras); return; }
     var d = document.createElement('div'); d.setAttribute('vw', ''); d.className = 'enabled';
     d.innerHTML = '<div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div>';
     document.body.appendChild(d);
@@ -114,7 +116,7 @@
       if (e.altKey && (e.key === 'a' || e.key === 'A')) { e.preventDefault(); alternar(); }
       if (e.key === 'Escape' && !painel.hidden) { alternar(false); botao.focus(); }
     });
-    document.addEventListener('click', function (e) { if (!painel.hidden && !painel.contains(e.target) && e.target !== botao) alternar(false); });
+    document.addEventListener('click', function (e) { if (!painel.hidden && !painel.contains(e.target) && e.target !== botao && !(e.target.closest && e.target.closest('[data-a11y-abrir]'))) alternar(false); });
   }
   function alternar(abrir) {
     if (abrir === undefined) abrir = painel.hidden;
@@ -130,7 +132,12 @@
     var cl = painel.querySelector('#a11yCorLivre'); if (cl && /^#[0-9a-f]{6}$/i.test(prefs.bg || '')) cl.value = prefs.bg;
   }
 
-  aplicar(); // antes do DOM pronto: evita "piscar" ao carregar
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { montar(); atualizarPainel(); });
-  else { montar(); atualizarPainel(); }
+  // Reset de emergência: ?a11y=reset na URL limpa as preferências deste navegador
+  if (/[?&]a11y=reset\b/.test(location.search)) { try { localStorage.removeItem(CHAVE); } catch (e) {} prefs = {}; for (var k0 in PADRAO) prefs[k0] = PADRAO[k0]; salvar(); }
+
+  try { aplicar(); } catch (e) { /* uma preferência inválida nunca pode impedir o botão de aparecer */ }
+  function iniciar() { try { montar(); atualizarPainel(); } catch (e) { if (window.console) console.error('Acessibilidade:', e); } }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar);
+  else iniciar();
+  window.a11yAlternar = function (abrir) { if (!painel) iniciar(); if (painel) alternar(abrir); }; // usado pelo link do menu
 })();
