@@ -26,6 +26,11 @@ if ($u['role'] === 'MB') {
   http_response_code(403); exit("O perfil MB não envia arquivos.");
 }
 
+// V18: curso pausado/suspenso/cancelado/arquivado — só o admin altera
+if (function_exists('curso_bloqueio') && ($bloq = curso_bloqueio($curso, $u))) {
+  http_response_code(423); exit($bloq);
+}
+
 // módulo do curso a que o arquivo pertence (0 = Geral)
 $modulo = (int)($_POST['modulo'] ?? -1);
 if ($modulo < 0 || $modulo > 8) {

@@ -31,11 +31,33 @@
       e.preventDefault();
       var perigo = form.dataset.confirmType === 'danger';
       var submitter = e.submitter || null;
+      var pedeMotivo = form.hasAttribute('data-motivo'); // V18: ações administrativas exigem motivo (auditado)
+
+      // Sem SweetAlert (CDN indisponível): usa confirm/prompt nativos para o sistema continuar operável
+      if (typeof Swal === 'undefined') {
+        var texto = (form.dataset.confirm || 'Deseja continuar?').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '');
+        if (!window.confirm((form.dataset.confirmTitle || 'Confirmar operação') + '\n\n' + texto)) return;
+        if (pedeMotivo) {
+          var mot = window.prompt('Motivo (obrigatório, mínimo 10 caracteres — fica na auditoria):', '');
+          if (mot === null) return;
+          if (mot.trim().length < 10) { window.alert('Informe o motivo com pelo menos 10 caracteres.'); return; }
+          var inpF = form.querySelector('input[name="motivo"]');
+          if (!inpF) { inpF = document.createElement('input'); inpF.type = 'hidden'; inpF.name = 'motivo'; form.appendChild(inpF); }
+          inpF.value = mot.trim();
+        }
+        form.dataset.confirmed = '1';
+        submitter && form.requestSubmit ? form.requestSubmit(submitter) : form.submit();
+        return;
+      }
 
       Swal.fire({
         title: form.dataset.confirmTitle || 'Confirmar operação',
         html: form.dataset.confirm || 'Deseja continuar?',
         icon: perigo ? 'warning' : 'question',
+        input: pedeMotivo ? 'textarea' : undefined,
+        inputLabel: pedeMotivo ? 'Motivo (obrigatório, fica na auditoria)' : undefined,
+        inputPlaceholder: pedeMotivo ? 'Descreva o motivo desta ação (mínimo 10 caracteres)' : undefined,
+        inputValidator: pedeMotivo ? function (v) { if (!v || v.trim().length < 10) return 'Informe o motivo com pelo menos 10 caracteres.'; } : undefined,
         showCancelButton: true,
         confirmButtonText: form.dataset.confirmBtn || 'Sim, confirmar',
         cancelButtonText: 'Cancelar',
@@ -44,9 +66,14 @@
         background: SWAL_BG,
         color: SWAL_FG,
         reverseButtons: true,
-        focusCancel: perigo
+        focusCancel: perigo && !pedeMotivo
       }).then(function (r) {
         if (!r.isConfirmed) return;
+        if (pedeMotivo) {
+          var inp = form.querySelector('input[name="motivo"]');
+          if (!inp) { inp = document.createElement('input'); inp.type = 'hidden'; inp.name = 'motivo'; form.appendChild(inp); }
+          inp.value = (r.value || '').trim();
+        }
         form.dataset.confirmed = '1';
         if (form.requestSubmit) {
           submitter ? form.requestSubmit(submitter) : form.requestSubmit();

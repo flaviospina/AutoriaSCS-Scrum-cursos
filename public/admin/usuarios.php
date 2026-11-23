@@ -73,6 +73,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       audit_log('usuario_senha_redefinida', 'user', $idu);
       $ok = "Senha redefinida.";
     }
+
+    // V18: exclusão (anonimizada) com transferência dos cursos; sessões do usuário são encerradas
+    if ($action === 'excluir') {
+      require_once __DIR__ . '/../../app/curso_repo.php';
+      $idu = (int)($_POST['id_user'] ?? 0);
+      $para = (int)($_POST['transferir_para'] ?? 0) ?: null;
+      usuario_excluir($idu, (string)($_POST['motivo'] ?? ''), auth_user_real(), $para);
+      $ok = "Usuário excluído. Os dados pessoais foram anonimizados e o histórico de ações foi preservado.";
+    }
   } catch (Throwable $e) {
     $erro = $e->getMessage();
   }
@@ -216,8 +225,45 @@ include __DIR__ . '/../_layout_top.php';
                 </form>
               </td>
 
-              <td class="text-end">
+              <td class="text-end text-nowrap">
+                <?php if (!empty($us['excluido_em'])): ?>
+                  <span class="badge bg-danger" title="Excluído em <?= htmlspecialchars($us['excluido_em']) ?>">Excluído</span>
+                <?php else: ?>
                 <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#senha<?= (int)$us['id_user'] ?>">Redefinir senha</button>
+                <?php if (is_admin_real() && (int)$us['id_user'] !== (int)$u['id_user']): ?>
+                  <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#excluir<?= (int)$us['id_user'] ?>">Excluir</button>
+                  <div class="modal fade" id="excluir<?= (int)$us['id_user'] ?>" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                      <form class="modal-content text-start" method="post">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="excluir">
+                        <input type="hidden" name="id_user" value="<?= (int)$us['id_user'] ?>">
+                        <div class="modal-header">
+                          <h5 class="modal-title">Excluir usuário — <?= htmlspecialchars($us['nome']) ?></h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                          <p class="small">O usuário deixa de acessar o sistema; nome e e-mail são anonimizados (LGPD) e o histórico de ações é preservado na auditoria. As coautorias são removidas.</p>
+                          <?php if ((int)$us['n_cursos'] > 0): ?>
+                            <label class="form-label small">Este usuário é responsável por <b><?= (int)$us['n_cursos'] ?></b> curso(s). Transferir para:</label>
+                            <select class="form-select form-select-sm mb-2" name="transferir_para" required>
+                              <option value="">Selecione o(a) novo(a) responsável</option>
+                              <?php foreach ($usuarios as $o): if ((int)$o['id_user'] === (int)$us['id_user'] || !$o['ativo'] || !empty($o['excluido_em'])) continue; ?>
+                                <option value="<?= (int)$o['id_user'] ?>"><?= htmlspecialchars($o['nome']) ?> (<?= htmlspecialchars($o['role']) ?>)</option>
+                              <?php endforeach; ?>
+                            </select>
+                          <?php endif; ?>
+                          <label class="form-label small">Motivo (obrigatório, fica na auditoria)</label>
+                          <textarea class="form-control form-control-sm" name="motivo" rows="2" required minlength="10"></textarea>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                          <button class="btn btn-danger">Excluir usuário</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                <?php endif; ?>
 
                 <div class="modal fade" id="senha<?= (int)$us['id_user'] ?>" tabindex="-1" aria-hidden="true">
                   <div class="modal-dialog">
@@ -241,6 +287,7 @@ include __DIR__ . '/../_layout_top.php';
                     </form>
                   </div>
                 </div>
+                <?php endif; ?>
               </td>
             </tr>
           <?php endforeach; ?>

@@ -59,6 +59,25 @@ O fluxo do Kanban não é mais fixo no código — é configurável em `Admin`:
 - **Mais de um professor por curso**: responsável (`tb_cursos.id_professor`) + coautores
   (`tb_curso_professores`), que acessam o curso, recebem os e-mails e compõem a identificação oficial.
 
+## Administração total — etapa 1 (V18)
+
+O **administrador real** (perfil ADMIN, sem "Ver como") passa a ter poderes de intervenção em qualquer fase.
+Toda ação exige **motivo (mínimo 10 caracteres)** e fica registrada na auditoria (`acao_admin`).
+
+- **Situação do curso** (`tb_cursos.situacao`): `ATIVO`, `PAUSADO`, `SUSPENSO`, `CANCELADO`, `ARQUIVADO`,
+  `EXCLUIDO` (lixeira). Fora de "Ativo", professores e MB não enviam arquivos nem mudam de etapa (bloqueio no
+  servidor, HTTP 423, com aviso na página do curso); o curso sai do Kanban. Os professores recebem e-mail.
+- **Lixeira** (Admin → Lixeira e situação dos cursos — `public/admin/lixeira.php`): restaurar, mudar a situação
+  ou **apagar definitivamente** (arquivos movidos para `storage/backups/curso-<id>-<data>/` com `dados.json`).
+- Na página do curso, cartão **"Administração do curso"**: situação, **mover forçado** para qualquer status
+  (ignora transições e pendências), **trocar responsável** (o anterior pode virar coautor) e **editar datas**.
+- **Excluir apontamento** (lista de apontamentos) e **excluir vídeo** (lista de vídeos), com motivo.
+- **Excluir usuário** (Admin → Usuários): anonimiza nome/e-mail, desativa e, se tiver cursos, exige
+  transferir a responsabilidade para outro(a) formador(a). O último administrador não pode ser excluído.
+- Dashboard: filtro "Situação (admin)"; cursos na lixeira/arquivados ficam fora das listas e dos indicadores.
+- Confirmações com motivo via SweetAlert (`data-motivo="1"`), com fallback nativo caso o CDN falhe.
+- Arquivos: `app/admin_repo.php`, `public/admin/lixeira.php`, `database/upgrade_v18.sql` (idempotente).
+
 ## Acessibilidade e aparência (V17)
 
 - **Painel de acessibilidade** (botão ♿ fixo no canto inferior esquerdo; atalho Alt+A; Esc fecha), em todas

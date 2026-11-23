@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS tb_users (
   senha_hash  VARCHAR(255) NOT NULL,
   role        VARCHAR(30) NOT NULL DEFAULT 'PROFESSOR',
   ativo       TINYINT(1) NOT NULL DEFAULT 1,
+  excluido_em DATETIME NULL,                                   -- V18: exclusão lógica (dados anonimizados)
   notif_pref  ENUM('IMEDIATO','DIARIO','DESATIVADO') NOT NULL DEFAULT 'IMEDIATO',
   created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_user),
@@ -100,6 +101,11 @@ CREATE TABLE IF NOT EXISTS tb_cursos (
   data_prevista_entrega_final DATE NULL,
   descricao_breve             TEXT NULL,
   status_atual                VARCHAR(80) NOT NULL,
+  situacao                    ENUM('ATIVO','PAUSADO','SUSPENSO','CANCELADO','ARQUIVADO','EXCLUIDO') NOT NULL DEFAULT 'ATIVO', -- V18
+  situacao_motivo             VARCHAR(500) NULL,                      -- V18: motivo informado pelo admin
+  situacao_em                 DATETIME NULL,
+  situacao_por                INT UNSIGNED NULL,
+  status_anterior             VARCHAR(80) NULL,                       -- V18: status antes de pausar/suspender (para retomar)
   publication_due_date        DATE NULL,
   projeto_aprovado_em         DATETIME NULL,
   aviso_pendencias_em         DATETIME NULL,                           -- V11: cooldown do e-mail de documentos pendentes

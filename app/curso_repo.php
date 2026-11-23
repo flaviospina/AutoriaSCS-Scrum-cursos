@@ -406,12 +406,15 @@ function checklist_get(int $id_curso): array {
 }
 
 function curso_transition(int $id_curso, array $user, string $to, ?string $obs = null,
-                          ?string $dataPublicacao = null, ?int $cargaHoraria = null): void {
+                          ?string $dataPublicacao = null, ?int $cargaHoraria = null, bool $forcar = false): void {
   $c = curso_get($id_curso);
   if (!$c) throw new Exception("Curso não encontrado.");
 
+  // V18: curso pausado/suspenso/cancelado/arquivado — só o admin altera
+  if (!$forcar && function_exists('curso_bloqueio')) { $bloq = curso_bloqueio($c, $user); if ($bloq) { http_response_code(423); throw new Exception($bloq); } }
+
   $from = $c['status_atual'];
-  if (!can_transition($user['role'], $from, $to)) {
+  if (!$forcar && !can_transition($user['role'], $from, $to)) {
     throw new Exception("Transição inválida: {$from} → {$to} para o perfil {$user['role']}.");
   }
 
@@ -440,7 +443,7 @@ function curso_transition(int $id_curso, array $user, string $to, ?string $obs =
   // documentos obrigatórios (itens 9-11): status que "exige entregas" só recebe
   // o curso com todas as categorias obrigatórias entregues
   $sTo = status_by_name($to);
-  if ($sTo && !empty($sTo['exige_entregas'])) {
+  if (!$forcar && $sTo && !empty($sTo['exige_entregas'])) {
     $pend = entregas_pendentes($id_curso, (int)$c['carga_horaria']);
     if ($pend) {
       audit_log('transicao_bloqueada_entregas', 'curso', $id_curso, ['status' => $from],
@@ -511,3 +514,6 @@ function curso_transition(int $id_curso, array $user, string $to, ?string $obs =
     'by' => ['id_user' => $user['id_user'], 'role' => $user['role'], 'email' => $user['email']],
   ]);
 }
+
+// V18: ações administrativas (situação do curso, mover forçado, exclusões) — carregado por último para evitar dependência circular
+require_once __DIR__ . "/admin_repo.php";

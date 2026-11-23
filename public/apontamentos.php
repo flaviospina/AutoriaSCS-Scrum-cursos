@@ -24,6 +24,19 @@ if (!is_staff() && !$ehProfessor) {
 $erro = null; $ok = null;
 $isTI = apont_pode_gerir($u);
 if (($_GET['ok'] ?? '') === 'criado') $ok = "Apontamento registrado. O(a) professor(a) e a TI foram avisados por e-mail.";
+if (($_GET['ok'] ?? '') === 'excluido') $ok = "Apontamento excluído pelo administrador. A ação ficou registrada na auditoria.";
+
+// V18: administrador real exclui um apontamento (com motivo)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'excluir_apont') {
+  csrf_check();
+  try {
+    apontamento_excluir((int)($_POST['id_apontamento'] ?? 0), $_POST['motivo'] ?? '', auth_user_real());
+    header("Location: apontamentos.php?id={$id}&ok=excluido");
+    exit;
+  } catch (Throwable $e) {
+    $erro = $e->getMessage();
+  }
+}
 
 // criar apontamento (TI/ADMIN) — regra no repositório (backend)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create') {
@@ -151,6 +164,14 @@ include __DIR__ . '/_layout_top.php';
                 <td class="text-end text-nowrap">
                   <a class="btn btn-sm <?= $pend && $ehProfessor && !$isTI ? 'btn-warning' : 'btn-outline-primary' ?>"
                      href="apontamento_detalhe.php?id=<?= (int)$a['id_apontamento'] ?>">Visualizar</a>
+                  <?php if (is_admin_real() && visao_alternada() === null && admin_v18()): ?>
+                    <form method="post" class="d-inline" data-confirm="Excluir definitivamente este apontamento e suas respostas?<br><small>A ação fica registrada na auditoria com o motivo informado.</small>" data-confirm-title="Excluir apontamento" data-confirm-type="danger" data-confirm-btn="Sim, excluir" data-motivo="1">
+                      <?= csrf_field() ?>
+                      <input type="hidden" name="action" value="excluir_apont">
+                      <input type="hidden" name="id_apontamento" value="<?= (int)$a['id_apontamento'] ?>">
+                      <button class="btn btn-sm btn-outline-danger" title="Excluir (administrador)">🗑</button>
+                    </form>
+                  <?php endif; ?>
                 </td>
               </tr>
             <?php endforeach; ?>

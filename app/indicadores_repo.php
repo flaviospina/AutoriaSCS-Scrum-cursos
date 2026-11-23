@@ -13,6 +13,7 @@
  */
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/status_repo.php';
+require_once __DIR__ . '/curso_repo.php'; // V18: admin_v18() / situação dos cursos
 
 /* ============================================================
  * Utilitários
@@ -60,6 +61,8 @@ function ind_sql_final(string $alias = 'c'): string {
  */
 function ind_filtro_cursos(array $f, string $alias = 'c'): array {
   $w = []; $p = []; $desc = [];
+  // V18: cursos na lixeira ficam fora de todos os indicadores e relatórios
+  if (function_exists('admin_v18') && admin_v18()) $w[] = "{$alias}.situacao <> 'EXCLUIDO'";
   if (!empty($f['de']))  { $w[] = "{$alias}.created_at >= ?"; $p[] = $f['de'] . ' 00:00:00'; $desc[] = 'de ' . date('d/m/Y', strtotime($f['de'])); }
   if (!empty($f['ate'])) { $w[] = "{$alias}.created_at <= ?"; $p[] = $f['ate'] . ' 23:59:59'; $desc[] = 'até ' . date('d/m/Y', strtotime($f['ate'])); }
   if (!empty($f['status']))          { $w[] = "{$alias}.status_atual = ?";    $p[] = $f['status'];          $desc[] = 'status ' . $f['status']; }

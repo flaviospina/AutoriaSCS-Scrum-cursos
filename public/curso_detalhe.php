@@ -23,6 +23,9 @@ $ehProfessor = curso_eh_professor($curso, (int)$u['id_user']);
 if (!is_staff() && !$ehProfessor) {
   http_response_code(403); echo "Acesso negado."; exit;
 }
+// V18: curso na lixeira só é visto pelo administrador
+if (curso_situacao($curso) === 'EXCLUIDO' && !is_admin_real()) { http_response_code(404); echo "Curso não encontrado."; exit; }
+$bloqueioSituacao = curso_bloqueio($curso, $u);
 
 $check = checklist_get($id);
 
@@ -288,6 +291,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? '', ['
 
 // Transição de status
 $pendenciasBloqueio = [];
+// V18 — ações administrativas (ADMIN real): situação, mover forçado, trocar responsável, editar datas
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && str_starts_with($_POST['action'] ?? '', 'adm_')) {
+  csrf_check();
+  try {
+    $uReal = auth_user_real();
+    $motivo = (string)($_POST['motivo'] ?? '');
+    switch ($_POST['action']) {
+      case 'adm_situacao':     curso_situacao_alterar($id, (string)($_POST['situacao'] ?? ''), $motivo, $uReal); $okAdm = 'situacao'; break;
+      case 'adm_mover':        curso_mover_forcado($id, trim($_POST['to'] ?? ''), $motivo, $uReal); $okAdm = 'mover'; break;
+      case 'adm_responsavel':  curso_trocar_responsavel($id, (int)($_POST['id_professor'] ?? 0), $motivo, $uReal, !empty($_POST['anterior_coautor'])); $okAdm = 'responsavel'; break;
+      case 'adm_datas':        curso_editar_datas($id, $_POST['datas'] ?? [], $motivo, $uReal); $okAdm = 'datas'; break;
+      default: throw new Exception('Ação administrativa inválida.');
+    }
+    header("Location: curso_detalhe.php?id={$id}&ok=adm_{$okAdm}"); exit;
+  } catch (Throwable $e) { $erro = $e->getMessage(); }
+}
+if (str_starts_with($_GET['ok'] ?? '', 'adm_')) $ok = ['adm_situacao' => 'Situação do curso alterada.', 'adm_mover' => 'Curso movido pelo administrador.', 'adm_responsavel' => 'Responsável pelo curso alterado.', 'adm_datas' => 'Datas do curso atualizadas.'][$_GET['ok']] ?? 'Ação administrativa concluída.';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'transition') {
   csrf_check();
   try {
@@ -332,6 +352,7 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
       Status: <span class="badge rounded-pill" style="<?= status_badge_style($curso['status_atual']) ?>">
                 <?= htmlspecialchars($curso['status_atual']) ?>
               </span>
+      <?php if (curso_situacao($curso) !== 'ATIVO'): ?><?= curso_situacao_badge($curso) ?><?php endif; ?>
       <span class="badge rounded-pill" style="<?= $pb['style'] ?>">Prioridade: <?= $pb['label'] ?></span>
       <?php if ($pf === 'atrasado'): ?>
         <span class="badge bg-danger">Atrasado</span>
@@ -360,6 +381,14 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
   <script>document.addEventListener('DOMContentLoaded', function () { if (window.avisaPendencias) window.avisaPendencias(<?= json_encode($pendenciasBloqueio, JSON_UNESCAPED_UNICODE) ?>); });</script>
 <?php elseif ($erro): ?><div class="alert alert-danger"><?= htmlspecialchars($erro) ?></div><?php endif; ?>
 <?php if ($ok): ?><div class="alert alert-success"><?= htmlspecialchars($ok) ?></div><?php endif; ?>
+
+<?php if ($bloqueioSituacao): ?>
+  <div class="alert alert-warning mb-3" role="alert">
+    <b>⏸ <?= htmlspecialchars($bloqueioSituacao) ?></b>
+    <?php if (!empty($curso['situacao_motivo'])): ?><div class="small mt-1">Motivo informado pela administração: <?= htmlspecialchars($curso['situacao_motivo']) ?></div><?php endif; ?>
+    <div class="small text-muted mt-1">Envio de arquivos e mudanças de etapa ficam desabilitados até o administrador reativar o curso.</div>
+  </div>
+<?php endif; ?>
 
 <?php if ($apontPendentes > 0 && $ehProfessor && !apont_pode_gerir($u)): ?>
   <div class="aviso-apontamentos mb-3" role="alert">
@@ -971,6 +1000,76 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
       </div>
     </div>
   </div>
+
+  <!-- V18: Administração do curso (somente ADMIN real) -->
+  <?php if (is_admin_real() && visao_alternada() === null): $sitAtual = curso_situacao($curso); ?>
+  <div class="col-12">
+    <div class="card shadow-sm border-danger">
+      <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+          <h2 class="h6 mb-0">🛡 Administração do curso <span class="text-muted small fw-normal">(toda ação pede motivo e fica na auditoria)</span></h2>
+          <div>Situação: <?= curso_situacao_badge($curso) ?><?php if ($sitAtual !== 'ATIVO' && !empty($curso['situacao_motivo'])): ?> <span class="small text-muted">— <?= htmlspecialchars($curso['situacao_motivo']) ?> (<?= $curso['situacao_em'] ? date('d/m/Y', strtotime($curso['situacao_em'])) : '' ?>)</span><?php endif; ?></div>
+        </div>
+        <?php if (!admin_v18()): ?>
+          <div class="alert alert-warning small mb-0">Execute <code>database/upgrade_v18.sql</code> no phpMyAdmin para habilitar as ações administrativas.</div>
+        <?php else: ?>
+        <div class="row g-3">
+          <div class="col-12 col-lg-4">
+            <div class="small fw-semibold mb-1">Situação do curso</div>
+            <div class="d-flex flex-wrap gap-1">
+              <?php foreach (['ATIVO' => ['Retomar / ativar', 'btn-outline-success'], 'PAUSADO' => ['Pausar', 'btn-outline-warning'], 'SUSPENSO' => ['Suspender', 'btn-outline-danger'], 'CANCELADO' => ['Cancelar', 'btn-outline-light'], 'ARQUIVADO' => ['Arquivar', 'btn-outline-secondary'], 'EXCLUIDO' => ['Excluir (lixeira)', 'btn-danger']] as $sit => [$rot, $cls]): if ($sit === $sitAtual) continue; ?>
+                <form method="post" class="d-inline" data-confirm="<?= htmlspecialchars(CURSO_SITUACOES[$sit]['desc']) ?><br><br>Mudar o curso para <b><?= CURSO_SITUACOES[$sit]['label'] ?></b>?" data-confirm-title="<?= htmlspecialchars($rot) ?>" data-confirm-type="<?= in_array($sit, ['EXCLUIDO', 'SUSPENSO', 'CANCELADO'], true) ? 'danger' : 'question' ?>" data-confirm-btn="Sim, confirmar" data-motivo="1">
+                  <?= csrf_field() ?><input type="hidden" name="action" value="adm_situacao"><input type="hidden" name="situacao" value="<?= $sit ?>">
+                  <button class="btn btn-sm <?= $cls ?>"><?= htmlspecialchars($rot) ?></button>
+                </form>
+              <?php endforeach; ?>
+            </div>
+            <div class="small text-muted mt-1">Fora de "Ativo", professores e MB não alteram o curso; ele some do Kanban. A lixeira permite restaurar ou apagar definitivamente (Admin → Lixeira).</div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <form method="post" data-confirm="Mover o curso para o status escolhido <b>ignorando</b> a ordem do fluxo, documentos pendentes e datas obrigatórias?" data-confirm-title="Mover forçado" data-confirm-type="danger" data-confirm-btn="Sim, mover" data-motivo="1">
+              <?= csrf_field() ?><input type="hidden" name="action" value="adm_mover">
+              <label class="small fw-semibold mb-1" for="admMoverTo">Mover forçado (qualquer status)</label>
+              <div class="input-group input-group-sm">
+                <select class="form-select" name="to" id="admMoverTo" required>
+                  <?php foreach (status_names() as $sn): if ($sn === $curso['status_atual']) continue; ?><option value="<?= htmlspecialchars($sn) ?>"><?= htmlspecialchars($sn) ?></option><?php endforeach; ?>
+                </select>
+                <button class="btn btn-outline-danger">Mover</button>
+              </div>
+            </form>
+            <form method="post" class="mt-2" data-confirm="Trocar o(a) responsável pelo curso? O(a) atual pode continuar como coautor(a)." data-confirm-title="Trocar responsável" data-confirm-btn="Sim, trocar" data-motivo="1">
+              <?= csrf_field() ?><input type="hidden" name="action" value="adm_responsavel">
+              <label class="small fw-semibold mb-1" for="admResp">Trocar responsável</label>
+              <div class="input-group input-group-sm">
+                <select class="form-select" name="id_professor" id="admResp" required>
+                  <?php foreach (formadores_usuarios() as $f): if ((int)$f['id_user'] === (int)$curso['id_professor']) continue; ?><option value="<?= (int)$f['id_user'] ?>"><?= htmlspecialchars(formador_rotulo($f)) ?></option><?php endforeach; ?>
+                </select>
+                <button class="btn btn-outline-primary">Trocar</button>
+              </div>
+              <div class="form-check mt-1"><input class="form-check-input" type="checkbox" name="anterior_coautor" id="admAntCo" value="1" checked><label class="form-check-label small" for="admAntCo">Atual responsável vira coautor(a)</label></div>
+            </form>
+          </div>
+          <div class="col-12 col-lg-4">
+            <form method="post" data-confirm="Alterar as datas do curso?" data-confirm-title="Editar datas" data-confirm-btn="Sim, salvar" data-motivo="1">
+              <?= csrf_field() ?><input type="hidden" name="action" value="adm_datas">
+              <div class="small fw-semibold mb-1">Datas do curso</div>
+              <div class="row g-1 small">
+                <div class="col-6"><label class="form-label mb-0" for="admD1">Início previsto</label><input type="date" class="form-control form-control-sm" id="admD1" name="datas[data_prevista_inicio]" value="<?= htmlspecialchars($curso['data_prevista_inicio'] ?? '') ?>"></div>
+                <div class="col-6"><label class="form-label mb-0" for="admD2">Entrega prevista</label><input type="date" class="form-control form-control-sm" id="admD2" name="datas[data_prevista_entrega_final]" value="<?= htmlspecialchars($curso['data_prevista_entrega_final'] ?? '') ?>"></div>
+                <div class="col-6"><label class="form-label mb-0" for="admD3">Publicação</label><input type="date" class="form-control form-control-sm" id="admD3" name="datas[publication_due_date]" value="<?= htmlspecialchars($curso['publication_due_date'] ?? '') ?>"></div>
+                <div class="col-6"><label class="form-label mb-0" for="admD4">Projeto aprovado em</label><input type="datetime-local" class="form-control form-control-sm" id="admD4" name="datas[projeto_aprovado_em]" value="<?= $curso['projeto_aprovado_em'] ? date('Y-m-d\TH:i', strtotime($curso['projeto_aprovado_em'])) : '' ?>"></div>
+                <div class="col-6"><label class="form-label mb-0" for="admD5">Validado em</label><input type="datetime-local" class="form-control form-control-sm" id="admD5" name="datas[validated_at]" value="<?= $curso['validated_at'] ? date('Y-m-d\TH:i', strtotime($curso['validated_at'])) : '' ?>"></div>
+                <div class="col-6"><label class="form-label mb-0" for="admD6">Inserido em</label><input type="datetime-local" class="form-control form-control-sm" id="admD6" name="datas[inserted_at]" value="<?= $curso['inserted_at'] ? date('Y-m-d\TH:i', strtotime($curso['inserted_at'])) : '' ?>"></div>
+              </div>
+              <button class="btn btn-sm btn-outline-primary mt-2">Salvar datas</button>
+            </form>
+          </div>
+        </div>
+        <?php endif; ?>
+      </div>
+    </div>
+  </div>
+  <?php endif; ?>
 
   <!-- Professores do curso (responsável + coautores) -->
   <?php $profsCurso = curso_professores($id); $podeGerirProfs = curso_pode_gerir_professores($curso, $u) && curso_professores_disponivel(); ?>

@@ -30,6 +30,19 @@ $podeEnviar = perm('recebe_email_insercao') || is_admin();
 
 $erro = null; $ok = null;
 if (($_GET['ok'] ?? '') === 'criado') $ok = "Vídeo disponibilizado. O(a) formador(a) foi avisado(a) por e-mail com a descrição do vídeo.";
+if (($_GET['ok'] ?? '') === 'excluido') $ok = "Vídeo excluído pelo administrador (versões, pareceres e arquivos). A ação ficou registrada na auditoria.";
+
+// V18: administrador real exclui um vídeo inteiro (com motivo)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'excluir_video') {
+  csrf_check();
+  try {
+    video_excluir((int)($_POST['id_video'] ?? 0), $_POST['motivo'] ?? '', auth_user_real());
+    header("Location: curso_videos.php?id={$id}&ok=excluido");
+    exit;
+  } catch (Throwable $e) {
+    $erro = $e->getMessage();
+  }
+}
 
 // Enviar um novo vídeo (cria o vídeo + versão 1)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'criar_video') {
@@ -173,10 +186,18 @@ include __DIR__ . '/_layout_top.php';
                         <span class="text-muted small">—</span>
                       <?php endif; ?>
                     </td>
-                    <td class="text-end">
+                    <td class="text-end text-nowrap">
                       <a class="btn btn-sm btn-outline-primary" href="video_revisao.php?id=<?= (int)$v['id_video'] ?>">
                         Abrir revisão
                       </a>
+                      <?php if (is_admin_real() && visao_alternada() === null && admin_v18()): ?>
+                        <form method="post" class="d-inline" data-confirm="Excluir o vídeo <b><?= htmlspecialchars($v['titulo']) ?></b> com todas as versões, pareceres e arquivos?<br><small>A ação fica registrada na auditoria com o motivo informado.</small>" data-confirm-title="Excluir vídeo" data-confirm-type="danger" data-confirm-btn="Sim, excluir" data-motivo="1">
+                          <?= csrf_field() ?>
+                          <input type="hidden" name="action" value="excluir_video">
+                          <input type="hidden" name="id_video" value="<?= (int)$v['id_video'] ?>">
+                          <button class="btn btn-sm btn-outline-danger" title="Excluir (administrador)">🗑</button>
+                        </form>
+                      <?php endif; ?>
                     </td>
                   </tr>
                 <?php endforeach; ?>

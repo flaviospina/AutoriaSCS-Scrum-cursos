@@ -71,7 +71,17 @@ if ($q !== '') {
   $params[] = "%{$q}%";
 }
 
+// V18: situação do curso — lixeira e arquivados ficam fora das listas; o admin pode filtrar por situação
+$fSit = trim($_GET['situacao'] ?? '');
+$sitFiltro = null;
+if (function_exists('admin_v18') && admin_v18()) {
+  if (is_admin() && $fSit !== '' && isset(CURSO_SITUACOES[$fSit])) { $where[] = "c.situacao = ?"; $params[] = $fSit; $sitFiltro = $fSit; }
+  else { $where[] = "c.situacao NOT IN ('EXCLUIDO','ARQUIVADO')"; }
+}
+
 $sqlWhere = $where ? ("WHERE " . implode(" AND ", $where)) : "";
+// Kanban: só cursos ativos (salvo quando o admin filtra uma situação)
+$sqlWhereKanban = $sqlWhere . ((function_exists('admin_v18') && admin_v18() && !$sitFiltro) ? ($sqlWhere ? " AND " : "WHERE ") . "c.situacao = 'ATIVO'" : '');
 
 // ------------------------------------------------------------------
 // TABELA: paginação
@@ -97,6 +107,7 @@ $st = db()->prepare("
   SELECT c.id_curso, c.nome_curso, c.carga_horaria, c.publico_alvo, c.status_atual, c.prioridade,
          c.nivel_ensino, c.unidade_escolar,
          c.data_prevista_inicio, c.data_prevista_entrega_final, c.updated_at,
+         " . ((function_exists('admin_v18') && admin_v18()) ? "c.situacao," : "") . "
          u.nome AS professor_nome
   FROM tb_cursos c
   JOIN tb_users u ON u.id_user = c.id_professor
@@ -120,10 +131,11 @@ if ($view === 'kanban' && is_staff()) {
   $stK = db()->prepare("
     SELECT c.id_curso, c.nome_curso, c.carga_horaria, c.publico_alvo, c.status_atual, c.prioridade,
            c.data_prevista_entrega_final, c.updated_at,
+           " . ((function_exists('admin_v18') && admin_v18()) ? "c.situacao," : "") . "
            u.nome AS professor_nome
     FROM tb_cursos c
     JOIN tb_users u ON u.id_user = c.id_professor
-    $sqlWhere
+    $sqlWhereKanban
     ORDER BY FIELD(c.prioridade,'URGENTE','ALTA','MEDIA','BAIXA'), c.updated_at DESC
     LIMIT 400
   ");
@@ -202,6 +214,18 @@ include __DIR__ . '/_layout_top.php';
             <?php endforeach; ?>
           </select>
         </div>
+
+        <?php if (is_admin() && function_exists('admin_v18') && admin_v18()): ?>
+        <div class="col-6 col-md-2">
+          <label class="form-label small">Situação (admin)</label>
+          <select class="form-select form-select-sm" name="situacao">
+            <option value="">Em andamento</option>
+            <?php foreach (CURSO_SITUACOES as $k => $sd): ?>
+              <option value="<?= $k ?>" <?= $fSit===$k ? 'selected':'' ?>><?= htmlspecialchars($sd['label']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <?php endif; ?>
 
         <div class="col-12 col-md-3">
           <label class="form-label small">Formador(a)</label>
@@ -320,6 +344,7 @@ include __DIR__ . '/_layout_top.php';
                   <span class="badge rounded-pill" style="<?= status_badge_style($c['status_atual']) ?>">
                     <?= htmlspecialchars($c['status_atual']) ?>
                   </span>
+                  <?php if (curso_situacao($c) !== 'ATIVO'): ?><?= curso_situacao_badge($c) ?><?php endif; ?>
                   <span class="badge rounded-pill" style="<?= $pb['style'] ?>"><?= $pb['label'] ?></span>
 
                   <?php if ($pf === 'atrasado'): ?>
@@ -585,6 +610,7 @@ include __DIR__ . '/_layout_top.php';
                     <span class="badge" style="<?= status_badge_style($c['status_atual']) ?>">
                       <?= htmlspecialchars($c['status_atual']) ?>
                     </span>
+                    <?php if (curso_situacao($c) !== 'ATIVO'): ?><br><?= curso_situacao_badge($c) ?><?php endif; ?>
                   </td>
 
                   <?php if ($u['role'] !== 'PROFESSOR'): ?>
