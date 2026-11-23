@@ -20,9 +20,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header("Location: dashboard.php");
     exit;
   } else {
-    $erro = "E-mail ou senha inválidos.";
+    $erro = auth_login_erro() ?: "E-mail ou senha inválidos.";
   }
 }
+if (($_GET['msg'] ?? '') === 'sessao') $erro = "Sua sessão foi encerrada (pelo administrador ou por inativação da conta). Entre novamente.";
 
 include __DIR__ . '/_layout_top.php';
 ?>

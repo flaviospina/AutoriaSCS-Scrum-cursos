@@ -93,6 +93,7 @@ $PAGINA = basename($_SERVER['PHP_SELF'] ?? '');
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="<?= $LP ?>admin/diagnostico_sistema.php">Diagnóstico do sistema</a></li>
                 <li><a class="dropdown-item" href="<?= $LP ?>admin/lixeira.php">Lixeira e situação dos cursos</a></li>
+                <li><a class="dropdown-item" href="<?= $LP ?>admin/parametros.php">Parâmetros do sistema</a></li>
                 <li><a class="dropdown-item text-danger" href="<?= $LP ?>admin/zerar_dados.php">Zerar dados</a></li>
               </ul>
             </li>
@@ -100,7 +101,7 @@ $PAGINA = basename($_SERVER['PHP_SELF'] ?? '');
         </ul>
 
         <div class="d-flex gap-2 align-items-center">
-          <?php if (is_admin_real()): $visaoAtual = visao_alternada(); ?>
+          <?php if (is_admin_real() && !agir_como()): $visaoAtual = visao_alternada(); ?>
             <form method="post" action="<?= $LP ?>trocar_visao.php" class="d-flex align-items-center gap-1" title="Alternar visualização (somente ADMIN)">
               <?= csrf_field() ?>
               <input type="hidden" name="voltar" value="dashboard.php">
@@ -124,7 +125,19 @@ $PAGINA = basename($_SERVER['PHP_SELF'] ?? '');
   </div>
 </nav>
 
-<?php if ($u && is_admin_real() && visao_alternada() !== null): ?>
+<?php if ($u && ($agBanner = agir_como())): ?>
+  <div class="visao-banner" style="background:#7f1d1d;color:#fff;border-bottom:3px solid #ef4444">
+    <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <span>🎭 <b>AGINDO COMO <?= htmlspecialchars($agBanner['user']['nome']) ?> (<?= htmlspecialchars($agBanner['user']['role']) ?>)</b> desde <?= date('H:i', strtotime($agBanner['desde'])) ?>.
+        Tudo o que você fizer será registrado como <b><?= htmlspecialchars(auth_user_real()['nome']) ?></b> agindo em nome deste usuário.</span>
+      <form method="post" action="<?= $LP ?>agir_como.php" class="m-0">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="encerrar">
+        <button class="btn btn-sm btn-light">Encerrar e voltar a ser ADMIN</button>
+      </form>
+    </div>
+  </div>
+<?php elseif ($u && is_admin_real() && visao_alternada() !== null): ?>
   <div class="visao-banner">
     <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
       <span>👁 <b>Modo de visualização:</b> você está vendo o sistema como

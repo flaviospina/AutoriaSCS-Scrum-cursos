@@ -37,6 +37,10 @@ CREATE TABLE IF NOT EXISTS tb_users (
   role        VARCHAR(30) NOT NULL DEFAULT 'PROFESSOR',
   ativo       TINYINT(1) NOT NULL DEFAULT 1,
   excluido_em DATETIME NULL,                                   -- V18: exclusão lógica (dados anonimizados)
+  senha_trocar  TINYINT(1) NOT NULL DEFAULT 0,                 -- V20: exigir troca de senha no próximo acesso
+  login_falhas  TINYINT UNSIGNED NOT NULL DEFAULT 0,           -- V20: tentativas erradas seguidas
+  bloqueado_ate DATETIME NULL,                                 -- V20: bloqueio temporário do login
+  sessoes_desde DATETIME NULL,                                 -- V20: sessões iniciadas antes disso são inválidas
   notif_pref  ENUM('IMEDIATO','DIARIO','DESATIVADO') NOT NULL DEFAULT 'IMEDIATO',
   created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_user),
@@ -495,7 +499,9 @@ CREATE TABLE IF NOT EXISTS tb_config (
   updated_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (chave)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-INSERT IGNORE INTO tb_config (chave, valor) VALUES ('coautor_espera_seg', '20');
+INSERT IGNORE INTO tb_config (chave, valor) VALUES ('coautor_espera_seg', '20'),
+  ('upload_max_mb', '25'), ('dias_curso_parado', '30'), ('lixeira_retencao_dias', '90'),
+  ('login_max_tentativas', '5'), ('login_bloqueio_min', '15'), ('intervencoes_email', '1'); -- V20
 
 -- ------------------------------------------------------------
 -- Links externos por curso (Google Drive / vídeos MB / outros)

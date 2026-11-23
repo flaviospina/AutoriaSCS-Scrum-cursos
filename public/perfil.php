@@ -44,8 +44,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'senha
     if (strlen($nova) < 6) throw new Exception("A nova senha deve ter pelo menos 6 caracteres.");
     if ($nova !== $conf) throw new Exception("A confirmação não confere com a nova senha.");
 
-    db()->prepare("UPDATE tb_users SET senha_hash=? WHERE id_user=?")
+    db()->prepare("UPDATE tb_users SET senha_hash=?" . (users_v20() ? ", senha_trocar=0" : "") . " WHERE id_user=?")
       ->execute([password_hash($nova, PASSWORD_DEFAULT), (int)$u['id_user']]);
+    unset($_SESSION['senha_trocar']); // V20: troca obrigatória cumprida
     audit_log('senha_alterada_pelo_usuario', 'user', (int)$u['id_user']);
     $ok = "Senha alterada com sucesso.";
   } catch (Throwable $e) {
@@ -66,6 +67,9 @@ include __DIR__ . '/_layout_top.php';
 
 <?php if ($erro): ?><div class="alert alert-danger"><?= htmlspecialchars($erro) ?></div><?php endif; ?>
 <?php if ($ok): ?><div class="alert alert-success"><?= htmlspecialchars($ok) ?></div><?php endif; ?>
+<?php if (!empty($_SESSION['senha_trocar']) && !agir_como()): ?>
+  <div class="alert alert-warning alert-fixo"><b>🔑 Troca de senha obrigatória.</b> O administrador exigiu que você defina uma nova senha antes de continuar usando o sistema. Use o quadro "Alterar senha" abaixo.</div>
+<?php endif; ?>
 
 <div class="row g-3">
   <div class="col-12 col-lg-6">

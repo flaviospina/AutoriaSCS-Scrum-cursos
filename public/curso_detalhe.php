@@ -11,6 +11,7 @@ require_once __DIR__ . '/../app/audit.php';
 require_once __DIR__ . '/../app/apontamento_repo.php';
 require_once __DIR__ . '/../app/checklist_repo.php';
 require_once __DIR__ . '/../app/filmagens_repo.php'; // V19: filmagens (Estúdio MB)
+require_once __DIR__ . '/../app/config_repo.php';    // V20: parâmetros (limite de upload)
 
 require_login();
 $u = auth_user();
@@ -66,11 +67,11 @@ if (($_GET['err'] ?? '') !== '') {
   $mapErr = [
     'slide'     => "O envio deste vídeo ficará disponível após a aprovação dos slides correspondentes.",
     'categoria' => "Categoria inválida para o módulo selecionado.",
-    'size'      => "Arquivo acima do limite de 25MB.",
+    'size'      => "Arquivo acima do limite de " . upload_max_mb() . "MB.",
     'mime'      => "Tipo de arquivo não permitido.",
     'semarquivos' => "Este curso ainda não possui arquivos para baixar.",
   ];
-  $erro = $mapErr[$_GET['err']] ?? "Falha no upload (" . htmlspecialchars($_GET['err']) . "). Verifique tamanho (máx. 25MB) e tipo do arquivo.";
+  $erro = $mapErr[$_GET['err']] ?? "Falha no upload (" . htmlspecialchars($_GET['err']) . "). Verifique tamanho (máx. " . upload_max_mb() . "MB) e tipo do arquivo.";
 }
 
 // Atualiza checklist (V11: por perfil; o backend só aceita itens do checklist autorizado)
@@ -770,7 +771,7 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
           <div class="col-12 col-md-5">
             <label class="form-label small">Arquivo</label>
             <input class="form-control" type="file" name="arquivo" id="upArquivo" required>
-            <div class="form-text">Limite 25MB. Tipos comuns: PDF, DOCX, PPTX, MP4, ZIP.</div>
+            <div class="form-text">Limite <?= upload_max_mb() ?>MB. Tipos comuns: PDF, DOCX, PPTX, MP4, ZIP.</div>
           </div>
           <div class="col-12 col-md-2 d-flex align-items-end">
             <button class="btn btn-primary w-100" id="upBtn">Enviar</button>

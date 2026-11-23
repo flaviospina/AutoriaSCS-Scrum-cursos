@@ -15,6 +15,7 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/status_repo.php';
 require_once __DIR__ . '/curso_repo.php'; // V18: admin_v18() / situação dos cursos
 require_once __DIR__ . '/filmagens_repo.php'; // V19: filmagens (Estúdio MB)
+require_once __DIR__ . '/admin_repo.php';     // V20: intervenções administrativas
 
 /* ============================================================
  * Utilitários
@@ -174,7 +175,7 @@ function ind_todos(): array {
     'lead_time'      => ['Lead time médio (proposta → publicação)', ind_dias($lead === null ? null : (float)$lead), 'lead_time', 'Dias entre a proposta e o status final.', '#0dcaf0'],
     'gargalo'        => ['Etapa mais demorada (média)', $gargalo ? $gargalo . ' · ' . ind_dias($gargaloDias) : '—', 'tempo_etapas', 'Status com maior permanência média.', '#fd7e14'],
     'wip_excedido'   => ['Colunas acima do limite WIP', $wipExc, 'por_etapa', 'Colunas com mais cursos que o limite configurado.', $wipExc ? '#dc3545' : '#198754'],
-    'parados_30d'    => ['Parados há mais de 30 dias', ind_n("SELECT COUNT(*) FROM tb_cursos c WHERE NOT $final AND c.updated_at < NOW() - INTERVAL 30 DAY"), 'parados', 'Em andamento, sem nenhuma alteração há 30 dias.', '#dc3545'],
+    'parados_30d'    => ['Parados há mais de ' . dias_curso_parado() . ' dias', ind_n("SELECT COUNT(*) FROM tb_cursos c WHERE NOT $final AND c.updated_at < NOW() - INTERVAL ? DAY", [dias_curso_parado()]), 'parados', 'Em andamento, sem nenhuma alteração há ' . dias_curso_parado() . ' dias (Admin → Parâmetros).', '#dc3545'],
   ]];
   $g['fluxo']['por_coluna'] = $porColuna;
 
@@ -285,6 +286,7 @@ function ind_todos(): array {
     'downloads_30d'  => ['Downloads de materiais (30 dias)', ind_n("SELECT COUNT(*) FROM tb_audit_log WHERE acao IN ('arquivo_baixado','pacote_baixado','download_todos') AND created_at >= NOW() - INTERVAL 30 DAY"), 'auditoria_resumo&tipo=arquivo_baixado', 'Arquivos/pacotes baixados.'],
     'modelos'        => ['Modelos vigentes na biblioteca', ind_n("SELECT COUNT(*) FROM tb_modelos WHERE ativo=1 AND vigente=1"), 'modelos', 'Templates oficiais em vigor.'],
     'modelos_down'   => ['Downloads de modelos (30 dias)', ind_n("SELECT COUNT(*) FROM tb_audit_log WHERE acao='modelo_baixado' AND created_at >= NOW() - INTERVAL 30 DAY"), 'auditoria_resumo&tipo=modelo_baixado', 'Uso da biblioteca de modelos.'],
+    'intervencoes_30d' => ['Intervenções administrativas (30 dias)', ind_n("SELECT COUNT(*) FROM tb_audit_log WHERE acao IN ('" . implode("','", INTERVENCOES_ACOES) . "') AND created_at >= NOW() - INTERVAL 30 DAY"), 'intervencoes&de=' . date('Y-m-d', strtotime('-30 days')), 'Ações de exceção do ADMIN (situação de cursos, exclusões, agir como, parâmetros, migrações).', '#fd7e14'],
   ]];
 
   return $g;
@@ -341,6 +343,7 @@ function rel_catalogo(): array {
     'notificacoes'       => ['E-mails enviados', 'Fila de notificações por status, destinatário e assunto.', 'sistema', ['periodo', 'situacao_notif']],
     'auditoria_resumo'   => ['Auditoria (resumo)', 'Ações registradas por tipo e por usuário no período.', 'sistema', ['periodo', 'tipo_acao']],
     'modelos'            => ['Biblioteca de modelos', 'Modelos cadastrados, vigência e downloads.', 'sistema', []],
+    'intervencoes'       => ['Intervenções administrativas', 'Ações de exceção do ADMIN com motivo: situação de cursos, lixeira, exclusões, troca de responsável, agir como, parâmetros e migrações.', 'sistema', ['periodo', 'tipo_interv']],
     'filmagens'          => ['Filmagens (reservas de estúdio)', 'Reservas do Sistema de Reservas, vínculo com o curso, filmagem registrada pela MB e entrega do vídeo.', 'filmagens', ['periodo', 'situacao_filmagem', 'formador', 'filtro_filmagens']],
     'filmagens_atraso'   => ['Atraso da MB (filmagem → vídeo)', 'Por filmagem realizada: dias da reserva até a filmagem e da filmagem até a entrega do vídeo, com pendências.', 'filmagens', ['periodo', 'formador', 'situacao_pend_video']],
   ];
@@ -436,7 +439,7 @@ function rel_gerar(string $r, array $f): ?array {
       break;
 
     case 'parados':
-      $d = $janela ?? 30; $out['titulo'] .= " (sem alteração há mais de {$d} dias)";
+      $d = $janela ?? dias_curso_parado(); $out['titulo'] .= " (sem alteração há mais de {$d} dias)";
       $out['colunas'] = ['Curso', 'Formador(a)', 'Status', 'Última alteração', 'Dias parado', 'Entrega prevista'];
       $w2 = ($where ? $where . ' AND ' : 'WHERE ') . "NOT $final AND c.updated_at < NOW() - INTERVAL ? DAY"; $p2 = array_merge($p, [$d]);
       foreach (ind_rows("SELECT c.*, u.nome prof, DATEDIFF(NOW(), c.updated_at) dias FROM tb_cursos c JOIN tb_users u ON u.id_user=c.id_professor $w2 ORDER BY c.updated_at", $p2) as $c) {
@@ -659,6 +662,21 @@ function rel_gerar(string $r, array $f): ?array {
         $out['links'][] = $x['id_curso'] ? 'curso_detalhe.php?id=' . (int)$x['id_curso'] : 'filmagens.php';
       }
       $out['resumo'] = ['Filmagens' => count($out['linhas']), 'Média reserva→filmagem' => ind_dias($nRF ? $somaRF / $nRF : null), 'Média filmagem→vídeo' => ind_dias($nFV ? $somaFV / $nFV : null), 'Maior atraso' => $max === null ? '—' : $max . ' d', 'Vídeos pendentes' => $pend];
+      break;
+
+    case 'intervencoes':
+      $out['colunas'] = ['Data/hora', 'Ação', 'Alvo', 'Quem', 'Agindo como', 'Motivo', 'Detalhes'];
+      $tipos = [];
+      foreach (intervencoes_listar($f['de'] ?? null, $f['ate'] ?? null, $f['tipo'] ?? null) as $it) {
+        $tipos[$it['tipo']] = ($tipos[$it['tipo']] ?? 0) + 1;
+        $det = $it['detalhes']; unset($det['acao'], $det['motivo'], $det['_agindo_como']);
+        $out['linhas'][] = [date('d/m/Y H:i', strtotime($it['created_at'])), $it['tipo'], $it['alvo'], $it['quem'], $it['agindo_como'] ?? '', $it['motivo'], mb_strimwidth(json_encode($det, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 0, 160, '…')];
+        $out['links'][] = $it['entidade'] === 'curso' && $it['id_entidade'] ? 'curso_detalhe.php?id=' . (int)$it['id_entidade'] : 'admin/auditoria.php';
+      }
+      if (!empty($f['tipo'])) $out['filtros_desc'][] = 'ação ' . $f['tipo'];
+      if (!empty($f['de']) || !empty($f['ate'])) $out['filtros_desc'][] = 'período ' . ($f['de'] ?? '…') . ' a ' . ($f['ate'] ?? '…');
+      arsort($tipos);
+      $out['resumo'] = array_merge(['Intervenções' => count($out['linhas'])], $tipos);
       break;
 
     case 'marcacoes':

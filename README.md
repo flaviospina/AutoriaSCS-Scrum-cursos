@@ -59,6 +59,26 @@ O fluxo do Kanban não é mais fixo no código — é configurável em `Admin`:
 - **Mais de um professor por curso**: responsável (`tb_cursos.id_professor`) + coautores
   (`tb_curso_professores`), que acessam o curso, recebem os e-mails e compõem a identificação oficial.
 
+## Administração total — etapas 2 e 3 (V20)
+
+- **Agir como** (Admin → Usuários → Mais): o ADMIN executa o sistema como outro usuário (nunca outro admin), com
+  motivo obrigatório, faixa vermelha permanente e cada ação auditada em nome do admin com a marca
+  `_agindo_como`. Durante o modo, os poderes de admin ficam suspensos; "Encerrar" devolve o perfil.
+- **Usuários**: transferir todos os cursos para outro formador, encerrar sessões abertas (desconecta na hora),
+  exigir troca de senha no próximo acesso (o usuário só acessa Meu Perfil até trocar) e desbloquear login.
+- **Bloqueio de login** após N tentativas erradas (parâmetros `login_max_tentativas` / `login_bloqueio_min`).
+- **Admin → Parâmetros do sistema** (`tb_config`): limite de upload, dias de "curso parado", retenção da
+  lixeira, espera dos coautores, e-mail da TI, remetente, rodapé dos e-mails, resumo semanal, bloqueio de login.
+  Banco, chave do Drive e senha SMTP continuam em `config.local.php`.
+- **Lixeira com expurgo**: ao abrir a Lixeira, cursos excluídos há mais de N dias são apagados definitivamente
+  (arquivos em `storage/backups/`); 0 desliga o expurgo.
+- **Relatório "Intervenções administrativas"** (Relatórios → Sistema) e indicador; **resumo semanal** por e-mail
+  aos administradores (disparado ao abrir o Dashboard, no máximo 1x por semana).
+- **Migrações pelo Diagnóstico**: botão "Aplicar agora" executa `database/upgrade_vNN.sql` direto no banco
+  (ADMIN real), com registro comando a comando — dispensa o phpMyAdmin.
+- Arquivos: `app/auth.php`, `app/audit.php`, `app/config_repo.php`, `app/admin_repo.php`, `public/agir_como.php`,
+  `public/admin/parametros.php`, `public/admin/migrar.php`, `database/upgrade_v20.sql`.
+
 ## Filmagens do Estúdio MB (V19)
 
 Integra o **Sistema de Reservas do Estúdio MB** (mesmo servidor, banco separado) ao controle de produção:

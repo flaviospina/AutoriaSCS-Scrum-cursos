@@ -54,7 +54,8 @@ if (!isset($_FILES['arquivo']) || $_FILES['arquivo']['error'] !== UPLOAD_ERR_OK)
 }
 
 // validações
-$maxSize = 25 * 1024 * 1024; // 25MB
+require_once __DIR__ . '/../app/config_repo.php';
+$maxSize = upload_max_mb() * 1024 * 1024; // V20: Admin → Parâmetros
 if ($_FILES['arquivo']['size'] > $maxSize) {
   header("Location: curso_detalhe.php?id={$id_curso}&err=size");
   exit;

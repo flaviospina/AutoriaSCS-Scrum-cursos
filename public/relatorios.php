@@ -229,6 +229,12 @@ include __DIR__ . '/_layout_top.php';
                 <option value="pendentes" <?= ($f['situacao'] ?? '') === 'pendentes' ? 'selected' : '' ?>>Somente pendentes</option>
               </select></div>
           <?php endif; ?>
+          <?php if (in_array('tipo_interv', $filtrosRel, true)): ?>
+            <div class="col-12 col-md-3"><label class="form-label small mb-0">Ação</label>
+              <select class="form-select form-select-sm" name="tipo"><option value="">Todas</option>
+                <?php foreach (['curso_situacao', 'curso_excluido_definitivo', 'curso_mover_forcado', 'curso_trocar_responsavel', 'curso_editar_datas', 'apontamento_excluido', 'video_excluido', 'video_versao_excluida', 'usuario_transferir_cursos', 'usuario_excluido', 'usuario_sessoes_encerradas', 'usuario_troca_senha_exigida', 'usuario_desbloqueado', 'agir_como_inicio', 'agir_como_fim', 'parametros_alterados', 'migracao_aplicada'] as $s): ?><option value="<?= $s ?>" <?= ($f['tipo'] ?? '') === $s ? 'selected' : '' ?>><?= $s ?></option><?php endforeach; ?>
+              </select></div>
+          <?php endif; ?>
           <?php if (in_array('situacao_marc', $filtrosRel, true)): ?>
             <div class="col-6 col-md-2"><label class="form-label small mb-0">Situação</label>
               <select class="form-select form-select-sm" name="situacao"><option value="">Todas</option>

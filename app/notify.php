@@ -23,6 +23,9 @@ function app_base_url(): string {
 
 /** Caixa institucional da equipe TI & AutoriaSCS. */
 function ti_email(): string {
+  require_once __DIR__ . '/config_repo.php';
+  $p = trim((string)cfg_get('ti_email', '')); // V20: parâmetro do sistema prevalece sobre o arquivo
+  if ($p !== '' && filter_var($p, FILTER_VALIDATE_EMAIL)) return $p;
   return notify_config()['mail']['ti_email'] ?? 'ti.cecape@scseduca.com.br';
 }
 
@@ -161,6 +164,8 @@ function mail_template(string $titulo, string $corpoHtml, ?string $linkUrl = nul
     $faixaLogos = "<div style='background:#ffffff;border:1px solid #e2e6e6;border-bottom:0;border-radius:12px 12px 0 0;padding:14px 12px;text-align:center'>{$imgs}</div>";
   }
   $raioTopo = $logos ? '0' : '12px 12px 0 0';
+  require_once __DIR__ . '/config_repo.php';
+  $rodapeExtra = trim((string)cfg_get('email_rodape', '')); $rodapeExtra = $rodapeExtra !== '' ? '<br>' . htmlspecialchars($rodapeExtra) : '';
   return "<!doctype html><html><body style='margin:0;background:#f4f6f6;font-family:Comfortaa,Verdana,Arial,sans-serif'>
     <div style='max-width:620px;margin:0 auto;padding:24px 12px'>
       {$faixaLogos}
@@ -177,6 +182,7 @@ function mail_template(string $titulo, string $corpoHtml, ?string $linkUrl = nul
           Mensagem automática do sistema de acompanhamento de cursos.
           Ajuste suas preferências de e-mail em Meu Perfil.
           Suporte: ti.cecape@scseduca.com.br
+          {$rodapeExtra}
         </div>
       </div>
     </div></body></html>";
@@ -495,6 +501,9 @@ function mailer_send(string $toEmail, string $toName, string $subject, string $h
   $method = $cfg['method'] ?? 'disabled';
   $fromEmail = $cfg['from_email'] ?? 'no-reply.cecape@scseduca.com.br';
   $fromName  = $cfg['from_name'] ?? 'AutoriaSCS - CECAPE';
+  require_once __DIR__ . '/config_repo.php'; // V20: remetente ajustável em Admin → Parâmetros
+  $pe = trim((string)cfg_get('from_email', '')); if ($pe !== '' && filter_var($pe, FILTER_VALIDATE_EMAIL)) $fromEmail = $pe;
+  $pn = trim((string)cfg_get('from_name', '')); if ($pn !== '') $fromName = $pn;
 
   if ($method === 'disabled') return 'Envio de e-mail desativado na configuração.';
 

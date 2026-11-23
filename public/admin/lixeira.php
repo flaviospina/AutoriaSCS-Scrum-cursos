@@ -23,6 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 if (!empty($_GET['ok'])) $ok = mb_substr((string)$_GET['ok'], 0, 300);
 
+$expurgados = lixeira_expurgar($uReal); // V20: apaga o que passou do prazo de retenção (parâmetro)
+$retencao = lixeira_retencao_dias();
 $lixeira = cursos_lixeira();
 $grupos = [];
 foreach (['PAUSADO', 'SUSPENSO', 'CANCELADO', 'ARQUIVADO'] as $s) $grupos[$s] = cursos_por_situacao($s);
@@ -39,6 +41,7 @@ include __DIR__ . '/../_layout_top.php';
 <?php if (!admin_v18()): ?><div class="alert alert-warning">Execute <code>database/upgrade_v18.sql</code> no phpMyAdmin para habilitar a situação dos cursos e a lixeira.</div><?php endif; ?>
 <?php if ($erro): ?><div class="alert alert-danger"><?= htmlspecialchars($erro) ?></div><?php endif; ?>
 <?php if ($ok): ?><div class="alert alert-success"><?= htmlspecialchars($ok) ?></div><?php endif; ?>
+<?php if ($expurgados): ?><div class="alert alert-warning alert-fixo"><b>Expurgo automático:</b> <?= count($expurgados) ?> curso(s) com mais de <?= $retencao ?> dias na lixeira foram apagados definitivamente (arquivos em <code>storage/backups/</code>): <?= htmlspecialchars(implode(' • ', $expurgados)) ?>.</div><?php endif; ?>
 
 <div class="card shadow-sm border-danger mb-3"><div class="card-body">
   <h2 class="h6">🗑 Lixeira (<?= count($lixeira) ?>)</h2>
@@ -52,7 +55,7 @@ include __DIR__ . '/../_layout_top.php';
           <td><a href="../curso_detalhe.php?id=<?= (int)$c['id_curso'] ?>"><?= htmlspecialchars($c['nome_curso']) ?></a></td>
           <td><?= htmlspecialchars($c['professor_nome']) ?></td>
           <td><span class="badge" style="<?= status_badge_style($c['status_atual']) ?>"><?= htmlspecialchars($c['status_atual']) ?></span></td>
-          <td class="text-nowrap"><?= $c['situacao_em'] ? date('d/m/Y H:i', strtotime($c['situacao_em'])) : '' ?></td>
+          <td class="text-nowrap"><?= $c['situacao_em'] ? date('d/m/Y H:i', strtotime($c['situacao_em'])) : '' ?><?php if ($retencao > 0 && $c['situacao_em']): $rest = $retencao - (int)floor((time() - strtotime($c['situacao_em'])) / 86400); ?><br><span class="small <?= $rest <= 7 ? 'text-danger' : 'text-muted' ?>">apaga em <?= max(0, $rest) ?> d</span><?php endif; ?></td>
           <td><?= htmlspecialchars($c['por_nome'] ?? '') ?></td>
           <td class="small"><?= htmlspecialchars($c['situacao_motivo'] ?? '') ?></td>
           <td><?= (int)$c['arquivos'] ?></td>

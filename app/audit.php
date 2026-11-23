@@ -13,6 +13,12 @@ function audit_log(string $acao, string $entidade, ?int $idEntidade = null,
     if ($idUser === null && isset($_SESSION['user']['id_user'])) {
       $idUser = (int)$_SESSION['user']['id_user'];
     }
+    // V20: durante o "Agir como", a ação é registrada em nome do ADMIN real, com a marca do usuário representado
+    if (!empty($_SESSION['agir_como']['user']['id_user']) && isset($_SESSION['user']['id_user'])) {
+      $ag = $_SESSION['agir_como']['user'];
+      $idUser = (int)$_SESSION['user']['id_user'];
+      $depois = ($depois ?? []) + ['_agindo_como' => ['id_user' => (int)$ag['id_user'], 'nome' => $ag['nome'], 'role' => $ag['role']]];
+    }
     $ip = $_SERVER['REMOTE_ADDR'] ?? null;
 
     db()->prepare("

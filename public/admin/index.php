@@ -63,6 +63,7 @@ include __DIR__ . '/../_layout_top.php';
       ['Diagnóstico do sistema', '✓', 'Confere se a última atualização foi aplicada: arquivos, migrações do banco e cache do PHP.', 'diagnostico_sistema.php'],
       ['Zerar dados', '⚠', 'Limpa cursos, materiais, vídeos e apontamentos para a entrada em produção (com backup). Preserva configurações e administradores.', 'zerar_dados.php'],
       ['Lixeira e situação dos cursos', '🗑', 'Cursos pausados, suspensos, cancelados, arquivados e na lixeira: restaurar, retomar ou apagar definitivamente.', 'lixeira.php'],
+      ['Parâmetros do sistema', '⚙', 'Limite de upload, dias de curso parado, retenção da lixeira, bloqueio de login, e-mails (TI, remetente, rodapé) e resumo semanal.', 'parametros.php'],
     ];
   ?>
   <?php foreach ($cards as [$titulo, $n, $desc, $link]): ?>

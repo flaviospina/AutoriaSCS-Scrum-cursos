@@ -74,6 +74,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $ok = "Senha redefinida.";
     }
 
+    // V20: ações administrativas sobre o usuário (motivo obrigatório, auditadas)
+    if (in_array($action, ['transferir', 'encerrar_sessoes', 'forcar_senha', 'desbloquear'], true)) {
+      require_once __DIR__ . '/../../app/curso_repo.php';
+      require_once __DIR__ . '/../../app/admin_repo.php';
+      $idu = (int)($_POST['id_user'] ?? 0); $motivo = (string)($_POST['motivo'] ?? ''); $real = auth_user_real();
+      switch ($action) {
+        case 'transferir': $n = usuario_transferir_cursos($idu, (int)($_POST['transferir_para'] ?? 0), $motivo, $real); $ok = "{$n} curso(s) transferido(s)."; break;
+        case 'encerrar_sessoes': usuario_sessoes_encerrar($idu, $motivo, $real); $ok = 'Sessões do usuário encerradas: ele precisará entrar novamente.'; break;
+        case 'forcar_senha': usuario_forcar_senha($idu, $motivo, $real); $ok = 'O usuário terá de definir uma nova senha no próximo acesso.'; break;
+        case 'desbloquear': usuario_desbloquear($idu, $motivo, $real); $ok = 'Login desbloqueado.'; break;
+      }
+    }
+
     // V18: exclusão (anonimizada) com transferência dos cursos; sessões do usuário são encerradas
     if ($action === 'excluir') {
       require_once __DIR__ . '/../../app/curso_repo.php';
@@ -87,6 +100,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   }
 }
 
+if (!empty($_GET['ok'])) $ok = mb_substr((string)$_GET['ok'], 0, 200);
+$v20 = users_v20();
 $fRole = trim($_GET['role'] ?? '');
 $fQ    = trim($_GET['q'] ?? '');
 $params = []; $where = [];
@@ -213,6 +228,8 @@ include __DIR__ . '/../_layout_top.php';
                   </div>
                   <div class="col-2 col-md-1 text-center">
                     <span class="badge bg-secondary rounded-pill"><?= (int)$us['n_cursos'] ?></span>
+                    <?php if ($v20 && !empty($us['bloqueado_ate']) && strtotime($us['bloqueado_ate']) > time()): ?><br><span class="badge bg-danger" title="Login bloqueado até <?= htmlspecialchars($us['bloqueado_ate']) ?>">🔒 bloqueado</span><?php endif; ?>
+                    <?php if ($v20 && !empty($us['senha_trocar'])): ?><br><span class="badge bg-warning text-dark" title="Deve trocar a senha no próximo acesso">🔑 trocar senha</span><?php endif; ?>
                   </div>
                   <div class="col-3 col-md-1">
                     <div class="form-check form-switch">
@@ -231,6 +248,52 @@ include __DIR__ . '/../_layout_top.php';
                 <?php else: ?>
                 <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#senha<?= (int)$us['id_user'] ?>">Redefinir senha</button>
                 <?php if (is_admin_real() && (int)$us['id_user'] !== (int)$u['id_user']): ?>
+                  <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-info dropdown-toggle" data-bs-toggle="dropdown">Mais</button>
+                    <ul class="dropdown-menu dropdown-menu-end p-2" style="min-width:280px">
+                      <?php if (!perfil_flag($us['role'], 'admin_total') && $us['ativo']): ?>
+                        <li><form method="post" action="../agir_como.php" data-confirm="Agir como <b><?= htmlspecialchars($us['nome']) ?></b>?<br><small>Você passa a executar o sistema com as permissões deste usuário; cada ação fica registrada como você agindo em nome dele. Uma faixa vermelha fica visível até encerrar.</small>" data-confirm-title="Agir como" data-confirm-type="danger" data-confirm-btn="Sim, agir como" data-motivo="1">
+                          <?= csrf_field() ?><input type="hidden" name="action" value="iniciar"><input type="hidden" name="id_user" value="<?= (int)$us['id_user'] ?>">
+                          <button class="dropdown-item">🎭 Agir como este usuário</button></form></li>
+                      <?php endif; ?>
+                      <?php if ($v20): ?>
+                        <li><form method="post" data-confirm="Encerrar todas as sessões abertas de <b><?= htmlspecialchars($us['nome']) ?></b>? Ele será desconectado agora." data-confirm-title="Encerrar sessões" data-confirm-type="danger" data-confirm-btn="Sim, encerrar" data-motivo="1">
+                          <?= csrf_field() ?><input type="hidden" name="action" value="encerrar_sessoes"><input type="hidden" name="id_user" value="<?= (int)$us['id_user'] ?>">
+                          <button class="dropdown-item">⛔ Encerrar sessões abertas</button></form></li>
+                        <li><form method="post" data-confirm="Exigir que <b><?= htmlspecialchars($us['nome']) ?></b> troque a senha no próximo acesso?" data-confirm-title="Exigir troca de senha" data-confirm-btn="Sim, exigir" data-motivo="1">
+                          <?= csrf_field() ?><input type="hidden" name="action" value="forcar_senha"><input type="hidden" name="id_user" value="<?= (int)$us['id_user'] ?>">
+                          <button class="dropdown-item">🔑 Exigir troca de senha</button></form></li>
+                        <?php if (!empty($us['bloqueado_ate']) && strtotime($us['bloqueado_ate']) > time()): ?>
+                          <li><form method="post" data-confirm="Desbloquear o login de <b><?= htmlspecialchars($us['nome']) ?></b> agora?" data-confirm-title="Desbloquear" data-confirm-btn="Sim, desbloquear" data-motivo="1">
+                            <?= csrf_field() ?><input type="hidden" name="action" value="desbloquear"><input type="hidden" name="id_user" value="<?= (int)$us['id_user'] ?>">
+                            <button class="dropdown-item">🔓 Desbloquear login</button></form></li>
+                        <?php endif; ?>
+                      <?php else: ?>
+                        <li><span class="dropdown-item-text small text-muted">Sessões, troca de senha e bloqueio exigem a migração V20 (Diagnóstico).</span></li>
+                      <?php endif; ?>
+                      <?php if ((int)$us['n_cursos'] > 0): ?>
+                        <li><button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#transf<?= (int)$us['id_user'] ?>">🔁 Transferir os <?= (int)$us['n_cursos'] ?> curso(s) para outro formador</button></li>
+                      <?php endif; ?>
+                    </ul>
+                  </div>
+                  <?php if ((int)$us['n_cursos'] > 0): ?>
+                  <div class="modal fade" id="transf<?= (int)$us['id_user'] ?>" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog"><form class="modal-content text-start" method="post">
+                      <?= csrf_field() ?><input type="hidden" name="action" value="transferir"><input type="hidden" name="id_user" value="<?= (int)$us['id_user'] ?>">
+                      <div class="modal-header"><h5 class="modal-title">Transferir cursos — <?= htmlspecialchars($us['nome']) ?></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                      <div class="modal-body">
+                        <p class="small">Os <b><?= (int)$us['n_cursos'] ?></b> curso(s) em que este usuário é responsável passam para o(a) formador(a) escolhido(a). O usuário continua ativo. Os envolvidos recebem e-mail.</p>
+                        <label class="form-label small">Novo(a) responsável</label>
+                        <select class="form-select form-select-sm mb-2" name="transferir_para" required><option value="">Selecione</option>
+                          <?php foreach ($usuarios as $o): if ((int)$o['id_user'] === (int)$us['id_user'] || !$o['ativo'] || !empty($o['excluido_em'])) continue; ?><option value="<?= (int)$o['id_user'] ?>"><?= htmlspecialchars($o['nome']) ?> (<?= htmlspecialchars($o['role']) ?>)</option><?php endforeach; ?>
+                        </select>
+                        <label class="form-label small">Motivo (obrigatório, fica na auditoria)</label>
+                        <textarea class="form-control form-control-sm" name="motivo" rows="2" required minlength="10"></textarea>
+                      </div>
+                      <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary">Transferir</button></div>
+                    </form></div>
+                  </div>
+                  <?php endif; ?>
                   <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#excluir<?= (int)$us['id_user'] ?>">Excluir</button>
                   <div class="modal fade" id="excluir<?= (int)$us['id_user'] ?>" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog">

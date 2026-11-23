@@ -32,42 +32,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // ------------------------------------------------------------------
 $arquivos = [
   ['app/apontamento_repo.php', 'e6279f082fb09ec02a4f0f8356caa1c4', 'function apont_criar('],
-  ['app/auth.php', '5ae623857bd0fd85a0ea58a9ab565e3c', 'function visao_alternar('],
   ['app/categorias_repo.php', '054ff959a0ed0f9a63b3ca531c609993', 'excluida_em'],
   ['app/checklist_repo.php', 'dd2ae4fc94954be7c058a9c6d0eac43b', 'checklist_reordenar_por_grupo('],
   ['app/curso_repo.php', '990393e9b7ecb7d17e39873222bce387', 'curso_bloqueio('],
-  ['app/admin_repo.php', '9fa30854040305e31d93ab47f1e68821', 'function curso_situacao_alterar('],
-  ['public/admin/lixeira.php', '821eeea35cbc0d42eb58582f1a8d17a2', 'cursos_lixeira()'],
-  ['public/admin/usuarios.php', 'd73e1b436338ec38a51a34f57d20f7f1', 'usuario_excluir('],
-  ['public/upload.php', '707d03ddc5b6b555c4eb53b9a2597230', 'curso_bloqueio('],
+  ['public/admin/lixeira.php', '3167bb757130f2efd0e6d9b0da722cee', 'lixeira_expurgar'],
+  ['public/admin/usuarios.php', 'e55216d6de532b54353ba378a5c0bb23', 'encerrar_sessoes'],
+  ['public/upload.php', 'eff2b39c3489e3ab5d715e71220f17dd', 'upload_max_mb()'],
   ['app/filmagens_repo.php', '0974399cfc3f71d9e44bd92cb4e84709', 'function filmagens_sincronizar('],
   ['public/filmagens.php', '4acaba6fe0115a3f99638ba2bbd94aaa', 'Filmagem avulsa'],
+  ['database/upgrade_v20.sql', 'c67ee265fa7cd89d1da3ebdd37e6d3c1', 'senha_trocar'],
+  ['public/admin/parametros.php', '5d52d737feecc79cb8f847c67d77a697', 'cfg_param_defs()'],
+  ['public/admin/migrar.php', 'da8f78c49d96431e9e5dad6e60b8d438', 'migracao_aplicar('],
+  ['public/agir_como.php', '5182ea6f13245f5eba01a4d5f4f721ee', 'agir_como_iniciar('],
+  ['app/auth.php', '5632c830d6156ef06e2add4cf61c86ce', 'function agir_como('],
+  ['app/audit.php', '0fdc626700011f96186649ed64808e81', '_agindo_como'],
+  ['app/config_repo.php', '803adf7ed410bcadca957aca26962fd3', 'cfg_param_defs'],
+  ['app/notify.php', 'eafe3cd5db8c6de618a91a532a44d620', 'email_rodape'],
+  ['public/login.php', '8ad35c7e207e80569f426dcd42e36f7f', 'auth_login_erro'],
+  ['public/perfil.php', '646311929ddf2e21ff20b9030dc36f10', 'senha_trocar'],
+  ['app/admin_repo.php', 'fa09e366e23a8b6b38c85b46ca51a7e4', 'function migracao_aplicar('],
   ['database/upgrade_v19.sql', '2a53d7c837b0acfcfd042765afb6be17', 'tb_filmagens'],
   ['database/upgrade_v18.sql', 'd2d1fb8749f5a572d3522d30fdb1e3f8', 'situacao_motivo'],
   ['app/entregas_repo.php', '78fc10e9c161da14af9b4d64a34ede75', 'arquivo_aprovado'],
   ['app/niveis_repo.php', '43fd6beb60e20f12c7c8ce58a355fd3b', 'function niveis_lista('],
-  ['app/notify.php', '5e9445940d5b34497ea80baf24db367c', 'notify_coautores_incluidos'],
   ['app/status_repo.php', '2ca8a21929b36614d5a0642bedade037', 'return niveis_nomes('],
   ['public/_layout_bottom.php', '4d93adeeffc388f234df593adc24ae2f', 'data-motivo'],
-  ['public/_layout_top.php', 'bf7a075a45ec11022593086a11e65f62', 'filmagens.php'],
+  ['public/_layout_top.php', 'b44c83d5d286f2e95585c74588cf8b18', 'agir_como.php'],
   ['public/admin/categorias.php', '1eb567da87c6f042cabccaa0a91e8bee', 'tipo_especial'],
   ['public/admin/checklists.php', 'fca84f83fd8d47c63bb4ff96922ffcda', 'checklist_reordenar_por_grupo('],
-  ['public/admin/index.php', '23689604f66249a9c3d83a2c77704761', 'lixeira.php'],
+  ['public/admin/index.php', 'cf7c3190e2556c93567c0dba05367df8', 'parametros.php'],
   ['public/admin/niveis.php', '5e20090d9ba7112fa7255efa3c7c6f2c', 'Níveis de Ensino'],
   ['public/admin/status.php', '290038baceefe4923c186b183cc91b69', 'exige_entregas'],
   ['public/apontamento_detalhe.php', '0c15146082ab673dd72298ad3011a83d', 'Registrar objeção'],
   ['public/apontamentos.php', 'e7f00bfcd3e023f9ae09ab4c52ac45ae', 'excluir_apont'],
   ['public/assets/autoria-dark.css', '4374a063b0363471b581739e7479e523', 'is-panning'],
-  ['public/curso_detalhe.php', 'fd967d3b1fe18c1db3b6677285617ce2', 'filmagem_registrar'],
+  ['public/curso_detalhe.php', '7c5997ab20290dd72b63985a41d7d364', 'upload_max_mb()'],
   ['public/curso_editar.php', '48f0e68583051e05fc920090dad53282', 'campo-ro'],
   ['public/curso_novo.php', '49ab64be883e9031b6445cecc4fb6486', 'formador_rotulo('],
   ['public/curso_videos.php', '77f5458be45336fa2240c5613aa2809c', 'excluir_video'],
-  ['public/dashboard.php', 'e53fc8ce175515200b93f4d104f9bd60', 'name="situacao"'],
+  ['public/dashboard.php', '9e5e227e147bd587a903aba38f4b58fd', 'intervencoes_email_semanal'],
   ['public/download.php', '28b48691153a77cb34b65b4b1e163806', 'curso_eh_professor('],
   ['public/download_todos.php', '223f918db4a6c3472740defbce48719b', 'curso_eh_professor('],
   ['public/move_status.php', '65d36720706a15aab61c03f63e96ddc9', 'EntregasPendentesException'],
   ['public/trocar_visao.php', 'edfe1f047eb980e24117950c6c267536', 'visao_alternar('],
-  ['public/upload.php', '707d03ddc5b6b555c4eb53b9a2597230', 'curso_eh_professor('],
+  ['public/upload.php', 'eff2b39c3489e3ab5d715e71220f17dd', 'upload_max_mb()'],
   ['public/video_captura.php', 'e70e1c568e0e5ac9b14d886bc78be4c5', 'curso_eh_professor('],
   ['public/video_revisao.php', 'f609cd39b7844a9b8bc822331b696ec6', 'modulo_badge('],
   ['public/video_stream.php', '29169e537e92f129b226ca691f089ed8', 'drive_stream_range('],
@@ -91,14 +99,13 @@ $arquivos = [
   ['public/coautores_notificar.php', 'ab9e8899b3fd8119ade450a508da3c6b', 'curso_coautores_notificar('],
   ['cron/cron_notificacoes.php', '917ee68e68cfd2ed9246eae54dbc09c5', 'curso_coautores_notificar_atrasados('],
   ['public/admin/notificacoes.php', '3beb7db063b188cc6735eb83863147be', 'coautor_espera'],
-  ['app/config_repo.php', '379fff4fa09c622e5251abf2892f81a1', 'function coautor_espera_seg('],
   ['public/admin/modulos.php', 'f9b549e777318b1254ebfb4eef075fa9', 'modulos_cores_salvar('],
   ['app/modulos_repo.php', '9b5282dc70b2d70c30acf95667fd8067', 'function modulo_badge('],
   ['public/prefs_ui.php', 'ce3bd0280c99b57ff3b27c2e884148c0', 'ui_prefs_'],
   ['public/assets/acessibilidade.js', '6f3819033d0f5abd6c001ae2d343b661', 'A11Y_PREFS'],
   ['public/assets/acessibilidade.css', '162dae3b76c29b88d0f195b130b168e2', 'a11y-contraste'],
-  ['public/relatorios.php', '0531671044c5037f3112aeaa6674ab4f', 'situacao_filmagem'],
-  ['app/indicadores_repo.php', '4ae5684d7a8a73e827541e6ce4508032', 'filmagens_atraso'],
+  ['public/relatorios.php', 'b847ea5c1f283356dcd399bd6bd4e619', 'tipo_interv'],
+  ['app/indicadores_repo.php', '7cc2077e71f94387940526f8f0dcebed', 'intervencoes_listar('],
   ['public/indicadores.php', '5bbe37a93357efb023053672fe960ce9', 'Indicadores gerenciais'],
   ['app/slides_repo.php', '76e04b7b773d4650f359bc907816d3f6', 'slides_caixa_livre('],
   ['app/slides_pdf.php', '28941abdf2c6145acda50bb5aa45c230', 'class SlidesPdf'],
@@ -160,7 +167,11 @@ $migracoes = [
   ['V13', 'Coautores TI/ADMIN + e-mails de inclusão + parâmetros (tb_config)', diag_coluna('tb_curso_professores', 'notificado_em') && diag_tabela('tb_config')],
   ['V18', 'Administração total: situação dos cursos (pausar/suspender/cancelar/arquivar/lixeira) e exclusão de usuários', diag_coluna('tb_cursos', 'situacao') && diag_coluna('tb_users', 'excluido_em')],
   ['V19', 'Filmagens (Estúdio MB): reservas de estúdio + registro da filmagem (tb_filmagens)', diag_tabela('tb_filmagens')],
+  ['V20', 'Administração total (etapas 2 e 3): agir como, sessões, bloqueio de login, troca de senha obrigatória, parâmetros', diag_coluna('tb_users', 'senha_trocar') && diag_tabela('tb_config')],
 ];
+require_once __DIR__ . '/../../app/curso_repo.php';
+require_once __DIR__ . '/../../app/admin_repo.php';
+$migArquivos = migracoes_arquivos(); // V20: botão "Aplicar" para migrações com arquivo em database/
 $dbInfo = db()->query("SELECT DATABASE() db, VERSION() v, @@character_set_database cs, USER() u")->fetch();
 $nNiveis = diag_count("SELECT COUNT(*) n FROM tb_niveis_ensino");
 $nCateg  = diag_count("SELECT COUNT(*) n FROM tb_categorias");
@@ -350,12 +361,22 @@ include __DIR__ . '/../_layout_top.php';
   <h2 class="h6 mb-2">Migrações do banco de dados</h2>
   <div class="table-responsive">
     <table class="table table-sm align-middle mb-0">
-      <thead class="table-light"><tr><th>Versão</th><th>O que cria</th><th>Situação</th></tr></thead>
+      <thead class="table-light"><tr><th>Versão</th><th>O que cria</th><th>Situação</th><th class="text-end">Ação</th></tr></thead>
       <tbody>
       <?php foreach ($migracoes as [$v, $desc, $okm]): ?>
         <tr class="<?= $okm ? '' : 'table-danger' ?>">
           <td><b><?= $v ?></b></td><td><?= $desc ?></td>
-          <td><?= $okm ? '✅ aplicada' : '❌ <b>não aplicada</b> — execute <code>database/upgrade_' . strtolower($v) . '.sql</code>' ?></td>
+          <td><?= $okm ? '✅ aplicada' : '❌ <b>não aplicada</b> — <code>database/upgrade_' . strtolower($v) . '.sql</code>' ?></td>
+          <td class="text-end text-nowrap">
+            <?php if (!$okm && isset($migArquivos[$v]) && is_admin_real()): ?>
+              <form method="post" action="migrar.php" class="d-inline" data-confirm="Aplicar a migração <b><?= $v ?></b> agora, direto no banco do sistema?<br><small>O script é idempotente e não apaga dados. Recomenda-se ter um backup recente do banco.</small>" data-confirm-title="Aplicar migração" data-confirm-btn="Sim, aplicar">
+                <?= csrf_field() ?><input type="hidden" name="versao" value="<?= $v ?>">
+                <button class="btn btn-sm btn-primary">Aplicar agora</button>
+              </form>
+            <?php elseif (!$okm && isset($migArquivos[$v])): ?><span class="small text-muted">só o ADMIN real aplica</span>
+            <?php elseif (!$okm): ?><span class="small text-muted">rode no phpMyAdmin</span>
+            <?php endif; ?>
+          </td>
         </tr>
       <?php endforeach; ?>
       </tbody>

@@ -71,6 +71,9 @@ if ($q !== '') {
   $params[] = "%{$q}%";
 }
 
+// V20: resumo semanal das intervenções administrativas (dispara no máximo 1x por semana, quando um admin abre o Dashboard)
+if (is_admin_real()) { require_once __DIR__ . '/../app/admin_repo.php'; try { intervencoes_email_semanal(); } catch (Throwable $e) { error_log('Resumo semanal: ' . $e->getMessage()); } }
+
 // V18: situação do curso — lixeira e arquivados ficam fora das listas; o admin pode filtrar por situação
 $fSit = trim($_GET['situacao'] ?? '');
 $sitFiltro = null;

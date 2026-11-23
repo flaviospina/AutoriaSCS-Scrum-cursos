@@ -13,6 +13,7 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/audit.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/curso_repo.php';
+require_once __DIR__ . '/config_repo.php'; // V20: parâmetros do sistema
 
 const CURSO_SITUACOES = [
   'ATIVO'     => ['label' => 'Ativo',      'badge' => 'bg-success',           'desc' => 'Em andamento normal no fluxo.'],
@@ -256,4 +257,143 @@ function cursos_por_situacao(string $situacao): array {
   if (!admin_v18()) return [];
   $st = db()->prepare("SELECT c.id_curso, c.nome_curso, c.status_atual, c.situacao, c.situacao_motivo, c.situacao_em, u.nome AS professor_nome FROM tb_cursos c JOIN tb_users u ON u.id_user=c.id_professor WHERE c.situacao=? ORDER BY c.situacao_em DESC");
   $st->execute([$situacao]); return $st->fetchAll();
+}
+
+/* ======================================================================
+ * V20 — Administração total (etapas 2 e 3)
+ * ====================================================================== */
+
+/** Encerra todas as sessões abertas do usuário (ele precisa entrar de novo). */
+function usuario_sessoes_encerrar(int $idUser, string $motivo, array $user): void {
+  admin_exigir($user); $motivo = admin_motivo($motivo);
+  if (!users_v20()) throw new Exception('Rode database/upgrade_v20.sql para habilitar esta função.');
+  $st = db()->prepare("SELECT nome FROM tb_users WHERE id_user=?"); $st->execute([$idUser]); $alvo = $st->fetch();
+  if (!$alvo) throw new Exception('Usuário não encontrado.');
+  db()->prepare("UPDATE tb_users SET sessoes_desde=NOW() WHERE id_user=?")->execute([$idUser]);
+  foreach (glob(realpath(__DIR__ . '/../storage') . '/sessions/sess_*') ?: [] as $s) { $d = @file_get_contents($s); if ($d && preg_match('/"id_user";(?:i|s):\d*:?"?' . $idUser . '"?;/', $d)) @unlink($s); }
+  admin_audit('usuario_sessoes_encerradas', 'user', $idUser, null, ['nome' => $alvo['nome']], $motivo, $user);
+}
+
+/** Exige a troca de senha no próximo acesso do usuário. */
+function usuario_forcar_senha(int $idUser, string $motivo, array $user): void {
+  admin_exigir($user); $motivo = admin_motivo($motivo);
+  if (!users_v20()) throw new Exception('Rode database/upgrade_v20.sql para habilitar esta função.');
+  $st = db()->prepare("SELECT nome FROM tb_users WHERE id_user=?"); $st->execute([$idUser]); $alvo = $st->fetch();
+  if (!$alvo) throw new Exception('Usuário não encontrado.');
+  db()->prepare("UPDATE tb_users SET senha_trocar=1 WHERE id_user=?")->execute([$idUser]);
+  admin_audit('usuario_troca_senha_exigida', 'user', $idUser, null, ['nome' => $alvo['nome']], $motivo, $user);
+}
+
+/** Desbloqueia o login do usuário (zera tentativas e bloqueio). */
+function usuario_desbloquear(int $idUser, string $motivo, array $user): void {
+  admin_exigir($user); $motivo = admin_motivo($motivo);
+  if (!users_v20()) throw new Exception('Rode database/upgrade_v20.sql para habilitar esta função.');
+  $st = db()->prepare("SELECT nome, bloqueado_ate FROM tb_users WHERE id_user=?"); $st->execute([$idUser]); $alvo = $st->fetch();
+  if (!$alvo) throw new Exception('Usuário não encontrado.');
+  db()->prepare("UPDATE tb_users SET login_falhas=0, bloqueado_ate=NULL WHERE id_user=?")->execute([$idUser]);
+  admin_audit('usuario_desbloqueado', 'user', $idUser, ['bloqueado_ate' => $alvo['bloqueado_ate']], ['nome' => $alvo['nome']], $motivo, $user);
+}
+
+/* ---------------- Lixeira: expurgo automático ---------------- */
+
+/** Apaga definitivamente os cursos que passaram do prazo de retenção da lixeira (0 = nunca). Retorna os nomes apagados. */
+function lixeira_expurgar(array $user): array {
+  if (!admin_v18()) return [];
+  $dias = lixeira_retencao_dias(); if ($dias <= 0) return [];
+  $st = db()->prepare("SELECT id_curso, nome_curso FROM tb_cursos WHERE situacao='EXCLUIDO' AND situacao_em IS NOT NULL AND situacao_em < NOW() - INTERVAL ? DAY");
+  $st->execute([$dias]); $apagados = [];
+  foreach ($st->fetchAll() as $c) {
+    try { curso_excluir_definitivo((int)$c['id_curso'], "Expurgo automático da lixeira: mais de {$dias} dias (parâmetro do sistema).", $user); $apagados[] = $c['nome_curso']; }
+    catch (Throwable $e) { error_log('Expurgo da lixeira: ' . $e->getMessage()); }
+  }
+  return $apagados;
+}
+
+/* ---------------- Migrações pelo Diagnóstico ---------------- */
+
+/** Divide um arquivo .sql em comandos, respeitando aspas e comentários. */
+function sql_split(string $sql): array {
+  $cmds = []; $atual = ''; $n = strlen($sql); $q = null; $i = 0;
+  while ($i < $n) {
+    $ch = $sql[$i]; $dois = substr($sql, $i, 2);
+    if ($q === null) {
+      if ($dois === '--' || $ch === '#') { while ($i < $n && $sql[$i] !== "\n") $i++; continue; }      // comentário de linha
+      if ($dois === '/*') { $f = strpos($sql, '*/', $i + 2); $i = $f === false ? $n : $f + 2; continue; } // comentário de bloco
+      if ($ch === "'" || $ch === '"' || $ch === '`') { $q = $ch; $atual .= $ch; $i++; continue; }
+      if ($ch === ';') { $t = trim($atual); if ($t !== '' && stripos($t, 'DELIMITER') !== 0) $cmds[] = $t; $atual = ''; $i++; continue; }
+      $atual .= $ch; $i++; continue;
+    }
+    // dentro de aspas
+    if ($ch === '\\' && $i + 1 < $n) { $atual .= $ch . $sql[$i + 1]; $i += 2; continue; }
+    if ($ch === $q) { if ($i + 1 < $n && $sql[$i + 1] === $q) { $atual .= $ch . $ch; $i += 2; continue; } $q = null; }
+    $atual .= $ch; $i++;
+  }
+  $t = trim($atual); if ($t !== '') $cmds[] = $t;
+  return $cmds;
+}
+
+/** Arquivos de migração disponíveis: 'V20' => caminho. */
+function migracoes_arquivos(): array {
+  $out = [];
+  foreach (glob(realpath(__DIR__ . '/../database') . '/upgrade_v*.sql') ?: [] as $f) { if (preg_match('/upgrade_v(\d+)\.sql$/', $f, $m)) $out['V' . $m[1]] = $f; }
+  return $out;
+}
+
+/**
+ * Executa uma migração (database/upgrade_vNN.sql) no banco do sistema. Somente ADMIN real.
+ * Retorna ['comandos'=>n, 'ok'=>n, 'erros'=>[...], 'log'=>[[cmd, 'ok'|erro]]].
+ */
+function migracao_aplicar(string $versao, array $user): array {
+  admin_exigir($user);
+  $arqs = migracoes_arquivos(); $versao = strtoupper($versao);
+  if (!isset($arqs[$versao])) throw new Exception("Migração {$versao} não encontrada em database/.");
+  $sql = file_get_contents($arqs[$versao]); if ($sql === false) throw new Exception('Não foi possível ler o arquivo.');
+  $cmds = sql_split($sql); $log = []; $ok = 0; $erros = [];
+  $db = db();
+  foreach ($cmds as $c) {
+    if (preg_match('/^\s*(USE\s|SET\s+NAMES)/i', $c)) { $log[] = [$c, 'ignorado']; continue; }
+    try { $st = $db->query($c); if ($st instanceof PDOStatement) $st->closeCursor(); $ok++; $log[] = [$c, 'ok']; } // closeCursor: um SELECT no script não pode travar as consultas seguintes
+    catch (Throwable $e) { $erros[] = $e->getMessage(); $log[] = [$c, 'ERRO: ' . $e->getMessage()]; }
+  }
+  audit_log('migracao_aplicada', 'sistema', null, null, ['acao' => 'migracao_aplicada', 'versao' => $versao, 'comandos' => count($cmds), 'ok' => $ok, 'erros' => count($erros), 'motivo' => 'Aplicada pelo Diagnóstico do sistema'], (int)$user['id_user']);
+  return ['comandos' => count($cmds), 'ok' => $ok, 'erros' => $erros, 'log' => $log];
+}
+
+/* ---------------- Relatório / resumo semanal das intervenções ---------------- */
+
+const INTERVENCOES_ACOES = ['acao_admin', 'agir_como_inicio', 'agir_como_fim', 'migracao_aplicada', 'parametros_alterados'];
+
+/** Intervenções administrativas (auditoria) no período. */
+function intervencoes_listar(?string $de, ?string $ate, ?string $tipo = null, int $limite = 3000): array {
+  $w = ["a.acao IN ('" . implode("','", INTERVENCOES_ACOES) . "')"]; $p = [];
+  if ($de) { $w[] = "a.created_at >= ?"; $p[] = $de . ' 00:00:00'; }
+  if ($ate) { $w[] = "a.created_at <= ?"; $p[] = $ate . ' 23:59:59'; }
+  if ($tipo) { $w[] = "a.dados_depois LIKE ?"; $p[] = '%"acao":"' . $tipo . '"%'; }
+  $st = db()->prepare("SELECT a.*, u.nome quem FROM tb_audit_log a LEFT JOIN tb_users u ON u.id_user=a.id_user WHERE " . implode(' AND ', $w) . " ORDER BY a.id_audit DESC LIMIT " . (int)$limite);
+  $st->execute($p); $out = [];
+  foreach ($st->fetchAll() as $r) {
+    $d = json_decode((string)$r['dados_depois'], true) ?: [];
+    $r['tipo'] = $d['acao'] ?? $r['acao']; $r['motivo'] = $d['motivo'] ?? ''; $r['alvo'] = $d['curso'] ?? $d['nome'] ?? $d['como'] ?? $d['versao'] ?? '';
+    $r['agindo_como'] = isset($d['_agindo_como']) ? $d['_agindo_como']['nome'] : null;
+    $r['detalhes'] = $d; $out[] = $r;
+  }
+  return $out;
+}
+
+/** Resumo semanal por e-mail aos administradores (no máximo 1 por semana; disparado ao abrir o Dashboard). */
+function intervencoes_email_semanal(): void {
+  if (cfg_get('intervencoes_email') !== '1') return;
+  $ultimo = cfg_get('intervencoes_email_em', '');
+  if ($ultimo && strtotime($ultimo) > time() - 7 * 86400) return;
+  cfg_set('intervencoes_email_em', date('Y-m-d H:i:s')); // marca antes para não disparar em paralelo
+  $de = date('Y-m-d', strtotime('-7 days'));
+  $itens = intervencoes_listar($de, null, null, 500);
+  if (!$itens) return;
+  require_once __DIR__ . '/notify.php';
+  $rows = '';
+  foreach ($itens as $it) $rows .= '<tr><td style="padding:4px 8px;border-bottom:1px solid #eee;white-space:nowrap">' . date('d/m H:i', strtotime($it['created_at'])) . '</td><td style="padding:4px 8px;border-bottom:1px solid #eee">' . htmlspecialchars($it['tipo']) . '</td><td style="padding:4px 8px;border-bottom:1px solid #eee">' . htmlspecialchars((string)$it['alvo']) . '</td><td style="padding:4px 8px;border-bottom:1px solid #eee">' . htmlspecialchars((string)$it['quem']) . ($it['agindo_como'] ? ' <i>(agindo como ' . htmlspecialchars($it['agindo_como']) . ')</i>' : '') . '</td><td style="padding:4px 8px;border-bottom:1px solid #eee">' . htmlspecialchars(mb_strimwidth((string)$it['motivo'], 0, 90, '…')) . '</td></tr>';
+  $html = mail_template('Intervenções administrativas — últimos 7 dias', '<p>' . count($itens) . ' ação(ões) administrativa(s) desde ' . date('d/m/Y', strtotime($de)) . ':</p><table style="border-collapse:collapse;font-size:12px;width:100%"><tr><th align="left" style="padding:4px 8px">Quando</th><th align="left" style="padding:4px 8px">Ação</th><th align="left" style="padding:4px 8px">Alvo</th><th align="left" style="padding:4px 8px">Quem</th><th align="left" style="padding:4px 8px">Motivo</th></tr>' . $rows . '</table>', app_base_url() . '/relatorios.php?r=intervencoes', 'Ver o relatório completo');
+  foreach (db()->query("SELECT u.nome, u.email FROM tb_users u JOIN tb_perfis p ON p.codigo=u.role WHERE p.admin_total=1 AND u.ativo=1" . (users_v20() ? " AND u.excluido_em IS NULL" : ""))->fetchAll() as $adm) {
+    notify_queue($adm['email'], $adm['nome'], '[AutoriaSCS] Resumo semanal das intervenções administrativas', $html, true);
+  }
 }
