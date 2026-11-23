@@ -117,7 +117,7 @@ include __DIR__ . '/_layout_top.php';
     <div class="col-6 col-md-2"><label class="form-label small mb-0">De (data da reserva)</label><input type="date" class="form-control form-control-sm" name="de" value="<?= htmlspecialchars($f['de'] ?? '') ?>"></div>
     <div class="col-6 col-md-2"><label class="form-label small mb-0">Até</label><input type="date" class="form-control form-control-sm" name="ate" value="<?= htmlspecialchars($f['ate'] ?? '') ?>"></div>
     <div class="col-6 col-md-2"><label class="form-label small mb-0">Sala</label><select class="form-select form-select-sm" name="sala"><option value="">Todas</option><?php foreach (filmagens_salas() as $s): ?><option value="<?= htmlspecialchars($s) ?>" <?= ($f['sala'] ?? '') === $s ? 'selected' : '' ?>><?= htmlspecialchars($s) ?></option><?php endforeach; ?></select></div>
-    <div class="col-6 col-md-2"><label class="form-label small mb-0">Reserva</label><select class="form-select form-select-sm" name="estado"><option value="">Todas</option><?php foreach (['Pendente', 'Aceita', 'Recusada'] as $s): ?><option value="<?= $s ?>" <?= ($f['estado'] ?? '') === $s ? 'selected' : '' ?>><?= $s ?></option><?php endforeach; ?></select></div>
+    <div class="col-6 col-md-2"><label class="form-label small mb-0">Reserva</label><select class="form-select form-select-sm" name="estado"><option value="">Todas</option><?php foreach (['Pendente', 'Aceita', 'Horario Proposto', 'Recusada'] as $s): ?><option value="<?= $s ?>" <?= ($f['estado'] ?? '') === $s ? 'selected' : '' ?>><?= $s ?></option><?php endforeach; ?></select></div>
     <div class="col-6 col-md-2"><label class="form-label small mb-0">Filmagem</label><select class="form-select form-select-sm" name="filmagem"><option value="">Todas</option><?php foreach (FILMAGEM_SITUACOES as $k => $d): ?><option value="<?= $k ?>" <?= ($f['filmagem'] ?? '') === $k ? 'selected' : '' ?>><?= $d['label'] ?></option><?php endforeach; ?></select></div>
     <div class="col-6 col-md-2"><label class="form-label small mb-0">Busca (curso/professor)</label><input class="form-control form-control-sm" name="q" value="<?= htmlspecialchars($f['q'] ?? '') ?>"></div>
     <div class="col-12 d-flex gap-2 align-items-center">
@@ -174,7 +174,7 @@ include __DIR__ . '/_layout_top.php';
           <td><?= $l['filmagem'] === 'PENDENTE' && $l['estado_reserva'] === 'Recusada' ? '<span class="text-muted">—</span>' : filmagem_badge($l['filmagem']) ?>
             <?php if ($l['filmagem'] === 'REALIZADA'): ?><div class="small"><?= date('d/m/Y', strtotime($l['filmada_em'])) ?> <span class="text-muted">(<?= fdias($l['dias_reserva_filmagem']) ?> após a reserva)</span></div><?php endif; ?>
             <?php if ($l['filmagem_obs']): ?><div class="small text-muted"><?= htmlspecialchars($l['filmagem_obs']) ?></div><?php endif; ?>
-            <?php if ($l['registrado_nome']): ?><div class="small text-muted">por <?= htmlspecialchars($l['registrado_nome']) ?></div><?php endif; ?>
+            <?php if ($l['registrado_nome']): ?><div class="small text-muted">por <?= htmlspecialchars($l['registrado_nome']) ?> (AutoriaSCS)</div><?php elseif ($l['filmagem'] !== 'PENDENTE'): ?><div class="small text-muted">via Sistema de Reservas</div><?php endif; ?>
           </td>
           <td class="small">
             <?php if ($l['filmagem'] === 'REALIZADA' && $l['id_curso']): ?>
@@ -203,7 +203,7 @@ include __DIR__ . '/_layout_top.php';
       </tbody>
     </table>
   </div>
-  <div class="small text-muted">Linhas em amarelo: reserva com data já passada e filmagem ainda não registrada. "Vídeo entregue" considera a primeira versão de vídeo enviada no AutoriaSCS para o curso (e módulo, se vinculado) após a data da filmagem.</div>
+  <div class="small text-muted">A marcação "Gravação concluída / não concluída" feita pela MB no Sistema de Reservas é importada automaticamente; o registro feito aqui pela MB prevalece sobre ela. Linhas em amarelo: reserva com data já passada e filmagem ainda não registrada. "Vídeo entregue" considera a primeira versão de vídeo enviada no AutoriaSCS para o curso (e módulo, se vinculado) após a data da filmagem.</div>
   <?php endif; ?>
 </div></div>
 

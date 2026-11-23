@@ -70,6 +70,9 @@ Integra o **Sistema de Reservas do Estúdio MB** (mesmo servidor, banco separado
 - Sincronização automática (no máximo a cada 10 min) ao abrir Filmagens/Indicadores, ou pelo botão
   "Sincronizar reservas" (TI/Admin). O vínculo com o curso é automático pelo nome do curso e pelo e-mail do
   professor; o que não casar, a TI vincula manualmente (não é sobrescrito pela sincronização).
+- A marcação **"Gravação concluída / não concluída"** feita pela MB no Sistema de Reservas (coluna
+  `gravacao_concluida`) é importada: concluída → filmagem realizada na data reservada. O estado "Horario Proposto"
+  e a `hora_proposta` também são lidos. O registro feito no AutoriaSCS prevalece sobre o importado.
 - **Só a MB registra** "Filmagem realizada em [data]" ou "Não realizada (motivo)", na página **Filmagens** ou no
   cartão "Filmagens (Estúdio MB)" da página do curso. O ADMIN real pode corrigir (auditado). A MB também pode
   registrar uma **filmagem avulsa** (sem reserva no sistema).

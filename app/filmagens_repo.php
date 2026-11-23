@@ -61,7 +61,7 @@ function reservas_ler(): array {
   foreach (['id', 'data'] as $c) if (!in_array($c, $cols, true)) throw new Exception("A tabela reservas não tem a coluna '$c'.");
   $sel = ['r.id', 'r.data'];
   // as demais colunas variam conforme a versão do Sistema de Reservas: o que não existir vem como NULL
-  foreach (['usuario_id', 'sala', 'hora', 'curso', 'ambiente', 'estado', 'motivo', 'created_at'] as $c) $sel[] = in_array($c, $cols, true) ? "r.$c" : "NULL AS $c";
+  foreach (['usuario_id', 'sala', 'hora', 'curso', 'ambiente', 'estado', 'motivo', 'created_at', 'gravacao_concluida', 'hora_proposta'] as $c) $sel[] = in_array($c, $cols, true) ? "r.$c" : "NULL AS $c";
   $temUsers = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='usuarios'")->fetchColumn() > 0;
   $join = $temUsers ? "LEFT JOIN usuarios u ON u.id = r.usuario_id" : '';
   $sel[] = $temUsers ? 'u.nome AS professor' : 'NULL AS professor';
@@ -79,29 +79,43 @@ function filmagens_normalizar(string $s): string {
   return trim(preg_replace('/\s+/', ' ', $s));
 }
 
-/** Tenta descobrir o curso do AutoriaSCS a partir do nome do curso e do e-mail do professor da reserva. */
+/** Similaridade (0..100) entre dois nomes já normalizados. */
+function filmagens_similaridade(string $a, string $b): float {
+  if ($a === '' || $b === '') return 0;
+  if ($a === $b) return 100;
+  if (str_contains($a, $b) || str_contains($b, $a)) return 92; // um contém o outro (reserva costuma vir com o nome cortado)
+  similar_text($a, $b, $pct);
+  // compara também só o começo (os nomes longos divergem no final)
+  $n = min(strlen($a), strlen($b), 40); similar_text(substr($a, 0, $n), substr($b, 0, $n), $pctIni);
+  return max($pct, $pctIni * 0.95);
+}
+
+/**
+ * Tenta descobrir o curso do AutoriaSCS a partir do nome do curso e do e-mail do professor da reserva.
+ * Regras: nome muito parecido (≥ 90%) → liga; professor identificado pelo e-mail e nome razoavelmente parecido
+ * (≥ 60%) entre os cursos dele → liga; professor com um único curso e nome em branco → liga.
+ */
 function filmagem_autovincular(?string $cursoNome, ?string $email): ?int {
   $alvo = filmagens_normalizar((string)$cursoNome);
   $email = mb_strtolower(trim((string)$email));
   $idUser = null;
   if ($email !== '') { $st = db()->prepare("SELECT id_user FROM tb_users WHERE LOWER(email)=? LIMIT 1"); $st->execute([$email]); $idUser = ($r = $st->fetch()) ? (int)$r['id_user'] : null; }
-  $cursos = db()->query("SELECT id_curso, nome_curso, id_professor, status_atual FROM tb_cursos" . (function_exists('admin_v18') && admin_v18() ? " WHERE situacao <> 'EXCLUIDO'" : ''))->fetchAll();
+  $cursos = db()->query("SELECT id_curso, nome_curso, id_professor FROM tb_cursos" . (function_exists('admin_v18') && admin_v18() ? " WHERE situacao <> 'EXCLUIDO'" : ''))->fetchAll();
   $coaut = [];
-  if ($idUser) { $st = db()->prepare("SELECT id_curso FROM tb_curso_professores WHERE id_usuario=?"); try { $st->execute([$idUser]); $coaut = array_map('intval', array_column($st->fetchAll(), 'id_curso')); } catch (Throwable $e) {} }
+  if ($idUser) { try { $st = db()->prepare("SELECT id_curso FROM tb_curso_professores WHERE id_usuario=?"); $st->execute([$idUser]); $coaut = array_map('intval', array_column($st->fetchAll(), 'id_curso')); } catch (Throwable $e) {} }
   $doProf = fn(array $c) => $idUser && ((int)$c['id_professor'] === $idUser || in_array((int)$c['id_curso'], $coaut, true));
 
-  $exatos = []; $parciais = [];
-  if ($alvo !== '') {
-    foreach ($cursos as $c) {
-      $n = filmagens_normalizar($c['nome_curso']);
-      if ($n === $alvo) $exatos[] = $c;
-      elseif (strlen($alvo) >= 8 && (str_contains($n, $alvo) || str_contains($alvo, $n))) $parciais[] = $c;
-    }
+  $melhor = null; $melhorPct = 0; $melhorProf = null; $melhorProfPct = 0; $nProf = 0; $unicoProf = null;
+  foreach ($cursos as $c) {
+    $pct = filmagens_similaridade($alvo, filmagens_normalizar($c['nome_curso']));
+    $ehProf = $doProf($c);
+    if ($ehProf) { $nProf++; $unicoProf = (int)$c['id_curso']; }
+    if ($pct > $melhorPct || ($pct === $melhorPct && $ehProf)) { $melhorPct = $pct; $melhor = $c; }
+    if ($ehProf && $pct > $melhorProfPct) { $melhorProfPct = $pct; $melhorProf = $c; }
   }
-  if (count($exatos) === 1) return (int)$exatos[0]['id_curso'];
-  if (count($exatos) > 1) { $m = array_values(array_filter($exatos, $doProf)); return count($m) === 1 ? (int)$m[0]['id_curso'] : (int)$exatos[0]['id_curso']; }
-  $m = array_values(array_filter($parciais, $doProf)); if (count($m) === 1) return (int)$m[0]['id_curso'];
-  if ($alvo === '' && $idUser) { $m = array_values(array_filter($cursos, $doProf)); if (count($m) === 1) return (int)$m[0]['id_curso']; } // professor com um único curso
+  if ($melhorProf && $melhorProfPct >= 60) return (int)$melhorProf['id_curso'];
+  if ($melhor && $melhorPct >= 90) return (int)$melhor['id_curso'];
+  if ($alvo === '' && $nProf === 1) return $unicoProf;
   return null;
 }
 
@@ -120,22 +134,35 @@ function filmagens_sincronizar(bool $forcar = false): array {
 
   $db = db();
   $existentes = [];
-  foreach ($db->query("SELECT id_filmagem, id_reserva, id_curso, vinculo_manual FROM tb_filmagens WHERE id_reserva IS NOT NULL") as $e) $existentes[(int)$e['id_reserva']] = $e;
+  foreach ($db->query("SELECT id_filmagem, id_reserva, id_curso, vinculo_manual, registrado_por FROM tb_filmagens WHERE id_reserva IS NOT NULL") as $e) $existentes[(int)$e['id_reserva']] = $e;
   $agora = date('Y-m-d H:i:s'); $vistos = [];
   $ins = $db->prepare("INSERT INTO tb_filmagens (id_reserva, id_curso, professor_nome, professor_email, curso_nome, sala, ambiente, data_reserva, hora_reserva, estado_reserva, motivo_reserva, reserva_criada_em, sincronizado_em) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)");
   $upd = $db->prepare("UPDATE tb_filmagens SET professor_nome=?, professor_email=?, curso_nome=?, sala=?, ambiente=?, data_reserva=?, hora_reserva=?, estado_reserva=?, motivo_reserva=?, reserva_criada_em=?, removida_na_origem=0, sincronizado_em=? WHERE id_reserva=?");
   $updCurso = $db->prepare("UPDATE tb_filmagens SET id_curso=? WHERE id_filmagem=? AND id_curso IS NULL AND vinculo_manual=0");
+  // marcação "Gravação concluída" feita pela MB no Sistema de Reservas: vale enquanto a MB não registrar nada aqui
+  $updGrav = $db->prepare("UPDATE tb_filmagens SET filmagem=?, filmada_em=?, filmagem_obs=? WHERE id_filmagem=? AND registrado_por IS NULL");
   foreach ($rows as $r) {
     $idRes = (int)$r['id']; $vistos[] = $idRes;
     if (!$r['data'] || !preg_match('/^\d{4}-\d{2}-\d{2}/', (string)$r['data'])) continue;
-    $estado = in_array($r['estado'] ?? '', ['Pendente', 'Aceita', 'Recusada'], true) ? $r['estado'] : 'Pendente';
-    $vals = [$r['professor'] ?: null, $r['email_prof'] ?: null, $r['curso'] ?: null, $r['sala'] ?: null, $r['ambiente'] ?: null, substr((string)$r['data'], 0, 10), $r['hora'] ?: null, $estado, $r['motivo'] ?: null, $r['created_at'] ?: null, $agora];
+    $estado = in_array($r['estado'] ?? '', ['Pendente', 'Aceita', 'Recusada', 'Horario Proposto'], true) ? $r['estado'] : 'Pendente';
+    $data = substr((string)$r['data'], 0, 10);
+    $motivo = (string)($r['motivo'] ?? '');
+    if ($estado === 'Horario Proposto' && !empty($r['hora_proposta'])) $motivo = trim('Horário proposto pela MB: ' . substr($r['hora_proposta'], 0, 5) . ($motivo !== '' ? ' — ' . $motivo : ''));
+    $vals = [$r['professor'] ?: null, $r['email_prof'] ?: null, $r['curso'] ?: null, $r['sala'] ?: null, $r['ambiente'] ?: null, $data, $r['hora'] ?: null, $estado, $motivo ?: null, $r['created_at'] ?: null, $agora];
+    // gravação informada pela MB no Sistema de Reservas (NULL = não informado)
+    $grav = $r['gravacao_concluida'];
+    $gravSit = $grav === null || $grav === '' ? 'PENDENTE' : ((int)$grav === 1 ? 'REALIZADA' : 'NAO_REALIZADA');
+    $gravData = $gravSit === 'REALIZADA' ? $data : null;
+    $gravObs = $gravSit === 'PENDENTE' ? null : ($gravSit === 'REALIZADA' ? 'Gravação concluída (informado pela MB no Sistema de Reservas)' : 'Gravação não concluída (informado pela MB no Sistema de Reservas)');
     if (isset($existentes[$idRes])) {
+      $ex = $existentes[$idRes];
       $upd->execute(array_merge($vals, [$idRes])); $out['atualizadas']++;
-      if ($existentes[$idRes]['id_curso'] === null && !(int)$existentes[$idRes]['vinculo_manual']) { $idc = filmagem_autovincular($r['curso'], $r['email_prof']); if ($idc) $updCurso->execute([$idc, (int)$existentes[$idRes]['id_filmagem']]); }
+      if ($ex['registrado_por'] === null) $updGrav->execute([$gravSit, $gravData, $gravObs, (int)$ex['id_filmagem']]);
+      if ($ex['id_curso'] === null && !(int)$ex['vinculo_manual']) { $idc = filmagem_autovincular($r['curso'], $r['email_prof']); if ($idc) $updCurso->execute([$idc, (int)$ex['id_filmagem']]); }
     } else {
       $idc = filmagem_autovincular($r['curso'], $r['email_prof']);
       $ins->execute(array_merge([$idRes, $idc], $vals)); $out['novas']++;
+      if ($gravSit !== 'PENDENTE') $updGrav->execute([$gravSit, $gravData, $gravObs, (int)$db->lastInsertId()]);
     }
   }
   // reservas apagadas na origem: marcamos, não excluímos (o registro da filmagem é nosso)
@@ -150,7 +177,7 @@ function filmagens_sincronizar(bool $forcar = false): array {
  * Consultas
  * ---------------------------------------------------------------- */
 function filmagem_badge(string $s): string { $d = FILMAGEM_SITUACOES[$s] ?? FILMAGEM_SITUACOES['PENDENTE']; return '<span class="badge ' . $d['badge'] . '">' . $d['label'] . '</span>'; }
-function reserva_badge(string $e): string { $m = ['Aceita' => 'bg-success', 'Recusada' => 'bg-danger', 'Pendente' => 'bg-warning text-dark']; return '<span class="badge ' . ($m[$e] ?? 'bg-secondary') . '">' . htmlspecialchars($e) . '</span>'; }
+function reserva_badge(string $e): string { $m = ['Aceita' => 'bg-success', 'Recusada' => 'bg-danger', 'Pendente' => 'bg-warning text-dark', 'Horario Proposto' => 'bg-info text-dark']; return '<span class="badge ' . ($m[$e] ?? 'bg-secondary') . '">' . htmlspecialchars($e) . '</span>'; }
 
 function filmagem_get(int $id): ?array {
   $st = db()->prepare("SELECT f.*, c.nome_curso, c.id_professor, u.nome registrado_nome FROM tb_filmagens f LEFT JOIN tb_cursos c ON c.id_curso=f.id_curso LEFT JOIN tb_users u ON u.id_user=f.registrado_por WHERE f.id_filmagem=?");
