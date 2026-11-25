@@ -11,6 +11,7 @@ require_once __DIR__ . '/../app/auth.php';
 require_once __DIR__ . '/../app/db.php';
 require_once __DIR__ . '/../app/audit.php';
 require_once __DIR__ . '/../app/indicadores_repo.php';
+require_once __DIR__ . '/../app/apontamento_repo.php'; // V21: APONT_TIPOS no filtro de relatórios
 
 require_login();
 $u = auth_user();
@@ -181,7 +182,7 @@ include __DIR__ . '/_layout_top.php';
           <?php if (in_array('tipo_apont', $filtrosRel, true)): ?>
             <div class="col-6 col-md-2"><label class="form-label small mb-0">Tipo</label>
               <select class="form-select form-select-sm" name="tipo"><option value="">Todos</option>
-                <?php foreach (['TECNICO', 'PEDAGOGICO', 'ABNT', 'OUTRO'] as $s): ?><option value="<?= $s ?>" <?= ($f['tipo'] ?? '') === $s ? 'selected' : '' ?>><?= $s ?></option><?php endforeach; ?>
+                <?php foreach (APONT_TIPOS as $s => $sl): ?><option value="<?= $s ?>" <?= ($f['tipo'] ?? '') === $s ? 'selected' : '' ?>><?= htmlspecialchars($sl) ?></option><?php endforeach; ?>
               </select></div>
           <?php endif; ?>
           <?php if (in_array('situacao_apont', $filtrosRel, true)): ?>

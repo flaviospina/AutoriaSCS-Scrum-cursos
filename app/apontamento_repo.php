@@ -22,7 +22,7 @@ const APONT_STATUS = [
   'CONCLUIDO'           => ['label' => 'Concluído',                  'cor' => '#22c55e', 'pendente' => false],
 ];
 
-const APONT_TIPOS = ['TECNICO' => 'Técnico', 'PEDAGOGICO' => 'Pedagógico', 'ABNT' => 'ABNT', 'OUTRO' => 'Outro'];
+const APONT_TIPOS = ['TECNICO' => 'Técnico', 'PEDAGOGICO' => 'Pedagógico', 'TECNICO_PEDAGOGICO' => 'Técnico-pedagógico', 'ABNT' => 'ABNT', 'OUTRO' => 'Outro']; // V21: Técnico-pedagógico (exige upgrade_v21.sql)
 
 /** Status que a equipe TI/ADMIN pode definir diretamente. */
 const APONT_STATUS_TI = ['PENDENTE_ANALISE', 'CORRECAO_SOLICITADA', 'APROVADO', 'CONCLUIDO'];

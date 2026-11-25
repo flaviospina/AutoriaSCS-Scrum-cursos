@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 //    um "marcador" — trecho de código que só existe na versão nova.
 // ------------------------------------------------------------------
 $arquivos = [
-  ['app/apontamento_repo.php', 'e6279f082fb09ec02a4f0f8356caa1c4', 'function apont_criar('],
+  ['app/apontamento_repo.php', '7a8c70b43c66b17931a19fec88cf78af', 'TECNICO_PEDAGOGICO'],
   ['app/categorias_repo.php', '054ff959a0ed0f9a63b3ca531c609993', 'excluida_em'],
   ['app/checklist_repo.php', 'dd2ae4fc94954be7c058a9c6d0eac43b', 'checklist_reordenar_por_grupo('],
   ['app/curso_repo.php', '990393e9b7ecb7d17e39873222bce387', 'curso_bloqueio('],
@@ -40,6 +40,7 @@ $arquivos = [
   ['public/upload.php', 'eff2b39c3489e3ab5d715e71220f17dd', 'upload_max_mb()'],
   ['app/filmagens_repo.php', '0974399cfc3f71d9e44bd92cb4e84709', 'function filmagens_sincronizar('],
   ['public/filmagens.php', '4acaba6fe0115a3f99638ba2bbd94aaa', 'Filmagem avulsa'],
+  ['database/upgrade_v21.sql', '1ba6ca4c4a1dba44b7a13dbca11bf840', 'TECNICO_PEDAGOGICO'],
   ['database/upgrade_v20.sql', 'c67ee265fa7cd89d1da3ebdd37e6d3c1', 'senha_trocar'],
   ['public/admin/parametros.php', '5d52d737feecc79cb8f847c67d77a697', 'cfg_param_defs()'],
   ['public/admin/migrar.php', 'da8f78c49d96431e9e5dad6e60b8d438', 'migracao_aplicar('],
@@ -66,7 +67,7 @@ $arquivos = [
   ['public/apontamento_detalhe.php', '0c15146082ab673dd72298ad3011a83d', 'Registrar objeção'],
   ['public/apontamentos.php', 'e7f00bfcd3e023f9ae09ab4c52ac45ae', 'excluir_apont'],
   ['public/assets/autoria-dark.css', '4374a063b0363471b581739e7479e523', 'is-panning'],
-  ['public/curso_detalhe.php', '7c5997ab20290dd72b63985a41d7d364', 'upload_max_mb()'],
+  ['public/curso_detalhe.php', 'e905f161936a0bc63a11c7d561b5b1bf', 'upload_max_mb()'],
   ['public/curso_editar.php', '48f0e68583051e05fc920090dad53282', 'campo-ro'],
   ['public/curso_novo.php', '49ab64be883e9031b6445cecc4fb6486', 'formador_rotulo('],
   ['public/curso_videos.php', '77f5458be45336fa2240c5613aa2809c', 'excluir_video'],
@@ -104,7 +105,7 @@ $arquivos = [
   ['public/prefs_ui.php', 'ce3bd0280c99b57ff3b27c2e884148c0', 'ui_prefs_'],
   ['public/assets/acessibilidade.js', '6f3819033d0f5abd6c001ae2d343b661', 'A11Y_PREFS'],
   ['public/assets/acessibilidade.css', '162dae3b76c29b88d0f195b130b168e2', 'a11y-contraste'],
-  ['public/relatorios.php', 'b847ea5c1f283356dcd399bd6bd4e619', 'tipo_interv'],
+  ['public/relatorios.php', '26ceb718377d9ef291b77eb7f1e31d95', 'tipo_interv'],
   ['app/indicadores_repo.php', '7cc2077e71f94387940526f8f0dcebed', 'intervencoes_listar('],
   ['public/indicadores.php', '5bbe37a93357efb023053672fe960ce9', 'Indicadores gerenciais'],
   ['app/slides_repo.php', '76e04b7b773d4650f359bc907816d3f6', 'slides_caixa_livre('],
@@ -168,6 +169,7 @@ $migracoes = [
   ['V18', 'Administração total: situação dos cursos (pausar/suspender/cancelar/arquivar/lixeira) e exclusão de usuários', diag_coluna('tb_cursos', 'situacao') && diag_coluna('tb_users', 'excluido_em')],
   ['V19', 'Filmagens (Estúdio MB): reservas de estúdio + registro da filmagem (tb_filmagens)', diag_tabela('tb_filmagens')],
   ['V20', 'Administração total (etapas 2 e 3): agir como, sessões, bloqueio de login, troca de senha obrigatória, parâmetros', diag_coluna('tb_users', 'senha_trocar') && diag_tabela('tb_config')],
+  ['V21', 'Apontamentos: tipo "Técnico-pedagógico"', (function () { try { $st = db()->prepare("SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='tb_curso_apontamentos' AND COLUMN_NAME='tipo'"); $st->execute(); return str_contains((string)$st->fetchColumn(), 'TECNICO_PEDAGOGICO'); } catch (Throwable $e) { return false; } })()],
 ];
 require_once __DIR__ . '/../../app/curso_repo.php';
 require_once __DIR__ . '/../../app/admin_repo.php';

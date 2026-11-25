@@ -279,7 +279,7 @@ CREATE TABLE IF NOT EXISTS tb_curso_apontamentos (
   id_curso       INT UNSIGNED NOT NULL,
   id_user        INT UNSIGNED NOT NULL,
   id_file        INT UNSIGNED NULL,                 -- V11: arquivo/material relacionado
-  tipo           ENUM('TECNICO','PEDAGOGICO','ABNT','OUTRO') NOT NULL DEFAULT 'OUTRO',
+  tipo           ENUM('TECNICO','PEDAGOGICO','TECNICO_PEDAGOGICO','ABNT','OUTRO') NOT NULL DEFAULT 'OUTRO', -- V21: Técnico-pedagógico
   conteudo       TEXT NOT NULL,
   resolvido      TINYINT(1) NOT NULL DEFAULT 0,     -- espelho: 1 quando APROVADO/CONCLUIDO
   status         ENUM('PENDENTE_ANALISE','CORRECAO_SOLICITADA','EM_CORRECAO','REENVIADO_ANALISE','APROVADO','CONCLUIDO') NOT NULL DEFAULT 'PENDENTE_ANALISE',

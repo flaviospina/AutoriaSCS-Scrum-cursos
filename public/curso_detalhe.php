@@ -1311,10 +1311,7 @@ $pf = prazo_flag($curso['data_prevista_entrega_final'], $curso['status_atual']);
                       <div class="col-12 col-md-3">
                         <label class="form-label small">Tipo</label>
                         <select class="form-select form-select-sm" name="itens[<?= $k ?>][tipo]">
-                          <option value="TECNICO">Técnico</option>
-                          <option value="PEDAGOGICO">Pedagógico</option>
-                          <option value="ABNT">ABNT</option>
-                          <option value="OUTRO" selected>Outro</option>
+                          <?php foreach (APONT_TIPOS as $tk => $tl): ?><option value="<?= $tk ?>" <?= $tk === 'OUTRO' ? 'selected' : '' ?>><?= htmlspecialchars($tl) ?></option><?php endforeach; ?>
                         </select>
                       </div>
                       <div class="col-12 col-md-9">
